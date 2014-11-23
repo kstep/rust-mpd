@@ -1,4 +1,4 @@
-#![feature(macro_rules, slicing_syntax)]
+#![feature(macro_rules, slicing_syntax, if_let)]
 
 extern crate time;
 extern crate serialize;
@@ -8,46 +8,130 @@ use std::io::{TcpStream, BufferedStream, IoResult, IoError, standard_error};
 use std::io::net::ip::ToSocketAddr;
 use std::time::Duration;
 use std::collections::TreeMap;
-use time::Tm;
+use time::{Tm, Timespec};
 use serialize::{Decoder, Decodable};
+use serialize::json::Json;
+use serialize::json;
+
+#[cfg(test)]
+use std::io::BufReader;
 
 struct MpdConnection {
     stream: BufferedStream<TcpStream>
 }
 
+#[deriving(Show)]
 struct DirectoryInfo {
-    directory: Path,
+    //directory: Path,
+    directory: String,
     lastMod: Tm,
 }
 
+impl<D, E> Decodable<D, E> for DirectoryInfo where D: Decoder<E> {
+    fn decode(d: &mut D) -> Result<DirectoryInfo, E> {
+        d.read_struct("DirectoryInfo", 2, |d| Ok(DirectoryInfo {
+            //directory: try!(d.read_struct_field("directory", 0, |d| d.read_str().map(|v| Path::new(v)))),
+            directory: try!(d.read_struct_field("directory", 0, |d| d.read_str())),
+            lastMod: try!(d.read_struct_field("Last-Modified", 1, |d| d.read_str().map(|v| time::strptime(v[], "%Y-%m-%dT%H:%M:%SZ").unwrap()))),
+        }))
+    }
+}
+
+#[deriving(Show)]
 struct TrackInfo {
-    file: Path,
+    //file: Path,
+    file: String,
     lastMod: Tm,
     time: Duration,
-    title: String,
+    title: Option<String>,
     artist: Option<String>,
     album: Option<String>,
     albumArtist: Option<String>,
-    track: Option<uint>,
-    date: Option<uint>,
+    composer: Option<String>,
+    performer: Option<String>,
+    disc: Option<String>,
+    track: (Option<uint>, Option<uint>),
+    date: Option<Tm>,
     genre: Option<String>,
     id: Option<uint>,
     pos: Option<uint>,
 }
 
+impl<D, E> Decodable<D, E> for TrackInfo where D: Decoder<E> {
+    fn decode(d: &mut D) -> Result<TrackInfo, E> {
+        d.read_struct("TrackInfo", 15, |d| Ok(TrackInfo {
+            //file: try!(d.read_struct_field("file", 0, |d| d.read_str().map(|v| Path::new(v)))),
+            file: try!(d.read_struct_field("file", 0, |d| d.read_str())),
+            lastMod: try!(d.read_struct_field("Last-Modified", 1, |d| d.read_str().map(|v| time::strptime(v[], "%Y-%m-%dT%H:%M:%SZ").unwrap()))),
+            time: try!(d.read_struct_field("Time", 2, |d| d.read_i64().map(|v| Duration::seconds(v)))),
+
+            title: try!(d.read_struct_field("Title", 3, |d| d.read_option(|d, s| if s { d.read_str().map(|v| Some(v)) } else { Ok(None) }))),
+            artist: try!(d.read_struct_field("Artist", 4, |d| d.read_option(|d, s| if s { d.read_str().map(|v| Some(v)) } else { Ok(None) }))),
+            album: try!(d.read_struct_field("Album", 5, |d| d.read_option(|d, s| if s { d.read_str().map(|v| Some(v)) } else { Ok(None) }))),
+            albumArtist: try!(d.read_struct_field("AlbumArtist", 6, |d| d.read_option(|d, s| if s { d.read_str().map(|v| Some(v)) } else { Ok(None) }))),
+
+            track: try!(d.read_struct_field("Track", 7, |d| d.read_option(|d, s| if s {
+                d.read_str().map(|v| {
+                    let mut splits = v.splitn(1, '/');
+                    (splits.next().and_then(|v| from_str(v)), splits.next().and_then(|v| from_str(v)))
+                })
+            } else { Ok((None, None)) }))),
+            date: try!(d.read_struct_field("Date", 8, |d| d.read_option(|d, s| if s {
+                d.read_str().map(|v| time::strptime(v[], "%Y-%m-%dT%H:%M:%SZ")
+                                 .or_else(|e| time::strptime(v[], "%Y-%m-%d"))
+                                 .or_else(|e| time::strptime(v[], "%Y")).ok()) } else { Ok(None) }))),
+
+            genre: try!(d.read_struct_field("Genre", 9, |d| d.read_option(|d, s| if s { d.read_str().map(|v| Some(v)) } else { Ok(None) }))),
+
+            composer: try!(d.read_struct_field("Composer", 10, |d| d.read_option(|d, s| if s { d.read_str().map(|v| Some(v)) } else { Ok(None) }))),
+            performer: try!(d.read_struct_field("Performer", 11, |d| d.read_option(|d, s| if s { d.read_str().map(|v| Some(v)) } else { Ok(None) }))),
+            disc: try!(d.read_struct_field("Disc", 12, |d| d.read_option(|d, s| if s { d.read_str().map(|v| Some(v)) } else { Ok(None) }))),
+
+            id: try!(d.read_struct_field("id", 13, |d| d.read_option(|d, s| if s { d.read_uint().map(|v| Some(v)) } else { Ok(None) }))),
+            pos: try!(d.read_struct_field("pos", 14, |d| d.read_option(|d, s| if s { d.read_uint().map(|v| Some(v)) } else { Ok(None) })))
+        }))
+    }
+}
+
+#[deriving(Show)]
 enum State {
     PLAY,
     PAUSE,
     STOP
 }
 
+impl<D, E> Decodable<D, E> for State where D: Decoder<E> {
+    fn decode(d: &mut D) -> Result<State, E> {
+        d.read_str().and_then(|v| match v[] {
+            "play" => Ok(State::PLAY),
+            "pause" => Ok(State::PAUSE),
+            "stop" => Ok(State::STOP),
+            s => Err(d.error(format!("unknown state: {}", s)[]))
+        })
+    }
+}
+
+#[deriving(Show)]
 struct AudioFormat {
     rate: u16,
     bits: u8,
     chans: u8
 }
 
-#[deriving(Decodable)]
+impl<D, E> Decodable<D, E> for AudioFormat where D: Decoder<E> {
+    fn decode(d: &mut D) -> Result<AudioFormat, E> {
+        d.read_str().map(|v| {
+            let mut splits = v.splitn(3, ':');
+            AudioFormat {
+                rate: splits.next().and_then(|v| from_str(v)).unwrap_or(0),
+                bits: splits.next().and_then(|v| from_str(v)).unwrap_or(0),
+                chans: splits.next().and_then(|v| from_str(v)).unwrap_or(0)
+            }
+        })
+    }
+}
+
+#[deriving(Show)]
 struct Status {
     volume: u8,
     repeat: bool,
@@ -58,16 +142,71 @@ struct Status {
     playlistlength: uint,
     mixrampdb: f32,
     state: State,
-    song: uint,
-    songid: uint,
-    time: (Option<Duration>, Option<Duration>),
-    elapsed: Duration,
-    bitrate: uint,
-    audio: AudioFormat,
-    nextsong: uint,
-    nextsongid: uint,
+
+    xfade: Option<Duration>,
+
+    song: Option<uint>,
+    songid: Option<uint>,
+    nextsong: Option<uint>,
+    nextsongid: Option<uint>,
+
+    time: Option<(Duration, Duration)>,
+    elapsed: Option<Duration>,
+
+    bitrate: Option<uint>,
+    audio: Option<AudioFormat>,
+
+    updatingDb: Option<uint>,
+    error: Option<String>,
 }
 
+impl<D, E> Decodable<D, E> for Status where D: Decoder<E> {
+    fn decode(d: &mut D) -> Result<Status, E> {
+        d.read_struct("Status", 20, |d| Ok(Status {
+            volume: try!(d.read_struct_field("volume" , 0, |d| d.read_u8())),
+            repeat: try!(d.read_struct_field("repeat", 1, |d| d.read_u8())) != 0,
+            random: try!(d.read_struct_field("random", 2, |d| d.read_u8())) != 0,
+            single: try!(d.read_struct_field("single", 3, |d| d.read_u8())) != 0,
+            consume: try!(d.read_struct_field("consume", 4, |d| d.read_u8())) != 0,
+            playlist: try!(d.read_struct_field("playlist", 5, |d| d.read_uint())),
+            playlistlength: try!(d.read_struct_field("playlistlength", 6, |d| d.read_uint())),
+            mixrampdb: try!(d.read_struct_field("mixrampdb", 7, |d| d.read_f32())),
+            state: try!(d.read_struct_field("state", 8, |d| Decodable::decode(d))),
+
+            xfade: try!(d.read_struct_field("xfade", 9, |d| d.read_option(|d, s| if s {
+                d.read_i64().map(|v| Some(Duration::seconds(v))) } else { Ok(None) }))),
+
+            song: try!(d.read_struct_field("song", 10, |d| d.read_option(|d, s| if s {
+                d.read_uint().map(|v| Some(v)) } else { Ok(None) }))),
+            songid: try!(d.read_struct_field("songid", 11, |d| d.read_option(|d, s| if s {
+                d.read_uint().map(|v| Some(v)) } else { Ok(None) }))),
+            nextsong: try!(d.read_struct_field("nextsong", 12, |d| d.read_option(|d, s| if s {
+                d.read_uint().map(|v| Some(v)) } else { Ok(None) }))),
+            nextsongid: try!(d.read_struct_field("nextsongid", 13, |d| d.read_option(|d, s| if s {
+                d.read_uint().map(|v| Some(v)) } else { Ok(None) }))),
+
+            time: try!(d.read_struct_field("time", 14, |d| d.read_option(|d, s| if s {
+                d.read_str().map(|v| {
+                    let mut s = v.splitn(2, ':').flat_map(|v| from_str(v).map(|v| Duration::seconds(v)).into_iter());
+                    s.next().into_iter().zip(s.next().into_iter()).next()
+                }) } else { Ok(None) }))),
+            elapsed: try!(d.read_struct_field("elapsed", 15, |d| d.read_option(|d, s| if s {
+                d.read_f32().map(|v| Some(Duration::milliseconds((v * 1000.0) as i64))) } else { Ok(None) }))),
+
+            bitrate: try!(d.read_struct_field("bitrate", 16, |d| d.read_option(|d, s| if s {
+                d.read_uint().map(|v| Some(v)) } else { Ok(None) }))),
+            audio: try!(d.read_struct_field("audio", 17, |d| d.read_option(|d, s| if s {
+                Decodable::decode(d).map(|v| Some(v)) } else { Ok(None) }))),
+
+            updatingDb: try!(d.read_struct_field("updating_db", 18, |d| d.read_option(|d, s| if s {
+                d.read_uint().map(|v| Some(v)) } else { Ok(None) }))),
+            error: try!(d.read_struct_field("error", 19, |d| d.read_option(|d, s| if s {
+                d.read_str().map(|v| Some(v)) } else { Ok(None) }))),
+        }))
+    }
+}
+
+#[deriving(Show)]
 struct Stats {
     uptime: Duration,
     playtime: Duration,
@@ -77,76 +216,73 @@ struct Stats {
     dbPlaytime: Duration,
     dbUpdate: Tm,
 }
-
-struct MpdDecoder {
-    stream: &mut BufferedStream<TcpStream>
+impl<D, E> Decodable<D, E> for Stats where D: Decoder<E> {
+    fn decode(d: &mut D) -> Result<Stats, E> {
+        d.read_struct("Stats", 7, |d| Ok(Stats {
+            uptime: try!(d.read_struct_field("uptime", 0, |d| d.read_i64().map(|v| Duration::seconds(v)))),
+            playtime: try!(d.read_struct_field("playtime", 1, |d| d.read_i64().map(|v| Duration::seconds(v)))),
+            artists: try!(d.read_struct_field("artists", 2, |d| d.read_uint())),
+            albums: try!(d.read_struct_field("albums", 3, |d| d.read_uint())),
+            songs: try!(d.read_struct_field("songs", 4, |d| d.read_uint())),
+            dbPlaytime: try!(d.read_struct_field("db_playtime", 5, |d| d.read_i64().map(|v| Duration::seconds(v)))),
+            dbUpdate: try!(d.read_struct_field("db_update", 6, |d| d.read_i64().map(|v| time::at(Timespec::new(v, 0)))))
+        }))
+    }
 }
 
-impl Decoder<IoError> for MpdDecoder {
-    fn read_nil(&mut self) -> IoResult<()> { () }
+enum Subsystem {
+    Database,
+    Update,
+    StoredPlaylist,
+    Playlist,
+    Player,
+    Mixer,
+    Output,
+    Options,
+    Sticker,
+    Subscription,
+    Message,
+}
 
-    fn read_u64(&mut self) -> IoResult<u64> {
-        let mut r = 0;
-        let mut skip = true;
-        for b in self.stream.bytes() {
-            match b {
-                Ok(d) if 0x30 <= d && d <= 0x39 => { skip = false; r = r * 10 + (b & 0x0f) as uint; },
-                Err(e) => return Err(e),
-                Ok(0x20) => if skip { continue; } else { break; },
-                _ => return Err(standard_error(io::InvalidInput))
-            }
-        }
+fn parse_mpd<B: Buffer>(buf: &mut B) -> IoResult<Json> {
+    let mut arr = Vec::new();
+    let mut obj = TreeMap::new();
 
-        Ok(r)
-    }
+    for res in buf.lines() {
+        match res {
+            Ok(line) => {
+                let line = line.trim_right_chars('\n');
 
-    fn read_uint(&mut self) -> IoResult<uint> { self.read_u64() as uint }
-    fn read_u32(&mut self) -> IoResult<u32> { self.read_u64() as u32 }
-    fn read_u16(&mut self) -> IoResult<u32> { self.read_u64() as u16 }
-    fn read_u8(&mut self) -> IoResult<u32> { self.read_u64() as u8 }
+                if line[] == "OK" {
+                    break;
+                }
 
-    fn read_i64(&mut self) -> IoResult<i64> {
-        let mut r = 0;
-        let mut skip = true;
-        let mut sign = 1;
+                let mut pair = line.splitn(1, ':');
+                if let (Some(k), Some(v)) = (pair.next(), pair.next().map(|v| v[1..])) {
+                    let key = k.to_string();
+                    if obj.contains_key(&key) {
+                        arr.push(Json::Object(obj));
+                        obj = TreeMap::new();
+                    }
 
-        for b in self.stream.bytes() {
-            match b {
-                Ok(0x2d) if skip => { skip = false; sign = -1; },
-                Ok(d) if 0x30 <= d && d <= 0x39 => { skip = false; r = r * 10 + (b & 0x0f) as uint; },
-                Err(e) => return Err(e),
-                Ok(0x20) => if skip { continue; } else { break; },
-                _ => return Err(standard_error(io::InvalidInput))
-            }
-        }
-
-        Ok(sign * r)
-    }
-
-    fn read_int(&mut self) -> IoResult<int> { self.read_i64() as int }
-    fn read_i32(&mut self) -> IoResult<i32> { self.read_u64() as i32 }
-    fn read_i16(&mut self) -> IoResult<i32> { self.read_u64() as i16 }
-    fn read_i8(&mut self) -> IoResult<i32> { self.read_u64() as i8 }
-
-    fn read_bool(&mut self) -> IoResult<bool> {
-        match self.stream.read_u8() {
-            Ok(c) if c == 0x30 => false,
-            Ok(c) if c == 0x31 => true,
-            Err(e) => Err(e),
-            _ => Err(standard_error(io::InvalidInput))
+                    obj.insert(key, Json::String(v.to_string()));
+                }
+            },
+            Err(e) => return Err(e)
         }
     }
 
-    fn read_f64(&mut self) -> IoResult<f64> {
-    }
+    arr.push(Json::Object(obj));
+    Ok(Json::Array(arr))
+}
 
-    fn read_f32(&mut self) -> IoResult<f32> { self.read_f64() as f32 }
+fn decode_mpd<T: Decodable<json::Decoder, json::DecoderError>, B: Buffer>(buf: &mut B) -> Result<T, json::DecoderError> {
+    let parsed = match parse_mpd(buf) {
+        Ok(v) => v,
+        Err(e) => return Err(json::DecoderError::ParseError(json::ParserError::IoError(e.kind, e.desc)))
+    };
 
-    fn read_char(&mut self) -> IoResult<char> { self.read_char() }
-    fn read_str(&mut self) -> IoResult<String> { self.read_line() }
-    fn read_enum<T>(&mut self, name: &str, f: |&mut MpdDecoder| -> IoResult<T>) -> IoResult<T> {
-        
-    }
+    Decodable::decode(&mut json::Decoder::new(parsed))
 }
 
 impl MpdConnection {
@@ -157,6 +293,12 @@ impl MpdConnection {
        }
     }
 
+    fn issue_command(&mut self, cmd: &str) -> IoResult<()> {
+        self.stream.write_str(cmd)
+            .and_then(|()| self.stream.write(b"\n"))
+            .and_then(|()| self.stream.flush())
+    }
+
     fn playlist(&mut self) -> IoResult<Vec<Path>> {
         Err(standard_error(io::IoUnavailable))
     }
@@ -165,51 +307,53 @@ impl MpdConnection {
         Err(standard_error(io::IoUnavailable))
     }
 
-    fn status(&mut self) -> IoResult<Status> {
-        try!(self.stream.write(b"status\n").and_then(|()| self.stream.flush()));
+    fn status(&mut self) -> IoResult<Vec<Status>> {
+        try!(self.issue_command("status"));
+        decode_mpd(&mut self.stream).map_err(|v| panic!("{}", v))
+    }
+    fn stats(&mut self) -> IoResult<Vec<Stats>> {
+        try!(self.issue_command("stats"));
+        decode_mpd(&mut self.stream).map_err(|v| panic!("{}", v))
+    }
 
-        let mut result = Status {
-            volume: 0,
-            repeat: false,
-            random: false,
-            single: false,
-            consume: false,
-            playlist: 0,
-            playlistlength: 0,
-            mixrampdb: 0.0,
-            state: STOP,
-            song: 0,
-            songid: 0,
-            time: (None, None),
-            elapsed: 0,
-            bitrate: 0,
-            audio: AudioFormat{ rate: 0, bits: 0, chans: 0 },
-            nextsong: 0,
-            nextsongid: 0,
-        };
-
-        for res in self.stream.lines() {
-            let line = try!(res);
-            if line[] == "OK" { break; } 
-
-            if 
-        }
-
-        let map = self.stream.lines()
-            .take_while(|line| line.map(|l| l[] == "OK").unwrap_or(false))
-            .filter_map(|line| line.ok().map(|s| s.splitn(1, ':')).and_then(|s| match (s.next(), s.next()) {
-                (Some(k), Some(v)) => Some((k.to_string(), v.trim_left_chars(' ').to_string())),
-                (_, _) => None
-            }))
-            .collect::<TreeMap<String, String>>();
-            
-        Err(standard_error(io::IoUnavailable))
-    } 
-    fn stats(&mut self) -> IoResult<Stats> {
-        Err(standard_error(io::IoUnavailable))
+    fn search(&mut self, typ: &str, value: &str) -> IoResult<Vec<TrackInfo>> {
+        try!(self.issue_command("search file \"\""));
+        decode_mpd(&mut self.stream).map_err(|v| panic!("{}", v))
     }
 }
 
 #[test]
-fn it_works() {
+fn test_status_parser() {
+    let mut status = BufReader::new(b"\
+volume: 100
+repeat: 1
+random: 0
+single: 0
+consume: 0
+playlist: 2
+playlistlength: 0
+mixrampdb: 0.000000
+state: stop
+OK"[]);
+
+    let mpdStatus: Result<Vec<Status>, json::DecoderError> = decode_mpd(&mut status);
+    panic!("{}", mpdStatus);
+}
+
+#[test]
+fn test_live_status() {
+    let mut conn = MpdConnection::new("192.168.1.10:6600").unwrap();
+    panic!("{}", conn.status());
+}
+
+#[test]
+fn test_live_stats() {
+    let mut conn = MpdConnection::new("192.168.1.10:6600").unwrap();
+    panic!("{}", conn.stats());
+}
+
+#[test]
+fn test_live_search() {
+    let mut conn = MpdConnection::new("192.168.1.10:6600").unwrap();
+    panic!("{}", conn.search("file", ""));
 }
