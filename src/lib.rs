@@ -8,10 +8,52 @@ use std::time::duration::Duration;
 use std::ptr;
 use std::c_str::ToCStr;
 use collections::string::String;
+use time::Timespec;
 
 #[repr(C)] struct mpd_connection;
 #[repr(C)] struct mpd_settings;
 #[repr(C)] struct mpd_status;
+#[repr(C)] struct mpd_song;
+
+#[repr(C)]
+#[deriving(Show)]
+pub enum TagType {
+    Unknown = -1,
+    Artist = 0,
+    Album = 1,
+    AlbumArtist = 2,
+    Title = 3,
+    Track = 4,
+    Name = 5,
+    Genre = 6,
+    Date = 7,
+    Composer = 8,
+    Performer = 9,
+    Comment = 10,
+    Disc = 11,
+
+    MbArtistId = 12,
+    MbAlbumId = 13,
+    MbAlbumArtistId = 14,
+    MbTrackId = 15,
+}
+
+impl TagType {
+    fn name(&self) -> Option<String> {
+        let name = unsafe { mpd_tag_name(*self) };
+        if name == ptr::null() {
+            None
+        } else {
+            Some(unsafe { String::from_raw_buf(name) })
+        }
+    }
+}
+
+impl std::str::FromStr for TagType {
+    fn from_str(s: &str) -> Option<TagType> {
+        Some(s.with_c_str(|s| unsafe { mpd_tag_name_parse(s as *const u8) }))
+    }
+}
 
 #[repr(C)]
 #[deriving(Show)]
@@ -53,6 +95,66 @@ pub enum MpdState {
     Stop = 1,
     Play = 2,
     Pause = 3,
+}
+
+pub struct Song {
+    song: *mut mpd_song
+}
+
+impl std::fmt::Show for Song {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        try!(f.write(b"Song { "));
+        try!(f.write(b"uri: "));
+        try!(self.uri().fmt(f));
+        try!(f.write(b" }"));
+        Ok(())
+    }
+}
+
+impl Song {
+    pub fn uri(&self) -> String { unsafe { String::from_raw_buf(mpd_song_get_uri(self.song as *const _)) } }
+    pub fn tags(&self, kind: TagType, index: u32) -> Option<String> {
+        let tag = unsafe { mpd_song_get_tag(self.song as *const _, kind, index) };
+        if tag == ptr::null() {
+            None
+        } else {
+            Some(unsafe { String::from_raw_buf(tag) })
+        }
+    }
+    pub fn duration(&self) -> Duration { Duration::seconds(unsafe { mpd_song_get_duration(self.song as *const _) } as i64) }
+    pub fn id(&self) -> u32 { unsafe { mpd_song_get_id(self.song as *const _) } }
+    pub fn prio(&self) -> u32 { unsafe { mpd_song_get_prio(self.song as *const _) } }
+    pub fn start(&self) -> u32 { unsafe { mpd_song_get_start(self.song as *const _) } }
+    pub fn end(&self) -> u32 { unsafe { mpd_song_get_start(self.song as *const _) } }
+    pub fn last_mod(&self) -> Timespec { Timespec::new(unsafe { mpd_song_get_last_modified(self.song as *const _) }, 0) }
+    pub fn get_pos(&self) -> u32 { unsafe { mpd_song_get_pos(self.song as *const _) } }
+    pub fn set_pos(&mut self, pos: u32) { unsafe { mpd_song_set_pos(self.song, pos) } }
+
+    fn from_connection(connection: *mut mpd_connection) -> Option<Song> {
+        let song = unsafe { mpd_recv_song(connection) };
+        if song as *const _ == ptr::null::<mpd_song>() {
+            None
+        } else {
+            Some(Song { song: song })
+        }
+    }
+}
+
+impl Drop for Song {
+    fn drop(&mut self) {
+        unsafe { mpd_song_free(self.song); }
+    }
+}
+
+impl Clone for Song {
+    fn clone(&self) -> Song {
+        let song = unsafe { mpd_song_dup(self.song as *const _) };
+        if song as *const _ == ptr::null::<mpd_song>() {
+            panic!("Out of memory!")
+        }
+
+        Song { song: song }
+    }
 }
 
 #[repr(C)]
@@ -223,12 +325,33 @@ extern {
     fn mpd_status_get_error(status: *const mpd_status) -> *const u8;
 
     fn mpd_run_play(connection: *mut mpd_connection) -> bool;
+    fn mpd_run_play_pos(connection: *mut mpd_connection, song_pos: u32) -> bool;
+    fn mpd_run_play_id(connection: *mut mpd_connection, song_id: u32) -> bool;
     fn mpd_run_pause(connection: *mut mpd_connection, mode: bool) -> bool;
     fn mpd_run_stop(connection: *mut mpd_connection) -> bool;
     fn mpd_run_next(connection: *mut mpd_connection) -> bool;
     fn mpd_run_previous(connection: *mut mpd_connection) -> bool;
     fn mpd_run_set_volume(connection: *mut mpd_connection, volume: libc::c_uint) -> bool;
     fn mpd_run_change_volume(connection: *mut mpd_connection, volume: libc::c_int) -> bool;
+
+    fn mpd_song_dup(song: *const mpd_song) -> *mut mpd_song;
+    fn mpd_song_free(song: *mut mpd_song);
+    fn mpd_song_get_uri(song: *const mpd_song) -> *const u8;
+    fn mpd_song_get_tag(song: *const mpd_song, typ: TagType, idx: libc::c_uint) -> *const u8;
+    fn mpd_song_get_duration(song: *const mpd_song) -> libc::c_uint;
+    fn mpd_song_get_start(song: *const mpd_song) -> libc::c_uint;
+    fn mpd_song_get_end(song: *const mpd_song) -> libc::c_uint;
+    fn mpd_song_get_last_modified(song: *const mpd_song) -> libc::time_t;
+    fn mpd_song_get_id(song: *const mpd_song) -> libc::c_uint;
+    fn mpd_song_get_pos(song: *const mpd_song) -> libc::c_uint;
+    fn mpd_song_set_pos(song: *mut mpd_song, pos: libc::c_uint);
+    fn mpd_song_get_prio(song: *const mpd_song) -> libc::c_uint;
+    fn mpd_recv_song(connection: *mut mpd_connection) -> *mut mpd_song;
+
+    fn mpd_run_current_song(connection: *mut mpd_connection) -> *mut mpd_song;
+
+    fn mpd_tag_name(typ: TagType) -> *const u8;
+    fn mpd_tag_name_parse(name: *const u8) -> TagType;
 }
 
 pub struct MpdConnection {
@@ -386,7 +509,18 @@ impl MpdConnection {
     pub fn next(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_next(self.conn) } { return Err(MpdError::from_connection(self.conn).unwrap()) } Ok(()) }
     pub fn prev(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_previous(self.conn) } { return Err(MpdError::from_connection(self.conn).unwrap()) } Ok(()) }
 
+    pub fn play_pos(&mut self, pos: u32) -> MpdResult<()> { if ! unsafe { mpd_run_play_pos(self.conn, pos) } { return Err(MpdError::from_connection(self.conn).unwrap()) } Ok(()) }
+    pub fn play_id(&mut self, pos: u32) -> MpdResult<()> { if ! unsafe { mpd_run_play_id(self.conn, pos) } { return Err(MpdError::from_connection(self.conn).unwrap()) } Ok(()) }
+
     pub fn status(&self) -> MpdResult<MpdStatus> { MpdStatus::from_connection(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(MpdError::from_connection(self.conn).unwrap())) }
+    pub fn current_song(&self) -> MpdResult<Song> {
+        let song = unsafe { mpd_run_current_song(self.conn) };
+        if song as *const _ == ptr::null::<mpd_song>() {
+            Err(MpdError::from_connection(self.conn).unwrap())
+        } else {
+            Ok(Song { song: song })
+        }
+    }
 }
 
 impl Drop for MpdConnection {
@@ -409,7 +543,7 @@ fn test_conn() {
     println!("{}", conn.set_volume(0));
     println!("{}", conn.settings());
 
-    //panic!("{}", conn.status());
+    panic!("{}", conn.current_song());
 }
 
 //#[test]
