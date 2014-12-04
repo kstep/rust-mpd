@@ -15,6 +15,7 @@ use time::Timespec;
 #[repr(C)] struct mpd_status;
 #[repr(C)] struct mpd_song;
 #[repr(C)] struct mpd_playlist;
+#[repr(C)] struct mpd_output;
 
 #[repr(C)]
 #[deriving(Show)]
@@ -133,6 +134,20 @@ impl std::fmt::Show for Playlist {
         try!(f.write(b"Playlist { "));
         try!(f.write(b"path: "));
         try!(self.path().fmt(f));
+        try!(f.write(b" }"));
+        Ok(())
+    }
+}
+
+impl std::fmt::Show for Output {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        try!(f.write(b"Output { "));
+        try!(f.write(b"name: "));
+        try!(self.name().fmt(f));
+        try!(f.write(b", id: "));
+        try!(self.id().fmt(f));
+        try!(f.write(b", enabled: "));
+        try!(self.enabled().fmt(f));
         try!(f.write(b" }"));
         Ok(())
     }
@@ -451,6 +466,81 @@ extern {
 
     fn mpd_send_list_playlists(connection: *mut mpd_connection) -> bool;
     fn mpd_send_list_playlist(connection: *mut mpd_connection, name: *const u8) -> bool;
+
+    fn mpd_output_free(output: *mut mpd_output);
+    fn mpd_output_get_name(output: *const mpd_output) -> *const u8;
+    fn mpd_output_get_id(output: *const mpd_output) -> libc::c_uint;
+    fn mpd_output_get_enabled(output: *const mpd_output) -> bool;
+    fn mpd_run_enable_output(connection: *mut mpd_connection, output_id: libc::c_uint) -> bool;
+    fn mpd_run_disable_output(connection: *mut mpd_connection, output_id: libc::c_uint) -> bool;
+    fn mpd_run_toggle_output(connection: *mut mpd_connection, output_id: libc::c_uint) -> bool;
+    fn mpd_send_outputs(connection: *mut mpd_connection) -> bool;
+    fn mpd_recv_output(connection: *mut mpd_connection) -> *mut mpd_output;
+}
+
+pub struct Output {
+    output: *mut mpd_output
+}
+
+pub struct Outputs<'a> {
+    conn: &'a mut MpdConnection
+}
+
+impl<'a> Iterator<MpdResult<Output>> for Outputs<'a> {
+    fn next(&mut self) -> Option<MpdResult<Output>> {
+        match Output::from_connection(self.conn.conn) {
+            Some(s) => Some(Ok(s)),
+            None => match MpdError::from_connection(self.conn.conn) {
+                Some(e) => Some(Err(e)),
+                None => None
+            }
+        }
+    }
+}
+
+impl Output {
+    fn from_connection(connection: *mut mpd_connection) -> Option<Output> {
+        let output = unsafe { mpd_recv_output(connection) };
+        if output as *const _ == ptr::null::<mpd_output>() {
+            None
+        } else {
+            Some(Output { output: output })
+        }
+    }
+
+    fn id(&self) -> u32 { unsafe { mpd_output_get_id(self.output as *const _) } }
+    fn name(&self) -> String { unsafe { String::from_raw_buf(mpd_output_get_name(self.output as *const _)) } }
+    fn enabled(&self) -> bool { unsafe { mpd_output_get_enabled(self.output as *const _) } }
+
+    fn toggle(&self, conn: &mut MpdConnection) -> MpdResult<()> {
+        if unsafe { mpd_run_toggle_output(conn.conn, self.id()) } {
+            Ok(())
+        } else {
+            Err(MpdError::from_connection(conn.conn).unwrap())
+        }
+    }
+
+    fn disable(&self, conn: &mut MpdConnection) -> MpdResult<()> {
+        if unsafe { mpd_run_disable_output(conn.conn, self.id()) } {
+            Ok(())
+        } else {
+            Err(MpdError::from_connection(conn.conn).unwrap())
+        }
+    }
+
+    fn enable(&self, conn: &mut MpdConnection) -> MpdResult<()> {
+        if unsafe { mpd_run_enable_output(conn.conn, self.id()) } {
+            Ok(())
+        } else {
+            Err(MpdError::from_connection(conn.conn).unwrap())
+        }
+    }
+}
+
+impl Drop for Output {
+    fn drop(&mut self) {
+        unsafe { mpd_output_free(self.output) }
+    }
 }
 
 pub struct MpdConnection {
@@ -628,6 +718,14 @@ impl MpdConnection {
             Err(MpdError::from_connection(self.conn).unwrap())
         }
     }
+
+    pub fn outputs(&mut self) -> MpdResult<Outputs> {
+        if unsafe { mpd_send_outputs(self.conn) } {
+            Ok(Outputs { conn: self })
+        } else {
+            Err(MpdError::from_connection(self.conn).unwrap())
+        }
+    }
 }
 
 impl Drop for MpdConnection {
@@ -659,6 +757,10 @@ fn test_conn() {
 
     for s in playlist.unwrap().songs(&mut conn).unwrap() {
         println!("{}", s);
+    }
+
+    for o in conn.outputs().unwrap() {
+        println!("{}", o);
     }
 
     panic!("{}", conn.current_song());
