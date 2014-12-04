@@ -14,6 +14,7 @@ use time::Timespec;
 #[repr(C)] struct mpd_settings;
 #[repr(C)] struct mpd_status;
 #[repr(C)] struct mpd_song;
+#[repr(C)] struct mpd_playlist;
 
 #[repr(C)]
 #[deriving(Show)]
@@ -55,6 +56,7 @@ impl std::str::FromStr for TagType {
     }
 }
 
+
 #[repr(C)]
 #[deriving(Show)]
 pub enum MpdErrorKind {
@@ -95,6 +97,94 @@ pub enum MpdState {
     Stop = 1,
     Play = 2,
     Pause = 3,
+}
+
+pub struct Playlist {
+    pl: *mut mpd_playlist
+}
+
+impl Playlist {
+    pub fn path(&self) -> String {
+        unsafe { String::from_raw_buf(mpd_playlist_get_path(self.pl as *const _)) }
+    }
+
+    pub fn last_mod(&self) -> Timespec { Timespec::new(unsafe { mpd_playlist_get_last_modified(self.pl as *const _) }, 0) }
+
+    fn from_connection(connection: *mut mpd_connection) -> Option<Playlist> {
+        let pl = unsafe { mpd_recv_playlist(connection) };
+        if pl as *const _ == ptr::null::<mpd_playlist>() {
+            None
+        } else {
+            Some(Playlist { pl: pl })
+        }
+    }
+
+    pub fn songs<'a>(&self, conn: &'a mut MpdConnection) -> MpdResult<Songs<'a>> {
+        if unsafe { mpd_send_list_playlist(conn.conn, mpd_playlist_get_path(self.pl as *const _)) } {
+            Ok(Songs { conn: conn })
+        } else {
+            Err(MpdError::from_connection(conn.conn).unwrap())
+        }
+    }
+}
+
+impl std::fmt::Show for Playlist {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        try!(f.write(b"Playlist { "));
+        try!(f.write(b"path: "));
+        try!(self.path().fmt(f));
+        try!(f.write(b" }"));
+        Ok(())
+    }
+}
+
+impl Drop for Playlist {
+    fn drop(&mut self) {
+        unsafe { mpd_playlist_free(self.pl) }
+    }
+}
+
+impl Clone for Playlist {
+    fn clone(&self) -> Playlist {
+        let pl = unsafe { mpd_playlist_dup(self.pl as *const _) };
+        if pl as *const _ == ptr::null::<mpd_playlist>() {
+            panic!("Out of memory!")
+        }
+
+        Playlist { pl: pl }
+    }
+}
+
+pub struct Playlists<'a> {
+    conn: &'a MpdConnection
+}
+
+pub struct Songs<'a> {
+    conn: &'a MpdConnection
+}
+
+impl<'a> Iterator<MpdResult<Playlist>> for Playlists<'a> {
+    fn next(&mut self) -> Option<MpdResult<Playlist>> {
+        match Playlist::from_connection(self.conn.conn) {
+            Some(s) => Some(Ok(s)),
+            None => match MpdError::from_connection(self.conn.conn) {
+                Some(e) => Some(Err(e)),
+                None => None
+            }
+        }
+    }
+}
+
+impl<'a> Iterator<MpdResult<Song>> for Songs<'a> {
+    fn next(&mut self) -> Option<MpdResult<Song>> {
+        match Song::from_connection(self.conn.conn) {
+            Some(s) => Some(Ok(s)),
+            None => match MpdError::from_connection(self.conn.conn) {
+                Some(e) => Some(Err(e)),
+                None => None
+            }
+        }
+    }
 }
 
 pub struct Song {
@@ -352,6 +442,15 @@ extern {
 
     fn mpd_tag_name(typ: TagType) -> *const u8;
     fn mpd_tag_name_parse(name: *const u8) -> TagType;
+
+    fn mpd_playlist_dup(playlist: *const mpd_playlist) -> *mut mpd_playlist;
+    fn mpd_recv_playlist(playlist: *mut mpd_connection) -> *mut mpd_playlist;
+    fn mpd_playlist_free(playlist: *mut mpd_playlist);
+    fn mpd_playlist_get_last_modified(playlist: *const mpd_playlist) -> libc::time_t;
+    fn mpd_playlist_get_path(playlist: *const mpd_playlist) -> *const u8;
+
+    fn mpd_send_list_playlists(connection: *mut mpd_connection) -> bool;
+    fn mpd_send_list_playlist(connection: *mut mpd_connection, name: *const u8) -> bool;
 }
 
 pub struct MpdConnection {
@@ -521,6 +620,14 @@ impl MpdConnection {
             Ok(Song { song: song })
         }
     }
+
+    pub fn playlists(&mut self) -> MpdResult<Playlists> {
+        if unsafe { mpd_send_list_playlists(self.conn) } {
+            Ok(Playlists { conn: self })
+        } else {
+            Err(MpdError::from_connection(self.conn).unwrap())
+        }
+    }
 }
 
 impl Drop for MpdConnection {
@@ -542,6 +649,17 @@ fn test_conn() {
     println!("{}", conn.stop());
     println!("{}", conn.set_volume(0));
     println!("{}", conn.settings());
+
+    let mut playlist: MpdResult<Playlist> = Err(MpdError::Other { kind: MpdErrorKind::Success, desc: "".to_string() });
+
+    for pl in conn.playlists().unwrap() {
+        println!("{}", pl);
+        playlist = pl;
+    }
+
+    for s in playlist.unwrap().songs(&mut conn).unwrap() {
+        println!("{}", s);
+    }
 
     panic!("{}", conn.current_song());
 }
