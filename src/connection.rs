@@ -19,7 +19,7 @@ extern {
     fn mpd_connection_free(connection: *mut mpd_connection);
     fn mpd_connection_set_timeout(connection: *mut mpd_connection, timeout_ms: libc::c_uint);
     fn mpd_connection_get_fd(connection: *const mpd_connection) -> libc::c_int;
-    fn mpd_connection_get_server_version(connection: *const mpd_connection) -> [libc::c_uint, ..3];
+    fn mpd_connection_get_server_version(connection: *const mpd_connection) -> *const [libc::c_uint, ..3];
     fn mpd_connection_cmp_server_version(connection: *const mpd_connection, major: libc::c_uint, minor: libc::c_uint, patch: libc::c_uint) -> libc::c_int;
 
     fn mpd_send_command(connection: *mut mpd_connection, command: *const u8, ...) -> bool;
@@ -84,6 +84,10 @@ impl MpdConnection {
 
     pub fn authorize(&mut self, password: String) -> MpdResult<()> { if ! password.with_c_str(|s| unsafe { mpd_run_password(self.conn, s as *const u8) }) { return Err(FromConnection::from_connection(self.conn).unwrap()) } Ok(()) }
 
+    pub fn version(&self) -> (u32, u32, u32) {
+        let version = unsafe { * mpd_connection_get_server_version(self.conn as *const _) };
+        (version[0], version[1], version[2])
+    }
     pub fn settings(&self) -> Option<MpdSettings> { FromConnection::from_connection(self.conn) }
 
     pub fn play(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_play(self.conn) } { return Err(FromConnection::from_connection(self.conn).unwrap()) } Ok(()) }
