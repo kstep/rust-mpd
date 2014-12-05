@@ -1,3 +1,17 @@
+use libc;
+use std::error::Error;
+
+#[repr(C)] pub struct mpd_connection;
+
+#[link(name = "mpdclient")]
+extern {
+    fn mpd_connection_get_error(connection: *const mpd_connection) -> MpdErrorKind;
+    fn mpd_connection_get_error_message(connection: *const mpd_connection) -> *const u8;
+    fn mpd_connection_get_server_error(connection: *const mpd_connection) -> MpdServerErrorKind;
+    fn mpd_connection_get_server_error_location(connection: *const mpd_connection) -> libc::c_uint;
+    fn mpd_connection_get_system_error(connection: *const mpd_connection) -> libc::c_int;
+    fn mpd_connection_clear_error(connection: *mut mpd_connection) -> bool;
+}
 
 #[repr(C)]
 #[deriving(Show)]
@@ -46,7 +60,11 @@ pub enum MpdError {
     Other { kind: MpdErrorKind, desc: String }
 }
 
-impl MpdError {
+pub trait FromConnection {
+    fn from_connection(connection: *mut mpd_connection) -> Option<Self>;
+}
+
+impl FromConnection for MpdError {
     fn from_connection(connection: *mut mpd_connection) -> Option<MpdError> {
         unsafe {
             let error = mpd_connection_get_error(connection as *const _);
@@ -74,7 +92,7 @@ impl MpdError {
     }
 }
 
-impl std::error::Error for MpdError {
+impl Error for MpdError {
     fn description(&self) -> &str {
         match *self {
             MpdError::System { .. } => "system error",
@@ -116,7 +134,7 @@ impl std::error::Error for MpdError {
         })
     }
 
-    fn cause(&self) -> Option<&std::error::Error> { None }
+    fn cause(&self) -> Option<&Error> { None }
 }
 
 pub type MpdResult<T> = Result<T, MpdError>;

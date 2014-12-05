@@ -4,6 +4,7 @@ use std::c_str::ToCStr;
 use std::time::duration::Duration;
 use std::ptr;
 
+use common::FromConnection;
 use connection::{mpd_connection, MpdConnection};
 
 #[repr(C)] struct mpd_settings;
@@ -28,7 +29,7 @@ pub struct MpdSettings {
     password: Option<String>,
 }
 
-impl MpdSettings {
+impl FromConnection for MpdSettings {
     fn from_connection(connection: *mut mpd_connection) -> Option<MpdSettings> {
         unsafe {
             let settings = mpd_connection_get_settings(connection as *const _);
@@ -47,7 +48,9 @@ impl MpdSettings {
             }
         }
     }
+}
 
+impl MpdSettings {
     unsafe fn to_c_struct(&self) -> *mut mpd_settings {
         let host = self.host.clone().map(|v| v.to_c_str());
         let password = self.password.clone().map(|v| v.to_c_str());

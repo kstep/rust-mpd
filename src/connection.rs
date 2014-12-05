@@ -1,17 +1,17 @@
 
+use libc;
 use std::time::duration::Duration;
-use std::ptr;
 use std::c_str::ToCStr;
+use std::ptr;
 
-use common::{MpdError, MpdResult};
+pub use common::mpd_connection;
+
+use common::{FromConnection, MpdError, MpdResult, mpd_pair};
 use outputs::Outputs;
 use playlists::Playlists;
-
-pub trait FromConnection<T> {
-    fn from_connection(connection: *mut mpd_connection) -> Option<T>;
-}
-
-#[repr(C)] pub struct mpd_connection;
+use songs::{Song, mpd_song};
+use status::MpdStatus;
+use settings::MpdSettings;
 
 #[link(name = "mpdclient")]
 extern {
@@ -19,12 +19,6 @@ extern {
     fn mpd_connection_free(connection: *mut mpd_connection);
     fn mpd_connection_set_timeout(connection: *mut mpd_connection, timeout_ms: libc::c_uint);
     fn mpd_connection_get_fd(connection: *const mpd_connection) -> libc::c_int;
-    fn mpd_connection_get_error(connection: *const mpd_connection) -> MpdErrorKind;
-    fn mpd_connection_get_error_message(connection: *const mpd_connection) -> *const u8;
-    fn mpd_connection_get_server_error(connection: *const mpd_connection) -> MpdServerErrorKind;
-    fn mpd_connection_get_server_error_location(connection: *const mpd_connection) -> libc::c_uint;
-    fn mpd_connection_get_system_error(connection: *const mpd_connection) -> libc::c_int;
-    fn mpd_connection_clear_error(connection: *mut mpd_connection) -> bool;
     fn mpd_connection_get_server_version(connection: *const mpd_connection) -> [libc::c_uint, ..3];
     fn mpd_connection_cmp_server_version(connection: *const mpd_connection, major: libc::c_uint, minor: libc::c_uint, patch: libc::c_uint) -> libc::c_int;
 
@@ -59,16 +53,16 @@ extern {
 }
 
 pub struct MpdConnection {
-    conn: *mut mpd_connection
+    pub conn: *mut mpd_connection
 }
 
 
 impl MpdConnection {
-    fn new(host: Option<&str>, port: u32) -> Option<MpdResult<MpdConnection>> {
+    pub fn new(host: Option<&str>, port: u32) -> Option<MpdResult<MpdConnection>> {
         MpdConnection::new_with_timeout(host, port, Duration::zero())
     }
 
-    fn new_with_timeout(host: Option<&str>, port: u32, timeout: Duration) -> Option<MpdResult<MpdConnection>> {
+    pub fn new_with_timeout(host: Option<&str>, port: u32, timeout: Duration) -> Option<MpdResult<MpdConnection>> {
         unsafe {
             let host = host.map(|v| v.to_c_str());
             let conn = mpd_connection_new(match host {
@@ -77,7 +71,7 @@ impl MpdConnection {
             }, port, timeout.num_milliseconds() as u32);
 
             if conn as *const _ == ptr::null::<mpd_connection>() { None } else {
-                Some(match MpdError::from_connection(conn) {
+                Some(match FromConnection::from_connection(conn) {
                     None => Ok(MpdConnection { conn: conn }),
                     Some(e) => {
                         mpd_connection_free(conn);
@@ -88,38 +82,38 @@ impl MpdConnection {
         }
     }
 
-    pub fn authorize(&mut self, password: String) -> MpdResult<()> { if ! password.with_c_str(|s| unsafe { mpd_run_password(self.conn, s as *const u8) }) { return Err(MpdError::from_connection(self.conn).unwrap()) } Ok(()) }
+    pub fn authorize(&mut self, password: String) -> MpdResult<()> { if ! password.with_c_str(|s| unsafe { mpd_run_password(self.conn, s as *const u8) }) { return Err(FromConnection::from_connection(self.conn).unwrap()) } Ok(()) }
 
-    pub fn settings(&self) -> Option<MpdSettings> { MpdSettings::from_connection(self.conn) }
+    pub fn settings(&self) -> Option<MpdSettings> { FromConnection::from_connection(self.conn) }
 
-    pub fn play(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_play(self.conn) } { return Err(MpdError::from_connection(self.conn).unwrap()) } Ok(()) }
-    pub fn stop(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_stop(self.conn) } { return Err(MpdError::from_connection(self.conn).unwrap()) } Ok(()) }
-    pub fn pause(&mut self, mode: bool) -> MpdResult<()> { if ! unsafe { mpd_run_pause(self.conn, mode) } { return Err(MpdError::from_connection(self.conn).unwrap()) } Ok(()) }
-    pub fn set_volume(&mut self, vol: u32) -> MpdResult<()> { if ! unsafe { mpd_run_set_volume(self.conn, vol) } { return Err(MpdError::from_connection(self.conn).unwrap()) } Ok(()) }
-    pub fn change_volume(&mut self, vol: i32) -> MpdResult<()> { if ! unsafe { mpd_run_change_volume(self.conn, vol) } { return Err(MpdError::from_connection(self.conn).unwrap()) } Ok(()) }
+    pub fn play(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_play(self.conn) } { return Err(FromConnection::from_connection(self.conn).unwrap()) } Ok(()) }
+    pub fn stop(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_stop(self.conn) } { return Err(FromConnection::from_connection(self.conn).unwrap()) } Ok(()) }
+    pub fn pause(&mut self, mode: bool) -> MpdResult<()> { if ! unsafe { mpd_run_pause(self.conn, mode) } { return Err(FromConnection::from_connection(self.conn).unwrap()) } Ok(()) }
+    pub fn set_volume(&mut self, vol: u32) -> MpdResult<()> { if ! unsafe { mpd_run_set_volume(self.conn, vol) } { return Err(FromConnection::from_connection(self.conn).unwrap()) } Ok(()) }
+    pub fn change_volume(&mut self, vol: i32) -> MpdResult<()> { if ! unsafe { mpd_run_change_volume(self.conn, vol) } { return Err(FromConnection::from_connection(self.conn).unwrap()) } Ok(()) }
 
-    pub fn next(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_next(self.conn) } { return Err(MpdError::from_connection(self.conn).unwrap()) } Ok(()) }
-    pub fn prev(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_previous(self.conn) } { return Err(MpdError::from_connection(self.conn).unwrap()) } Ok(()) }
+    pub fn next(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_next(self.conn) } { return Err(FromConnection::from_connection(self.conn).unwrap()) } Ok(()) }
+    pub fn prev(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_previous(self.conn) } { return Err(FromConnection::from_connection(self.conn).unwrap()) } Ok(()) }
 
-    pub fn play_pos(&mut self, pos: u32) -> MpdResult<()> { if ! unsafe { mpd_run_play_pos(self.conn, pos) } { return Err(MpdError::from_connection(self.conn).unwrap()) } Ok(()) }
-    pub fn play_id(&mut self, pos: u32) -> MpdResult<()> { if ! unsafe { mpd_run_play_id(self.conn, pos) } { return Err(MpdError::from_connection(self.conn).unwrap()) } Ok(()) }
+    pub fn play_pos(&mut self, pos: u32) -> MpdResult<()> { if ! unsafe { mpd_run_play_pos(self.conn, pos) } { return Err(FromConnection::from_connection(self.conn).unwrap()) } Ok(()) }
+    pub fn play_id(&mut self, pos: u32) -> MpdResult<()> { if ! unsafe { mpd_run_play_id(self.conn, pos) } { return Err(FromConnection::from_connection(self.conn).unwrap()) } Ok(()) }
 
-    pub fn status(&self) -> MpdResult<MpdStatus> { MpdStatus::from_connection(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(MpdError::from_connection(self.conn).unwrap())) }
+    pub fn status(&self) -> MpdResult<MpdStatus> { FromConnection::from_connection(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConnection::from_connection(self.conn).unwrap())) }
     pub fn current_song(&self) -> MpdResult<Song> {
         let song = unsafe { mpd_run_current_song(self.conn) };
         if song as *const _ == ptr::null::<mpd_song>() {
-            Err(MpdError::from_connection(self.conn).unwrap())
+            Err(FromConnection::from_connection(self.conn).unwrap())
         } else {
             Ok(Song { song: song })
         }
     }
 
     pub fn playlists(&mut self) -> MpdResult<Playlists> {
-        Playlists::from_connection(self.conn)
+        Playlists::from_connection(self)
     }
 
     pub fn outputs(&mut self) -> MpdResult<Outputs> {
-        Outputs::from_connection(self.conn)
+        Outputs::from_connection(self)
     }
 }
 

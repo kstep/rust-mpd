@@ -4,6 +4,7 @@ use std::c_str::ToCStr;
 use std::time::duration::Duration;
 use std::ptr;
 
+use common::FromConnection;
 use connection::{mpd_connection, MpdConnection};
 
 struct mpd_status;
@@ -82,7 +83,7 @@ pub struct MpdStatus {
     error: Option<String>
 }
 
-impl MpdStatus {
+impl FromConnection for MpdStatus {
     fn from_connection(connection: *mut mpd_connection) -> Option<MpdStatus> {
         unsafe {
             let status = mpd_run_status(connection);

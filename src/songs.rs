@@ -6,11 +6,11 @@ use std::c_str::ToCStr;
 use std::ptr;
 use time::Timespec;
 
-use common::{MpdError, MpdResult};
+use common::{MpdError, MpdResult, FromConnection};
 use connection::{mpd_connection, MpdConnection};
 use tags::TagType;
 
-#[repr(C)] struct mpd_song;
+#[repr(C)] pub struct mpd_song;
 
 #[link(name = "mpdclient")]
 extern "C" {
@@ -30,14 +30,14 @@ extern "C" {
 }
 
 pub struct Songs<'a> {
-    conn: &'a MpdConnection
+    pub conn: &'a MpdConnection
 }
 
 impl<'a> Iterator<MpdResult<Song>> for Songs<'a> {
     fn next(&mut self) -> Option<MpdResult<Song>> {
         match Song::from_connection(self.conn.conn) {
             Some(s) => Some(Ok(s)),
-            None => match MpdError::from_connection(self.conn.conn) {
+            None => match FromConnection::from_connection(self.conn.conn) {
                 Some(e) => Some(Err(e)),
                 None => None
             }
@@ -46,7 +46,7 @@ impl<'a> Iterator<MpdResult<Song>> for Songs<'a> {
 }
 
 pub struct Song {
-    song: *mut mpd_song
+    pub song: *mut mpd_song
 }
 
 impl Show for Song {

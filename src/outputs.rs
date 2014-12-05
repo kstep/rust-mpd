@@ -4,8 +4,8 @@ use std::fmt::{Show, Error, Formatter};
 use std::c_str::ToCStr;
 use std::ptr;
 
-use common::{MpdError, MpdResult};
-use connection::{mpd_connection, MpdConnection};
+use common::{MpdError, MpdResult, FromConnection};
+use connection::{MpdConnection, mpd_connection};
 
 #[repr(C)] struct mpd_output;
 
@@ -44,21 +44,21 @@ pub struct Outputs<'a> {
     conn: &'a mut MpdConnection
 }
 
-impl Outputs {
-    fn from_connection(connection: *mut mpd_connection) -> MpdResult<Outputs> {
-        if unsafe { mpd_send_outputs(connection) } {
-            Ok(Outputs { conn: connection })
+impl<'a> Outputs<'a> {
+    pub fn from_connection<'a>(conn: &'a mut MpdConnection) -> MpdResult<Outputs<'a>> {
+        if unsafe { mpd_send_outputs(conn.conn) } {
+            Ok(Outputs { conn: conn })
         } else {
-            Err(MpdError::from_connection(connection).unwrap())
+            Err(FromConnection::from_connection(conn.conn).unwrap())
         }
     }
 }
 
 impl<'a> Iterator<MpdResult<Output>> for Outputs<'a> {
     fn next(&mut self) -> Option<MpdResult<Output>> {
-        match Output::from_connection(self.conn.conn) {
+        match FromConnection::from_connection(self.conn.conn) {
             Some(s) => Some(Ok(s)),
-            None => match MpdError::from_connection(self.conn.conn) {
+            None => match FromConnection::from_connection(self.conn.conn) {
                 Some(e) => Some(Err(e)),
                 None => None
             }
@@ -66,7 +66,7 @@ impl<'a> Iterator<MpdResult<Output>> for Outputs<'a> {
     }
 }
 
-impl Output {
+impl FromConnection for Output {
     fn from_connection(connection: *mut mpd_connection) -> Option<Output> {
         let output = unsafe { mpd_recv_output(connection) };
         if output as *const _ == ptr::null::<mpd_output>() {
@@ -75,32 +75,34 @@ impl Output {
             Some(Output { output: output })
         }
     }
+}
 
-    fn id(&self) -> u32 { unsafe { mpd_output_get_id(self.output as *const _) } }
-    fn name(&self) -> String { unsafe { String::from_raw_buf(mpd_output_get_name(self.output as *const _)) } }
-    fn enabled(&self) -> bool { unsafe { mpd_output_get_enabled(self.output as *const _) } }
+impl Output {
+    pub fn id(&self) -> u32 { unsafe { mpd_output_get_id(self.output as *const _) } }
+    pub fn name(&self) -> String { unsafe { String::from_raw_buf(mpd_output_get_name(self.output as *const _)) } }
+    pub fn enabled(&self) -> bool { unsafe { mpd_output_get_enabled(self.output as *const _) } }
 
-    fn toggle(&self, conn: &mut MpdConnection) -> MpdResult<()> {
+    pub fn toggle(&self, conn: &mut MpdConnection) -> MpdResult<()> {
         if unsafe { mpd_run_toggle_output(conn.conn, self.id()) } {
             Ok(())
         } else {
-            Err(MpdError::from_connection(conn.conn).unwrap())
+            Err(FromConnection::from_connection(conn.conn).unwrap())
         }
     }
 
-    fn disable(&self, conn: &mut MpdConnection) -> MpdResult<()> {
+    pub fn disable(&self, conn: &mut MpdConnection) -> MpdResult<()> {
         if unsafe { mpd_run_disable_output(conn.conn, self.id()) } {
             Ok(())
         } else {
-            Err(MpdError::from_connection(conn.conn).unwrap())
+            Err(FromConnection::from_connection(conn.conn).unwrap())
         }
     }
 
-    fn enable(&self, conn: &mut MpdConnection) -> MpdResult<()> {
+    pub fn enable(&self, conn: &mut MpdConnection) -> MpdResult<()> {
         if unsafe { mpd_run_enable_output(conn.conn, self.id()) } {
             Ok(())
         } else {
-            Err(MpdError::from_connection(conn.conn).unwrap())
+            Err(FromConnection::from_connection(conn.conn).unwrap())
         }
     }
 }

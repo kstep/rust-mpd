@@ -5,7 +5,7 @@ use std::ptr;
 use time::Timespec;
 use libc;
 
-use common::{MpdError, MpdResult};
+use common::{MpdError, MpdResult, FromConnection};
 use connection::{mpd_connection, MpdConnection};
 use songs::{Song, Songs};
 
@@ -27,12 +27,12 @@ pub struct Playlists<'a> {
     conn: &'a MpdConnection
 }
 
-impl Playlists {
-    pub fn from_connection(connection: *mut mpd_connection) -> MpdResult<Playlists> {
-        if unsafe { mpd_send_list_playlists(connection) } {
-            Ok(Playlists { conn: connection })
+impl<'a> Playlists<'a> {
+    pub fn from_connection<'a>(conn: &'a MpdConnection) -> MpdResult<Playlists<'a>> {
+        if unsafe { mpd_send_list_playlists(conn.conn) } {
+            Ok(Playlists { conn: conn })
         } else {
-            Err(MpdError::from_connection(connection).unwrap())
+            Err(FromConnection::from_connection(conn.conn).unwrap())
         }
     }
 }
@@ -41,7 +41,7 @@ impl<'a> Iterator<MpdResult<Playlist>> for Playlists<'a> {
     fn next(&mut self) -> Option<MpdResult<Playlist>> {
         match Playlist::from_connection(self.conn.conn) {
             Some(s) => Some(Ok(s)),
-            None => match MpdError::from_connection(self.conn.conn) {
+            None => match FromConnection::from_connection(self.conn.conn) {
                 Some(e) => Some(Err(e)),
                 None => None
             }
@@ -100,7 +100,7 @@ impl Playlist {
         if unsafe { mpd_send_list_playlist(conn.conn, mpd_playlist_get_path(self.pl as *const _)) } {
             Ok(Songs { conn: conn })
         } else {
-            Err(MpdError::from_connection(conn.conn).unwrap())
+            Err(FromConnection::from_connection(conn.conn).unwrap())
         }
     }
 }
