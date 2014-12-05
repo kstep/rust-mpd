@@ -24,28 +24,22 @@ extern "C" {
 }
 
 pub struct Playlists<'a> {
-    conn: &'a MpdConnection
+    conn: *mut mpd_connection
 }
 
-impl<'a> Playlists<'a> {
-    pub fn from_connection<'a>(conn: &'a MpdConnection) -> MpdResult<Playlists<'a>> {
-        if unsafe { mpd_send_list_playlists(conn.conn) } {
-            Ok(Playlists { conn: conn })
+impl<'a> FromConnection for Playlists<'a> {
+    fn from_connection<'a>(connection: *mut mpd_connection) -> Option<Playlists<'a>> {
+        if unsafe { mpd_send_list_playlists(connection) } {
+            Some(Playlists { conn: connection })
         } else {
-            Err(FromConnection::from_connection(conn.conn).unwrap())
+            None
         }
     }
 }
 
-impl<'a> Iterator<MpdResult<Playlist>> for Playlists<'a> {
-    fn next(&mut self) -> Option<MpdResult<Playlist>> {
-        match Playlist::from_connection(self.conn.conn) {
-            Some(s) => Some(Ok(s)),
-            None => match FromConnection::from_connection(self.conn.conn) {
-                Some(e) => Some(Err(e)),
-                None => None
-            }
-        }
+impl<'a> Iterator<Playlist> for Playlists<'a> {
+    fn next(&mut self) -> Option<Playlist> {
+        Playlist::from_connection(self.conn)
     }
 }
 

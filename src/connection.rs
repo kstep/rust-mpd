@@ -114,13 +114,8 @@ impl MpdConnection {
         }
     }
 
-    pub fn playlists(&mut self) -> MpdResult<Playlists> {
-        Playlists::from_connection(self)
-    }
-
-    pub fn outputs(&mut self) -> MpdResult<Outputs> {
-        Outputs::from_connection(self)
-    }
+    pub fn playlists(&mut self) -> MpdResult<Playlists> { FromConnection::from_connection(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConnection::from_connection(self.conn).unwrap())) }
+    pub fn outputs(&mut self) -> MpdResult<Outputs> { FromConnection::from_connection(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConnection::from_connection(self.conn).unwrap())) }
 }
 
 impl Drop for MpdConnection {

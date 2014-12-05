@@ -35,16 +35,17 @@ mod test {
         println!("{}", conn.settings());
         println!("{}", conn.status());
 
-        let mut playlist: MpdResult<Playlist> = Err(MpdError::Other { kind: MpdErrorKind::Success, desc: "".to_string() });
-
-        for pl in conn.playlists().unwrap() {
+        let playlists: Vec<Playlist> = conn.playlists().unwrap().collect();
+        for pl in playlists.iter() {
             println!("{}", pl);
-            playlist = pl;
+            for s in pl.songs(&mut conn).unwrap() {
+                println!("{}", s);
+            }
         }
 
-        for s in playlist.unwrap().songs(&mut conn).unwrap() {
-            println!("{}", s);
-        }
+        //for s in playlist.unwrap().songs(&mut conn).unwrap() {
+            //println!("{}", s);
+        //}
 
         for o in conn.outputs().unwrap() {
             println!("{}", o);

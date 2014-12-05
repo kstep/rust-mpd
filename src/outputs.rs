@@ -41,28 +41,22 @@ pub struct Output {
 }
 
 pub struct Outputs<'a> {
-    conn: &'a mut MpdConnection
+    conn: *mut mpd_connection
 }
 
-impl<'a> Outputs<'a> {
-    pub fn from_connection<'a>(conn: &'a mut MpdConnection) -> MpdResult<Outputs<'a>> {
-        if unsafe { mpd_send_outputs(conn.conn) } {
-            Ok(Outputs { conn: conn })
+impl<'a> FromConnection for Outputs<'a> {
+    fn from_connection<'a>(connection: *mut mpd_connection) -> Option<Outputs<'a>> {
+        if unsafe { mpd_send_outputs(connection) } {
+            Some(Outputs { conn: connection })
         } else {
-            Err(FromConnection::from_connection(conn.conn).unwrap())
+            None
         }
     }
 }
 
-impl<'a> Iterator<MpdResult<Output>> for Outputs<'a> {
-    fn next(&mut self) -> Option<MpdResult<Output>> {
-        match FromConnection::from_connection(self.conn.conn) {
-            Some(s) => Some(Ok(s)),
-            None => match FromConnection::from_connection(self.conn.conn) {
-                Some(e) => Some(Err(e)),
-                None => None
-            }
-        }
+impl<'a> Iterator<Output> for Outputs<'a> {
+    fn next(&mut self) -> Option<Output> {
+        FromConnection::from_connection(self.conn)
     }
 }
 

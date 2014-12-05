@@ -33,15 +33,9 @@ pub struct Songs<'a> {
     pub conn: &'a MpdConnection
 }
 
-impl<'a> Iterator<MpdResult<Song>> for Songs<'a> {
-    fn next(&mut self) -> Option<MpdResult<Song>> {
-        match Song::from_connection(self.conn.conn) {
-            Some(s) => Some(Ok(s)),
-            None => match FromConnection::from_connection(self.conn.conn) {
-                Some(e) => Some(Err(e)),
-                None => None
-            }
-        }
+impl<'a> Iterator<Song> for Songs<'a> {
+    fn next(&mut self) -> Option<Song> {
+        Song::from_connection(self.conn.conn)
     }
 }
 
