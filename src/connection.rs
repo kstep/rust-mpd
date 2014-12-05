@@ -12,6 +12,7 @@ use playlists::Playlists;
 use songs::{Song, mpd_song};
 use status::MpdStatus;
 use settings::MpdSettings;
+use stats::MpdStats;
 
 #[link(name = "mpdclient")]
 extern {
@@ -103,6 +104,7 @@ impl MpdConnection {
     pub fn play_id(&mut self, pos: u32) -> MpdResult<()> { if ! unsafe { mpd_run_play_id(self.conn, pos) } { return Err(FromConnection::from_connection(self.conn).unwrap()) } Ok(()) }
 
     pub fn status(&self) -> MpdResult<MpdStatus> { FromConnection::from_connection(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConnection::from_connection(self.conn).unwrap())) }
+    pub fn stats(&self) -> MpdResult<MpdStats> { FromConnection::from_connection(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConnection::from_connection(self.conn).unwrap())) }
     pub fn current_song(&self) -> MpdResult<Song> {
         let song = unsafe { mpd_run_current_song(self.conn) };
         if song as *const _ == ptr::null::<mpd_song>() {

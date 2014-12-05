@@ -1,5 +1,6 @@
 
 use libc;
+use std::fmt::{Show, Error, Formatter};
 use std::c_str::ToCStr;
 use std::time::duration::Duration;
 use std::ptr;
@@ -21,7 +22,7 @@ struct mpd_audio_format {
 }
 
 // rate, bits, chans
-type AudioFormat = (u32, u8, u8);
+pub type AudioFormat = (u32, u8, u8);
 
 #[repr(C)]
 #[deriving(Show)]
@@ -60,70 +61,103 @@ extern "C" {
     fn mpd_status_get_error(status: *const mpd_status) -> *const u8;
 }
 
-#[deriving(Show)]
 pub struct MpdStatus {
-    volume: i32,
-    repeat: bool,
-    random: bool,
-    single: bool,
-    consume: bool,
-    queue_length: u32,
-    queue_version: u32,
-    state: MpdState,
-    crossfade: u32,
-    mixrampdb: f32,
-    mixrampdelay: Option<f32>,
-    song: Option<(i32, i32)>, // id, pos
-    next_song: Option<(i32, i32)>,
-    elapsed_time: Duration,
-    total_time: Duration,
-    kbit_rate: u32,
-    audio_format: Option<AudioFormat>,
-    update_id: u32,
-    error: Option<String>
+    p: *mut mpd_status
+}
+
+impl Show for MpdStatus {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        try!(f.write(b"MpdStatus { volume: "));
+        try!(self.volume().fmt(f));
+        try!(f.write(b", repeat: "));
+        try!(self.repeat().fmt(f));
+        try!(f.write(b", random: "));
+        try!(self.random().fmt(f));
+        try!(f.write(b", single: "));
+        try!(self.single().fmt(f));
+        try!(f.write(b", consume: "));
+        try!(self.consume().fmt(f));
+        try!(f.write(b", state: "));
+        try!(self.state().fmt(f));
+        try!(f.write(b", crossfade: "));
+        try!(self.crossfade().fmt(f));
+        try!(f.write(b", queue_len: "));
+        try!(self.queue_len().fmt(f));
+        try!(f.write(b", queue_version: "));
+        try!(self.queue_version().fmt(f));
+        try!(f.write(b", mixrampdb: "));
+        try!(self.mixrampdb().fmt(f));
+        try!(f.write(b", mixrampdelay: "));
+        try!(self.mixrampdelay().fmt(f));
+        try!(f.write(b", song: "));
+        try!(self.song().fmt(f));
+        try!(f.write(b", next_song: "));
+        try!(self.next_song().fmt(f));
+        try!(f.write(b", elapsed_time: "));
+        try!(self.elapsed_time().fmt(f));
+        try!(f.write(b", total_time: "));
+        try!(self.total_time().fmt(f));
+        try!(f.write(b", kbit_rate: "));
+        try!(self.kbit_rate().fmt(f));
+        try!(f.write(b", audio_format: "));
+        try!(self.audio_format().fmt(f));
+        try!(f.write(b", update_id: "));
+        try!(self.update_id().fmt(f));
+        try!(f.write(b", error: "));
+        try!(self.error().fmt(f));
+        try!(f.write(b" }"));
+        Ok(())
+    }
 }
 
 impl FromConnection for MpdStatus {
     fn from_connection(connection: *mut mpd_connection) -> Option<MpdStatus> {
-        unsafe {
-            let status = mpd_run_status(connection);
-            if status as *const _ == ptr::null::<mpd_status>() {
-                return None
-            }
-
-            let s = status as *const _;
-            let aformat = mpd_status_get_audio_format(s);
-            let error = mpd_status_get_error(s);
-            let song_id = mpd_status_get_song_id(s);
-            let next_song_id = mpd_status_get_next_song_id(s);
-            let mixramp = mpd_status_get_mixrampdelay(s);
-
-            let result = MpdStatus {
-                volume: mpd_status_get_volume(s),
-                repeat: mpd_status_get_repeat(s),
-                random: mpd_status_get_random(s),
-                single: mpd_status_get_single(s),
-                consume: mpd_status_get_consume(s),
-                queue_length: mpd_status_get_queue_length(s),
-                queue_version: mpd_status_get_queue_version(s),
-                state: mpd_status_get_state(s),
-                crossfade: mpd_status_get_crossfade(s),
-                mixrampdb: mpd_status_get_mixrampdb(s),
-                mixrampdelay: if mixramp < 0f32 { None } else { Some(mixramp) },
-                song: if song_id < 0 { None } else { Some((song_id, mpd_status_get_song_pos(s))) },
-                next_song: if next_song_id < 0 { None } else { Some((next_song_id, mpd_status_get_next_song_pos(s))) },
-                elapsed_time: Duration::milliseconds(mpd_status_get_elapsed_ms(s) as i64),
-                total_time: Duration::seconds(mpd_status_get_total_time(s) as i64),
-                kbit_rate: mpd_status_get_kbit_rate(s),
-                audio_format: if aformat == ptr::null() { None } else { Some(((*aformat).sample_rate, (*aformat).bits, (*aformat).channels)) },
-                update_id: mpd_status_get_update_id(s),
-                error: if error == ptr::null() { None } else { Some(String::from_raw_buf(error)) }
-            };
-
-            mpd_status_free(status);
-
-            Some(result)
+        let status = unsafe { mpd_run_status(connection) };
+        if status as *const _ == ptr::null::<mpd_status>() {
+            return None;
         }
+
+        Some(MpdStatus { p: status })
+    }
+}
+
+impl MpdStatus {
+    pub fn volume(&self) -> i32 { unsafe { mpd_status_get_volume(self.p as *const _) } }
+    pub fn repeat(&self) -> bool { unsafe { mpd_status_get_repeat(self.p as *const _) } }
+    pub fn random(&self) -> bool { unsafe { mpd_status_get_random(self.p as *const _) } }
+    pub fn single(&self) -> bool { unsafe { mpd_status_get_single(self.p as *const _) } }
+    pub fn consume(&self) -> bool { unsafe { mpd_status_get_consume(self.p as *const _) } }
+    pub fn state(&self) -> MpdState { unsafe { mpd_status_get_state(self.p as *const _) } }
+    pub fn crossfade(&self) -> Duration { Duration::seconds(unsafe { mpd_status_get_crossfade(self.p as *const _) as i64 }) }
+    pub fn queue_len(&self) -> u32 { unsafe { mpd_status_get_queue_length(self.p as *const _) } }
+    pub fn queue_version(&self) -> u32 { unsafe { mpd_status_get_queue_version(self.p as *const _) } }
+    pub fn mixrampdb(&self) -> f32 { unsafe { mpd_status_get_mixrampdb(self.p as *const _) } }
+    pub fn mixrampdelay(&self) -> Option<f32> { let v = unsafe { mpd_status_get_mixrampdelay(self.p as *const _) }; if v < 0f32 { None } else { Some(v) } }
+    pub fn song(&self) -> Option<(i32, i32)> {
+        let song_id = unsafe { mpd_status_get_song_id(self.p as *const _) };
+        if song_id < 0 { None } else { Some((song_id, unsafe { mpd_status_get_song_pos(self.p as *const _) })) }
+    }
+    pub fn next_song(&self) -> Option<(i32, i32)> {
+        let song_id = unsafe { mpd_status_get_next_song_id(self.p as *const _) };
+        if song_id < 0 { None } else { Some((song_id, unsafe { mpd_status_get_next_song_pos(self.p as *const _) })) }
+    }
+    pub fn elapsed_time(&self) -> Duration { Duration::milliseconds(unsafe { mpd_status_get_elapsed_ms(self.p as *const _) as i64 }) }
+    pub fn total_time(&self) -> Duration { Duration::seconds(unsafe { mpd_status_get_total_time(self.p as *const _) as i64 }) }
+    pub fn kbit_rate(&self) -> u32 { unsafe { mpd_status_get_kbit_rate(self.p as *const _) } }
+    pub fn audio_format(&self) -> Option<AudioFormat> {
+        let aformat = unsafe { mpd_status_get_audio_format(self.p as *const _) };
+        if aformat == ptr::null() { None } else { Some(unsafe { ((*aformat).sample_rate, (*aformat).bits, (*aformat).channels) }) }
+    }
+    pub fn update_id(&self) -> u32 { unsafe { mpd_status_get_update_id(self.p as *const _) } }
+    pub fn error(&self) -> Option<String> {
+        let error = unsafe { mpd_status_get_error(self.p as *const _) };
+        if error == ptr::null() { None } else { Some(unsafe { String::from_raw_buf(error) }) }
+    }
+}
+
+impl Drop for MpdStatus {
+    fn drop(&mut self) {
+        unsafe { mpd_status_free(self.p) }
     }
 }
 

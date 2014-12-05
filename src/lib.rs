@@ -7,6 +7,7 @@ mod common;
 pub mod connection;
 pub mod settings;
 pub mod status;
+pub mod stats;
 pub mod outputs;
 pub mod tags;
 pub mod songs;
@@ -30,9 +31,9 @@ mod test {
             Some(Ok(c)) => c
         };
 
-        println!("{}", conn.stop());
-        println!("{}", conn.set_volume(0));
+        println!("{}", conn.set_volume(100));
         println!("{}", conn.settings());
+        println!("{}", conn.status());
 
         let mut playlist: MpdResult<Playlist> = Err(MpdError::Other { kind: MpdErrorKind::Success, desc: "".to_string() });
 
@@ -49,7 +50,14 @@ mod test {
             println!("{}", o);
         }
 
-        panic!("{}", conn.current_song());
+        conn.play();
+
+        println!("{}", conn.current_song());
+
+        println!("{}", conn.stats());
+
+        let v = conn.version();
+        panic!("{}", v);
     }
 
 }
