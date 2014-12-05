@@ -2,12 +2,18 @@
 use libc;
 use std::c_str::ToCStr;
 use std::time::duration::Duration;
+use std::fmt::{Show, Error, Formatter};
 use std::ptr;
 
 use common::FromConnection;
 use connection::{mpd_connection, MpdConnection};
 
-#[repr(C)] struct mpd_settings;
+#[repr(C)] pub struct mpd_settings;
+
+pub enum MpdSettings {
+    Owned(*mut mpd_settings),
+    Borrowed(*const mpd_settings)
+}
 
 #[link(name = "mpdclient")]
 extern {
@@ -21,47 +27,81 @@ extern {
     fn mpd_settings_get_password(settings: *const mpd_settings) -> *const u8;
 }
 
-#[deriving(Show)]
-pub struct MpdSettings {
-    host: Option<String>,
-    port: u32,
-    timeout: Duration,
-    password: Option<String>,
+impl Show for MpdSettings {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        try!(f.write(b"MpdSettings { host: "));
+        try!(self.host().fmt(f));
+        try!(f.write(b", port: "));
+        try!(self.port().fmt(f));
+        try!(f.write(b", timeout: "));
+        try!(self.timeout().fmt(f));
+        try!(f.write(b", password: "));
+        try!(self.password().fmt(f));
+        try!(f.write(b" }"));
+        Ok(())
+    }
 }
 
 impl FromConnection for MpdSettings {
     fn from_connection(connection: *mut mpd_connection) -> Option<MpdSettings> {
-        unsafe {
-            let settings = mpd_connection_get_settings(connection as *const _);
-            if settings == ptr::null() { None } else {
-                let host = mpd_settings_get_host(settings);
-                let password = mpd_settings_get_password(settings);
+        let settings = unsafe { mpd_connection_get_settings(connection as *const _) };
+        if settings as *const _ == ptr::null::<mpd_settings>() { return None; }
+        Some(MpdSettings::Borrowed(settings))
+    }
+}
 
-                let result = MpdSettings {
-                    host: if host == ptr::null() { None } else { Some(String::from_raw_buf(host)) },
-                    port: mpd_settings_get_port(settings),
-                    timeout: Duration::milliseconds(mpd_settings_get_timeout_ms(settings) as i64),
-                    password: if password == ptr::null() { None } else { Some(String::from_raw_buf(password)) },
-                };
-
-                Some(result)
-            }
+impl Drop for MpdSettings {
+    fn drop(&mut self) {
+        if let MpdSettings::Owned(p) = *self {
+            unsafe { mpd_settings_free(p); }
         }
     }
 }
 
 impl MpdSettings {
-    unsafe fn to_c_struct(&self) -> *mut mpd_settings {
-        let host = self.host.clone().map(|v| v.to_c_str());
-        let password = self.password.clone().map(|v| v.to_c_str());
+    #[inline] unsafe fn as_ref(&self) -> *const mpd_settings {
+        match *self {
+            MpdSettings::Owned(p) => p as *const _,
+            MpdSettings::Borrowed(p) => p
+        }
+    }
 
-        mpd_settings_new(match host {
-            Some(h) => h.as_ptr() as *const u8,
-            None => ptr::null()
-        }, self.port, self.timeout.num_milliseconds() as u32, ptr::null(),
-        match password {
-            Some(p) => p.as_ptr() as *const u8,
-            None => ptr::null()
-        })
+    pub fn host(&self) -> Option<String> {
+        let host = unsafe { mpd_settings_get_host(self.as_ref()) };
+        if host == ptr::null() { return None; }
+        Some(unsafe { String::from_raw_buf(host) })
+    }
+
+    pub fn port(&self) -> u32 {
+        unsafe { mpd_settings_get_port(self.as_ref()) }
+    }
+
+    pub fn timeout(&self) -> Duration {
+        Duration::milliseconds(unsafe { mpd_settings_get_timeout_ms(self.as_ref()) as i64 })
+    }
+
+    pub fn password(&self) -> Option<String> {
+        let password = unsafe { mpd_settings_get_password(self.as_ref()) };
+        if password == ptr::null() { return None; }
+        Some(unsafe { String::from_raw_buf(password) })
+    }
+
+    pub fn new(host: Option<String>, port: u32, timeout: Duration, password: Option<String>) -> Option<MpdSettings> {
+        let host = host.map(|v| v.to_c_str());
+        let password = password.map(|v| v.to_c_str());
+
+        Some(MpdSettings::Owned(unsafe {
+            mpd_settings_new(
+                match host {
+                    Some(h) => h.as_ptr() as *const u8,
+                    None => ptr::null()
+                },
+                port,
+                timeout.num_milliseconds() as u32, ptr::null(),
+                match password {
+                    Some(p) => p.as_ptr() as *const u8,
+                    None => ptr::null()
+                })
+        }))
     }
 }
