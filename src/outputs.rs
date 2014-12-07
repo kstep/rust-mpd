@@ -2,8 +2,8 @@
 use libc;
 use std::fmt::{Show, Error, Formatter};
 
-use common::{MpdResult, FromConn};
-use connection::{MpdConnection, mpd_connection};
+use error::MpdResult;
+use connection::{MpdConnection, mpd_connection, FromConn};
 
 #[repr(C)] struct mpd_output;
 
@@ -39,13 +39,13 @@ pub struct MpdOutput {
 }
 
 pub struct MpdOutputs<'a> {
-    conn: *mut mpd_connection
+    conn: &'a MpdConnection
 }
 
-impl<'a> FromConn for MpdOutputs<'a> {
-    fn from_conn<'a>(connection: *mut mpd_connection) -> Option<MpdOutputs<'a>> {
-        if unsafe { mpd_send_outputs(connection) } {
-            Some(MpdOutputs { conn: connection })
+impl<'a> MpdOutputs<'a> {
+    pub fn from_conn<'a>(conn: &'a MpdConnection) -> Option<MpdOutputs<'a>> {
+        if unsafe { mpd_send_outputs(conn.conn) } {
+            Some(MpdOutputs { conn: conn })
         } else {
             None
         }
@@ -65,8 +65,8 @@ impl<'a> Iterator<MpdResult<MpdOutput>> for MpdOutputs<'a> {
 }
 
 impl FromConn for MpdOutput {
-    fn from_conn(connection: *mut mpd_connection) -> Option<MpdOutput> {
-        let output = unsafe { mpd_recv_output(connection) };
+    fn from_conn(conn: &MpdConnection) -> Option<MpdOutput> {
+        let output = unsafe { mpd_recv_output(conn.conn) };
         if output.is_null() {
             None
         } else {
@@ -84,7 +84,7 @@ impl MpdOutput {
         if unsafe { mpd_run_toggle_output(conn.conn, self.id()) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(conn.conn).unwrap())
+            Err(FromConn::from_conn(conn).unwrap())
         }
     }
 
@@ -92,7 +92,7 @@ impl MpdOutput {
         if unsafe { mpd_run_disable_output(conn.conn, self.id()) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(conn.conn).unwrap())
+            Err(FromConn::from_conn(conn).unwrap())
         }
     }
 
@@ -100,7 +100,7 @@ impl MpdOutput {
         if unsafe { mpd_run_enable_output(conn.conn, self.id()) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(conn.conn).unwrap())
+            Err(FromConn::from_conn(conn).unwrap())
         }
     }
 }

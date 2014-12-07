@@ -4,8 +4,8 @@ use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
 use time::Timespec;
 
-use common::{FromConn, MpdResult};
-use connection::{mpd_connection, MpdConnection};
+use error::MpdResult;
+use connection::{mpd_connection, MpdConnection, FromConn};
 use tags::MpdTagType;
 
 #[repr(C)] pub struct mpd_song;
@@ -30,14 +30,14 @@ extern "C" {
 }
 
 pub struct MpdSongs<'a> {
-    pub conn: &'a MpdConnection
+    pub conn: &'a mut MpdConnection
 }
 
 impl<'a> Iterator<MpdResult<MpdSong>> for MpdSongs<'a> {
     fn next(&mut self) -> Option<MpdResult<MpdSong>> {
-        match FromConn::from_conn(self.conn.conn) {
+        match FromConn::from_conn(self.conn) {
             Some(song) => Some(Ok(song)),
-            None => match FromConn::from_conn(self.conn.conn) {
+            None => match FromConn::from_conn(self.conn) {
                 None => None,
                 Some(e) => Some(Err(e))
             }
@@ -88,14 +88,14 @@ impl MpdSong {
         if unsafe { mpd_run_seek_id(conn.conn, self.id(), pos.num_seconds() as libc::c_uint) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(conn.conn).unwrap())
+            Err(FromConn::from_conn(conn).unwrap())
         }
     }
 }
 
 impl FromConn for MpdSong {
-    fn from_conn(connection: *mut mpd_connection) -> Option<MpdSong> {
-        let song = unsafe { mpd_recv_song(connection) };
+    fn from_conn(conn: &MpdConnection) -> Option<MpdSong> {
+        let song = unsafe { mpd_recv_song(conn.conn) };
         if song.is_null() {
             None
         } else {

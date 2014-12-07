@@ -3,8 +3,8 @@ use std::fmt::{Show, Error, Formatter};
 use time::Timespec;
 use libc;
 
-use common::{MpdResult, FromConn};
-use connection::{mpd_connection, MpdConnection};
+use error::MpdResult;
+use connection::{FromConn, MpdConnection, mpd_connection};
 use songs::MpdSongs;
 
 #[repr(C)] struct mpd_playlist;
@@ -22,13 +22,13 @@ extern "C" {
 }
 
 pub struct MpdPlaylists<'a> {
-    conn: *mut mpd_connection
+    conn: &'a MpdConnection
 }
 
-impl<'a> FromConn for MpdPlaylists<'a> {
-    fn from_conn<'a>(connection: *mut mpd_connection) -> Option<MpdPlaylists<'a>> {
-        if unsafe { mpd_send_list_playlists(connection) } {
-            Some(MpdPlaylists { conn: connection })
+impl<'a> MpdPlaylists<'a> {
+    pub fn from_conn<'a>(conn: &'a MpdConnection) -> Option<MpdPlaylists<'a>> {
+        if unsafe { mpd_send_list_playlists(conn.conn) } {
+            Some(MpdPlaylists { conn: conn })
         } else {
             None
         }
@@ -87,8 +87,8 @@ impl MpdPlaylist {
 }
 
 impl FromConn for MpdPlaylist {
-    fn from_conn(connection: *mut mpd_connection) -> Option<MpdPlaylist> {
-        let pl = unsafe { mpd_recv_playlist(connection) };
+    fn from_conn(conn: &MpdConnection) -> Option<MpdPlaylist> {
+        let pl = unsafe { mpd_recv_playlist(conn.conn) };
         if pl.is_null() {
             None
         } else {
@@ -102,7 +102,7 @@ impl MpdPlaylist {
         if unsafe { mpd_send_list_playlist(conn.conn, mpd_playlist_get_path(self.pl as *const _)) } {
             Ok(MpdSongs { conn: conn })
         } else {
-            Err(FromConn::from_conn(conn.conn).unwrap())
+            Err(FromConn::from_conn(conn).unwrap())
         }
     }
 }
