@@ -17,9 +17,8 @@ pub mod playlists;
 #[cfg(test)]
 mod test {
 
-    use common::{MpdError, MpdResult, MpdErrorKind};
     use connection::MpdConnection;
-    use playlists::Playlist;
+    use playlists::MpdPlaylist;
 
     #[test]
     fn test_conn() {
@@ -31,11 +30,11 @@ mod test {
             Some(Ok(c)) => c
         };
 
-        println!("{}", conn.set_volume(100));
+        println!("{}", conn.set_volume(0));
         println!("{}", conn.settings());
         println!("{}", conn.status());
 
-        let playlists: Vec<Playlist> = conn.playlists().unwrap().collect();
+        let playlists: Vec<MpdPlaylist> = conn.playlists().unwrap().collect();
         for pl in playlists.iter() {
             println!("{}", pl);
             for s in pl.songs(&mut conn).unwrap() {
@@ -51,7 +50,7 @@ mod test {
             println!("{}", o);
         }
 
-        conn.stop();
+        println!("{}", conn.stop());
 
         println!("{}", conn.current_song());
 
