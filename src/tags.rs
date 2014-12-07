@@ -1,6 +1,5 @@
 
 use std::str::FromStr;
-use std::ptr;
 
 #[link(name = "mpdclient")]
 extern "C" {
@@ -32,9 +31,9 @@ pub enum TagType {
 }
 
 impl TagType {
-    fn name(&self) -> Option<String> {
+    pub fn name(&self) -> Option<String> {
         let name = unsafe { mpd_tag_name(*self) };
-        if name == ptr::null() {
+        if name.is_null() {
             None
         } else {
             Some(unsafe { String::from_raw_buf(name) })

@@ -2,11 +2,8 @@
 use libc;
 use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
-use std::c_str::ToCStr;
-use std::ptr;
 use time::Timespec;
 
-use common::{MpdError, MpdResult, FromConnection};
 use connection::{mpd_connection, MpdConnection};
 use tags::TagType;
 
@@ -57,7 +54,7 @@ impl Song {
     pub fn uri(&self) -> String { unsafe { String::from_raw_buf(mpd_song_get_uri(self.song as *const _)) } }
     pub fn tags(&self, kind: TagType, index: u32) -> Option<String> {
         let tag = unsafe { mpd_song_get_tag(self.song as *const _, kind, index) };
-        if tag == ptr::null() {
+        if tag.is_null() {
             None
         } else {
             Some(unsafe { String::from_raw_buf(tag) })
@@ -66,15 +63,21 @@ impl Song {
     pub fn duration(&self) -> Duration { Duration::seconds(unsafe { mpd_song_get_duration(self.song as *const _) } as i64) }
     pub fn id(&self) -> u32 { unsafe { mpd_song_get_id(self.song as *const _) } }
     pub fn prio(&self) -> u32 { unsafe { mpd_song_get_prio(self.song as *const _) } }
-    pub fn start(&self) -> u32 { unsafe { mpd_song_get_start(self.song as *const _) } }
-    pub fn end(&self) -> u32 { unsafe { mpd_song_get_start(self.song as *const _) } }
+    pub fn start(&self) -> Duration { Duration::seconds(unsafe { mpd_song_get_start(self.song as *const _) } as i64) }
+    pub fn end(&self) -> Option<Duration> {
+        match unsafe { mpd_song_get_end(self.song as *const _) } {
+            0 => None,
+            s @ _ => Some(Duration::seconds(s as i64))
+        }
+    }
+    pub fn slice(&self) -> (Duration, Option<Duration>) { (self.start(), self.end()) }
     pub fn last_mod(&self) -> Timespec { Timespec::new(unsafe { mpd_song_get_last_modified(self.song as *const _) }, 0) }
     pub fn get_pos(&self) -> u32 { unsafe { mpd_song_get_pos(self.song as *const _) } }
     pub fn set_pos(&mut self, pos: u32) { unsafe { mpd_song_set_pos(self.song, pos) } }
 
     fn from_connection(connection: *mut mpd_connection) -> Option<Song> {
         let song = unsafe { mpd_recv_song(connection) };
-        if song as *const _ == ptr::null::<mpd_song>() {
+        if song.is_null() {
             None
         } else {
             Some(Song { song: song })
@@ -91,7 +94,7 @@ impl Drop for Song {
 impl Clone for Song {
     fn clone(&self) -> Song {
         let song = unsafe { mpd_song_dup(self.song as *const _) };
-        if song as *const _ == ptr::null::<mpd_song>() {
+        if song.is_null() {
             panic!("Out of memory!")
         }
 

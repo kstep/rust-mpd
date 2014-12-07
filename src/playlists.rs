@@ -1,13 +1,11 @@
 
 use std::fmt::{Show, Error, Formatter};
-use std::c_str::ToCStr;
-use std::ptr;
 use time::Timespec;
 use libc;
 
-use common::{MpdError, MpdResult, FromConnection};
+use common::{MpdResult, FromConnection};
 use connection::{mpd_connection, MpdConnection};
-use songs::{Song, Songs};
+use songs::Songs;
 
 #[repr(C)] struct mpd_playlist;
 
@@ -52,7 +50,7 @@ impl Drop for Playlist {
 impl Clone for Playlist {
     fn clone(&self) -> Playlist {
         let pl = unsafe { mpd_playlist_dup(self.pl as *const _) };
-        if pl as *const _ == ptr::null::<mpd_playlist>() {
+        if pl.is_null() {
             panic!("Out of memory!")
         }
 
@@ -83,7 +81,7 @@ impl Playlist {
 
     fn from_connection(connection: *mut mpd_connection) -> Option<Playlist> {
         let pl = unsafe { mpd_recv_playlist(connection) };
-        if pl as *const _ == ptr::null::<mpd_playlist>() {
+        if pl.is_null() {
             None
         } else {
             Some(Playlist { pl: pl })

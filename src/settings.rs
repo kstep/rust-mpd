@@ -6,7 +6,7 @@ use std::fmt::{Show, Error, Formatter};
 use std::ptr;
 
 use common::FromConnection;
-use connection::{mpd_connection, MpdConnection};
+use connection::mpd_connection;
 
 #[repr(C)] pub struct mpd_settings;
 
@@ -45,7 +45,7 @@ impl Show for MpdSettings {
 impl FromConnection for MpdSettings {
     fn from_connection(connection: *mut mpd_connection) -> Option<MpdSettings> {
         let settings = unsafe { mpd_connection_get_settings(connection as *const _) };
-        if settings as *const _ == ptr::null::<mpd_settings>() { return None; }
+        if settings.is_null() { return None; }
         Some(MpdSettings::Borrowed(settings))
     }
 }

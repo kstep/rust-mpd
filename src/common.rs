@@ -13,14 +13,14 @@ extern {
     fn mpd_connection_clear_error(connection: *mut mpd_connection) -> bool;
 }
 
-#[repr(C)]
-#[deriving(Show)]
-pub struct mpd_pair {
-    name: *const u8,
-    value: *const u8
-}
+//#[repr(C)]
+//pub struct mpd_pair {
+    //name: *const u8,
+    //value: *const u8
+//}
 
 #[repr(C)]
+#[allow(dead_code)]
 #[deriving(Show)]
 pub enum MpdErrorKind {
     Success = 0,
@@ -36,6 +36,7 @@ pub enum MpdErrorKind {
 }
 
 #[repr(C)]
+#[allow(dead_code)]
 #[deriving(Show)]
 pub enum MpdServerErrorKind {
     Unknown = -1,

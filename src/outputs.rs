@@ -1,10 +1,8 @@
 
 use libc;
 use std::fmt::{Show, Error, Formatter};
-use std::c_str::ToCStr;
-use std::ptr;
 
-use common::{MpdError, MpdResult, FromConnection};
+use common::{MpdResult, FromConnection};
 use connection::{MpdConnection, mpd_connection};
 
 #[repr(C)] struct mpd_output;
@@ -63,7 +61,7 @@ impl<'a> Iterator<Output> for Outputs<'a> {
 impl FromConnection for Output {
     fn from_connection(connection: *mut mpd_connection) -> Option<Output> {
         let output = unsafe { mpd_recv_output(connection) };
-        if output as *const _ == ptr::null::<mpd_output>() {
+        if output.is_null() {
             None
         } else {
             Some(Output { output: output })

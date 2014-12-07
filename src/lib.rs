@@ -51,7 +51,7 @@ mod test {
             println!("{}", o);
         }
 
-        conn.play();
+        conn.stop();
 
         println!("{}", conn.current_song());
 

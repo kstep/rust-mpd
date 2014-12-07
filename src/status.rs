@@ -1,14 +1,12 @@
 
 use libc;
 use std::fmt::{Show, Error, Formatter};
-use std::c_str::ToCStr;
 use std::time::duration::Duration;
-use std::ptr;
 
 use common::FromConnection;
-use connection::{mpd_connection, MpdConnection};
+use connection::mpd_connection;
 
-struct mpd_status;
+#[repr(C)] struct mpd_status;
 
 #[repr(C)]
 #[deriving(Show)]
@@ -52,7 +50,7 @@ extern "C" {
     fn mpd_status_get_song_id(status: *const mpd_status) -> libc::c_int;
     fn mpd_status_get_next_song_pos(status: *const mpd_status) -> libc::c_int;
     fn mpd_status_get_next_song_id(status: *const mpd_status) -> libc::c_int;
-    fn mpd_status_get_elapsed_time(status: *const mpd_status) -> libc::c_uint;
+    //fn mpd_status_get_elapsed_time(status: *const mpd_status) -> libc::c_uint;
     fn mpd_status_get_elapsed_ms(status: *const mpd_status) -> libc::c_uint;
     fn mpd_status_get_total_time(status: *const mpd_status) -> libc::c_uint;
     fn mpd_status_get_kbit_rate(status: *const mpd_status) -> libc::c_uint;
@@ -113,7 +111,7 @@ impl Show for MpdStatus {
 impl FromConnection for MpdStatus {
     fn from_connection(connection: *mut mpd_connection) -> Option<MpdStatus> {
         let status = unsafe { mpd_run_status(connection) };
-        if status as *const _ == ptr::null::<mpd_status>() {
+        if status.is_null() {
             return None;
         }
 
@@ -146,12 +144,12 @@ impl MpdStatus {
     pub fn kbit_rate(&self) -> u32 { unsafe { mpd_status_get_kbit_rate(self.p as *const _) } }
     pub fn audio_format(&self) -> Option<AudioFormat> {
         let aformat = unsafe { mpd_status_get_audio_format(self.p as *const _) };
-        if aformat == ptr::null() { None } else { Some(unsafe { ((*aformat).sample_rate, (*aformat).bits, (*aformat).channels) }) }
+        if aformat.is_null() { None } else { Some(unsafe { ((*aformat).sample_rate, (*aformat).bits, (*aformat).channels) }) }
     }
     pub fn update_id(&self) -> u32 { unsafe { mpd_status_get_update_id(self.p as *const _) } }
     pub fn error(&self) -> Option<String> {
         let error = unsafe { mpd_status_get_error(self.p as *const _) };
-        if error == ptr::null() { None } else { Some(unsafe { String::from_raw_buf(error) }) }
+        if error.is_null() { None } else { Some(unsafe { String::from_raw_buf(error) }) }
     }
 }
 

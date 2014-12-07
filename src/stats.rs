@@ -1,9 +1,8 @@
 use libc;
 use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
-use std::ptr;
 use time::Timespec;
-use common::{MpdError, MpdResult, FromConnection};
+use common::FromConnection;
 use connection::mpd_connection;
 
 #[repr(C)] struct mpd_stats;
@@ -36,7 +35,7 @@ impl Drop for MpdStats {
 impl FromConnection for MpdStats {
     fn from_connection(connection: *mut mpd_connection) -> Option<MpdStats> {
         let stats = unsafe { mpd_run_stats(connection) };
-        if stats as *const _ == ptr::null::<mpd_stats>() {
+        if stats.is_null() {
             return None;
         }
 

@@ -3,10 +3,11 @@ use libc;
 use std::time::duration::Duration;
 use std::c_str::ToCStr;
 use std::ptr;
+use std::os::unix::prelude::{AsRawFd, Fd};
 
 pub use common::mpd_connection;
 
-use common::{FromConnection, MpdError, MpdResult, mpd_pair};
+use common::{FromConnection, MpdResult};
 use outputs::Outputs;
 use playlists::Playlists;
 use songs::{Song, mpd_song};
@@ -21,16 +22,19 @@ extern {
     fn mpd_connection_set_timeout(connection: *mut mpd_connection, timeout_ms: libc::c_uint);
     fn mpd_connection_get_fd(connection: *const mpd_connection) -> libc::c_int;
     fn mpd_connection_get_server_version(connection: *const mpd_connection) -> *const [libc::c_uint, ..3];
-    fn mpd_connection_cmp_server_version(connection: *const mpd_connection, major: libc::c_uint, minor: libc::c_uint, patch: libc::c_uint) -> libc::c_int;
+    //fn mpd_connection_cmp_server_version(connection: *const mpd_connection, major: libc::c_uint, minor: libc::c_uint, patch: libc::c_uint) -> libc::c_int;
 
+    /*
     fn mpd_send_command(connection: *mut mpd_connection, command: *const u8, ...) -> bool;
 
     fn mpd_response_finish(connection: *mut mpd_connection) -> bool;
     fn mpd_response_next(connection: *mut mpd_connection) -> bool;
 
     fn mpd_send_password(connection: *mut mpd_connection, password: *const u8) -> bool;
+    */
     fn mpd_run_password(connection: *mut mpd_connection, password: *const u8) -> bool;
 
+    /*
     fn mpd_recv_pair(connection: *mut mpd_connection) -> *mut mpd_pair;
     fn mpd_recv_pair_named(connection: *mut mpd_connection, name: *const u8) -> *mut mpd_pair;
     fn mpd_return_pair(connection: *mut mpd_connection, pair: *mut mpd_pair);
@@ -38,6 +42,7 @@ extern {
 
     fn mpd_command_list_begin(connection: *mut mpd_connection, discrete_ok: bool) -> bool;
     fn mpd_command_list_end(connection: *mut mpd_connection) -> bool;
+    */
 
     fn mpd_run_play(connection: *mut mpd_connection) -> bool;
     fn mpd_run_play_pos(connection: *mut mpd_connection, song_pos: u32) -> bool;
@@ -71,7 +76,7 @@ impl MpdConnection {
                 None => ptr::null()
             }, port, timeout.num_milliseconds() as u32);
 
-            if conn as *const _ == ptr::null::<mpd_connection>() { None } else {
+            if conn.is_null() { None } else {
                 Some(match FromConnection::from_connection(conn) {
                     None => Ok(MpdConnection { conn: conn }),
                     Some(e) => {
@@ -84,6 +89,8 @@ impl MpdConnection {
     }
 
     pub fn authorize(&mut self, password: String) -> MpdResult<()> { if ! password.with_c_str(|s| unsafe { mpd_run_password(self.conn, s as *const u8) }) { return Err(FromConnection::from_connection(self.conn).unwrap()) } Ok(()) }
+
+    pub fn set_timeout(&mut self, timeout: Duration) { unsafe { mpd_connection_set_timeout(self.conn, timeout.num_milliseconds() as libc::c_uint) } }
 
     pub fn version(&self) -> (u32, u32, u32) {
         let version = unsafe { * mpd_connection_get_server_version(self.conn as *const _) };
@@ -107,7 +114,7 @@ impl MpdConnection {
     pub fn stats(&self) -> MpdResult<MpdStats> { FromConnection::from_connection(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConnection::from_connection(self.conn).unwrap())) }
     pub fn current_song(&self) -> MpdResult<Song> {
         let song = unsafe { mpd_run_current_song(self.conn) };
-        if song as *const _ == ptr::null::<mpd_song>() {
+        if song.is_null() {
             Err(FromConnection::from_connection(self.conn).unwrap())
         } else {
             Ok(Song { song: song })
@@ -122,5 +129,9 @@ impl Drop for MpdConnection {
     fn drop(&mut self) {
         unsafe { mpd_connection_free(self.conn) }
     }
+}
+
+impl AsRawFd for MpdConnection {
+    fn as_raw_fd(&self) -> Fd { unsafe { mpd_connection_get_fd(self.conn as *const _) as Fd } }
 }
 
