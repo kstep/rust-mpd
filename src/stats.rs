@@ -3,6 +3,7 @@ use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
 use time::Timespec;
 use connection::{MpdConnection, FromConn, mpd_connection};
+use serialize::{Encoder, Encodable};
 
 #[repr(C)] struct mpd_stats;
 
@@ -50,6 +51,20 @@ impl MpdStats {
     fn db_update_time(&self) -> Timespec { Timespec::new(unsafe { mpd_stats_get_db_update_time(self.p as *const _) as i64 }, 0) } 
     fn play_time(&self) -> Duration { Duration::seconds(unsafe { mpd_stats_get_play_time(self.p as *const _) as i64 }) }
     fn db_play_time(&self) -> Duration { Duration::seconds(unsafe { mpd_stats_get_db_play_time(self.p as *const _) as i64 }) }
+}
+
+impl<S: Encoder<E>, E> Encodable<S, E> for MpdStats {
+    fn encode(&self, s: &mut S) -> Result<(), E> {
+        s.emit_struct("MpdStats", 7, |s| {
+            s.emit_struct_field("artists", 0, |s| s.emit_uint(self.artists())).and_then(|()|
+            s.emit_struct_field("albums", 1, |s| s.emit_uint(self.albums()))).and_then(|()|
+            s.emit_struct_field("songs", 2, |s| s.emit_uint(self.songs()))).and_then(|()|
+            s.emit_struct_field("uptime", 3, |s| s.emit_i64(self.uptime().num_milliseconds()))).and_then(|()|
+            s.emit_struct_field("play_time", 4, |s| s.emit_i64(self.play_time().num_milliseconds()))).and_then(|()|
+            s.emit_struct_field("db_play_time", 5, |s| s.emit_i64(self.db_play_time().num_milliseconds()))).and_then(|()|
+            s.emit_struct_field("db_update_time", 6, |s| s.emit_i64(self.db_update_time().sec)))
+        })
+    }
 }
 
 impl Show for MpdStats {

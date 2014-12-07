@@ -6,6 +6,7 @@ use time::Timespec;
 
 use error::MpdResult;
 use connection::{mpd_connection, MpdConnection, FromConn};
+use serialize::{Encoder, Encodable};
 use tags::MpdTagType;
 
 #[repr(C)] pub struct mpd_song;
@@ -56,6 +57,26 @@ impl Show for MpdSong {
         try!(self.uri().fmt(f));
         try!(f.write(b" }"));
         Ok(())
+    }
+}
+
+impl<S: Encoder<E>, E> Encodable<S, E> for MpdSong {
+    fn encode(&self, s: &mut S) -> Result<(), E> {
+        s.emit_struct("MpdSong", 7, |s| {
+            s.emit_struct_field("uri", 0, |s| s.emit_str(self.uri()[])).and_then(|()|
+            s.emit_struct_field("duration", 1, |s| s.emit_i64(self.duration().num_milliseconds()))).and_then(|()|
+            s.emit_struct_field("id", 2, |s| s.emit_uint(self.id()))).and_then(|()|
+            s.emit_struct_field("prio", 3, |s| s.emit_uint(self.prio()))).and_then(|()|
+            s.emit_struct_field("slice", 4, |s| s.emit_seq(
+                    2, |s| s.emit_seq_elt(0, |s| s.emit_i64(self.start().num_milliseconds())).and_then(|()|
+                           s.emit_seq_elt(1, |s| s.emit_option(|s| match self.end() {
+                               Some(ref d) => s.emit_option_some(|s| s.emit_i64(d.num_milliseconds())),
+                               None => s.emit_option_none()
+                           })))
+                    ))).and_then(|()|
+            s.emit_struct_field("last_modified", 5, |s| s.emit_i64(self.last_mod().sec))).and_then(|()|
+            s.emit_struct_field("pos", 6, |s| s.emit_uint(self.pos())))
+        })
     }
 }
 

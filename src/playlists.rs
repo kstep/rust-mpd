@@ -5,6 +5,7 @@ use libc;
 
 use error::MpdResult;
 use connection::{FromConn, MpdConnection, mpd_connection};
+use serialize::{Encoder, Encodable};
 use songs::MpdSongs;
 
 #[repr(C)] struct mpd_playlist;
@@ -84,6 +85,23 @@ impl MpdPlaylist {
     }
 
     pub fn last_mod(&self) -> Timespec { Timespec::new(unsafe { mpd_playlist_get_last_modified(self.pl as *const _) }, 0) }
+
+    pub fn songs<'a>(&self, conn: &'a mut MpdConnection) -> MpdResult<MpdSongs<'a>> {
+        if unsafe { mpd_send_list_playlist(conn.conn, mpd_playlist_get_path(self.pl as *const _)) } {
+            Ok(MpdSongs { conn: conn })
+        } else {
+            Err(FromConn::from_conn(conn).unwrap())
+        }
+    }
+}
+
+impl<S: Encoder<E>, E> Encodable<S, E> for MpdPlaylist {
+    fn encode(&self, s: &mut S) -> Result<(), E> {
+        s.emit_struct("MpdPlaylist", 2, |s| {
+            s.emit_struct_field("path", 0, |s| s.emit_str(self.path()[])).and_then(|()|
+            s.emit_struct_field("last_modified", 1, |s| s.emit_i64(self.last_mod().sec)))
+        })
+    }
 }
 
 impl FromConn for MpdPlaylist {
@@ -96,15 +114,4 @@ impl FromConn for MpdPlaylist {
         }
     }
 }
-
-impl MpdPlaylist {
-    pub fn songs<'a>(&self, conn: &'a mut MpdConnection) -> MpdResult<MpdSongs<'a>> {
-        if unsafe { mpd_send_list_playlist(conn.conn, mpd_playlist_get_path(self.pl as *const _)) } {
-            Ok(MpdSongs { conn: conn })
-        } else {
-            Err(FromConn::from_conn(conn).unwrap())
-        }
-    }
-}
-
 

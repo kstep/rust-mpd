@@ -2,6 +2,7 @@
 
 extern crate libc;
 extern crate time;
+extern crate serialize;
 
 pub mod connection;
 pub mod error;
@@ -20,6 +21,7 @@ mod test {
 
     use connection::MpdConnection;
     use playlists::MpdPlaylist;
+    use serialize::json;
 
     #[test]
     fn test_conn() {
@@ -34,12 +36,16 @@ mod test {
         println!("{}", conn.set_volume(0));
         println!("{}", conn.settings());
         println!("{}", conn.status());
+        println!("{}", json::encode(&conn.status().unwrap()));
+        println!("{}", json::encode(&conn.stats().unwrap()));
 
         let playlists: Vec<MpdPlaylist> = conn.playlists().unwrap().map(|r| r.unwrap()).collect();
+        println!("{}", json::encode(&playlists));
         for pl in playlists.iter() {
             println!("{}", pl);
             for s in pl.songs(&mut conn).unwrap() {
                 println!("{}", s);
+                println!("{}", json::encode(&s.unwrap()));
             }
         }
 

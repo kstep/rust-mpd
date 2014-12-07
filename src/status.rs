@@ -4,6 +4,7 @@ use std::fmt::{Show, Error, Formatter};
 use std::time::duration::Duration;
 
 use connection::{FromConn, MpdConnection, mpd_connection};
+use serialize::{Encoder, Encodable};
 
 #[repr(C)] struct mpd_status;
 
@@ -18,11 +19,15 @@ struct mpd_audio_format {
     reserved1: u32
 }
 
-// rate, bits, chans
-pub type AudioFormat = (u32, u8, u8);
+#[deriving(Show, Encodable)]
+pub struct AudioFormat {
+    pub rate: u32,
+    pub bits: u8,
+    pub chans: u8
+}
 
 #[repr(C)]
-#[deriving(Show)]
+#[deriving(Show, Encodable)]
 pub enum MpdState {
     Unknown = 0,
     Stop = 1,
@@ -60,6 +65,44 @@ extern "C" {
 
 pub struct MpdStatus {
     p: *mut mpd_status
+}
+
+impl<S: Encoder<E>, E> Encodable<S, E> for MpdStatus {
+    fn encode(&self, s: &mut S) -> Result<(), E> {
+        s.emit_struct("MpdStatus", 19, |s| {
+            s.emit_struct_field("volume", 0, |s| s.emit_int(self.volume())).and_then(|()|
+            s.emit_struct_field("repeat", 1, |s| s.emit_bool(self.repeat()))).and_then(|()|
+            s.emit_struct_field("random", 2, |s| s.emit_bool(self.random()))).and_then(|()|
+            s.emit_struct_field("single", 3, |s| s.emit_bool(self.single()))).and_then(|()|
+            s.emit_struct_field("consume", 4, |s| s.emit_bool(self.consume()))).and_then(|()|
+            s.emit_struct_field("state", 5, |s| self.state().encode(s))).and_then(|()|
+            s.emit_struct_field("crossfade", 6, |s| s.emit_i64(self.crossfade().num_milliseconds()))).and_then(|()|
+            s.emit_struct_field("queue_length", 7, |s| s.emit_uint(self.queue_len()))).and_then(|()|
+            s.emit_struct_field("queue_version", 8, |s| s.emit_uint(self.queue_version()))).and_then(|()|
+            s.emit_struct_field("mixrampdb", 9, |s| s.emit_f32(self.mixrampdb()))).and_then(|()|
+            s.emit_struct_field("mixrampdelay", 10, |s| s.emit_option(|s| match self.mixrampdelay() {
+                Some(ref d) => s.emit_option_some(|s| s.emit_i64(d.num_milliseconds())),
+                None => s.emit_option_none()
+            }))).and_then(|()|
+            s.emit_struct_field("song", 11, |s| s.emit_option(|s| match self.song() {
+                Some(ref v) => s.emit_option_some(|s| v.encode(s)),
+                None => s.emit_option_none()
+            }))).and_then(|()|
+            s.emit_struct_field("next_song", 12, |s| s.emit_option(|s| match self.next_song() {
+                Some(ref v) => s.emit_option_some(|s| v.encode(s)),
+                None => s.emit_option_none()
+            }))).and_then(|()|
+            s.emit_struct_field("elapsed_time", 13, |s| s.emit_i64(self.elapsed_time().num_milliseconds()))).and_then(|()|
+            s.emit_struct_field("total_time", 14, |s| s.emit_i64(self.elapsed_time().num_milliseconds()))).and_then(|()|
+            s.emit_struct_field("kbit_rate", 15, |s| s.emit_uint(self.kbit_rate()))).and_then(|()|
+            s.emit_struct_field("audio_format", 16, |s| self.audio_format().encode(s))).and_then(|()|
+            s.emit_struct_field("update_id", 17, |s| s.emit_uint(self.update_id()))).and_then(|()|
+            s.emit_struct_field("error", 18, |s| s.emit_option(|s| match self.error() {
+                Some(ref e) => s.emit_option_some(|s| s.emit_str(e[])),
+                None => s.emit_option_none()
+            })))
+        })
+    }
 }
 
 impl Show for MpdStatus {
@@ -119,7 +162,7 @@ impl FromConn for MpdStatus {
 }
 
 impl MpdStatus {
-    pub fn volume(&self) -> i32 { unsafe { mpd_status_get_volume(self.p as *const _) } }
+    pub fn volume(&self) -> int { unsafe { mpd_status_get_volume(self.p as *const _) as int } }
     pub fn repeat(&self) -> bool { unsafe { mpd_status_get_repeat(self.p as *const _) } }
     pub fn random(&self) -> bool { unsafe { mpd_status_get_random(self.p as *const _) } }
     pub fn single(&self) -> bool { unsafe { mpd_status_get_single(self.p as *const _) } }
@@ -143,7 +186,7 @@ impl MpdStatus {
     pub fn kbit_rate(&self) -> uint { unsafe { mpd_status_get_kbit_rate(self.p as *const _) as uint } }
     pub fn audio_format(&self) -> Option<AudioFormat> {
         let aformat = unsafe { mpd_status_get_audio_format(self.p as *const _) };
-        if aformat.is_null() { None } else { Some(unsafe { ((*aformat).sample_rate, (*aformat).bits, (*aformat).channels) }) }
+        if aformat.is_null() { None } else { Some(unsafe { AudioFormat { rate: (*aformat).sample_rate, bits: (*aformat).bits, chans: (*aformat).channels } }) }
     }
     pub fn update_id(&self) -> uint { unsafe { mpd_status_get_update_id(self.p as *const _) as uint } }
     pub fn error(&self) -> Option<String> {
