@@ -4,7 +4,7 @@ use std::str::FromStr;
 #[link(name = "mpdclient")]
 extern "C" {
     fn mpd_tag_name(typ: MpdTagType) -> *const u8;
-    fn mpd_tag_name_parse(name: *const u8) -> MpdTagType;
+    fn mpd_tag_name_parse(name: *const i8) -> MpdTagType;
 }
 
 #[repr(C)]
@@ -43,6 +43,6 @@ impl MpdTagType {
 
 impl FromStr for MpdTagType {
     fn from_str(s: &str) -> Option<MpdTagType> {
-        Some(s.with_c_str(|s| unsafe { mpd_tag_name_parse(s as *const u8) }))
+        Some(s.with_c_str(|s| unsafe { mpd_tag_name_parse(s) }))
     }
 }

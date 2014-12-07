@@ -18,7 +18,7 @@ pub enum MpdSettings {
 extern {
     fn mpd_connection_get_settings(connection: *const mpd_connection) -> *const mpd_settings;
 
-    fn mpd_settings_new(host: *const u8, port: libc::c_uint, timeout_ms: libc::c_uint, reserved: *const u8, password: *const u8) -> *mut mpd_settings;
+    fn mpd_settings_new(host: *const i8, port: libc::c_uint, timeout_ms: libc::c_uint, reserved: *const i8, password: *const i8) -> *mut mpd_settings;
     fn mpd_settings_free(settings: *mut mpd_settings);
     fn mpd_settings_get_host(settings: *const mpd_settings) -> *const u8;
     fn mpd_settings_get_port(settings: *const mpd_settings) -> libc::c_uint;
@@ -92,13 +92,13 @@ impl MpdSettings {
         Some(MpdSettings::Owned(unsafe {
             mpd_settings_new(
                 match host {
-                    Some(h) => h.as_ptr() as *const u8,
+                    Some(h) => h.as_ptr(),
                     None => ptr::null()
                 },
                 port,
                 timeout.num_milliseconds() as u32, ptr::null(),
                 match password {
-                    Some(p) => p.as_ptr() as *const u8,
+                    Some(p) => p.as_ptr(),
                     None => ptr::null()
                 })
         }))

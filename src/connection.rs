@@ -51,7 +51,7 @@ impl FromConn for MpdError {
 
 #[link(name = "mpdclient")]
 extern {
-    fn mpd_connection_new(host: *const u8, port: libc::c_uint, timeout_ms: libc::c_uint) -> *mut mpd_connection;
+    fn mpd_connection_new(host: *const i8, port: libc::c_uint, timeout_ms: libc::c_uint) -> *mut mpd_connection;
     fn mpd_connection_free(connection: *mut mpd_connection);
     fn mpd_connection_set_timeout(connection: *mut mpd_connection, timeout_ms: libc::c_uint);
     fn mpd_connection_get_fd(connection: *const mpd_connection) -> libc::c_int;
@@ -59,18 +59,18 @@ extern {
     //fn mpd_connection_cmp_server_version(connection: *const mpd_connection, major: libc::c_uint, minor: libc::c_uint, patch: libc::c_uint) -> libc::c_int;
 
     /*
-    fn mpd_send_command(connection: *mut mpd_connection, command: *const u8, ...) -> bool;
+    fn mpd_send_command(connection: *mut mpd_connection, command: *const i8, ...) -> bool;
 
     fn mpd_response_finish(connection: *mut mpd_connection) -> bool;
     fn mpd_response_next(connection: *mut mpd_connection) -> bool;
 
-    fn mpd_send_password(connection: *mut mpd_connection, password: *const u8) -> bool;
+    fn mpd_send_password(connection: *mut mpd_connection, password: *const i8) -> bool;
     */
-    fn mpd_run_password(connection: *mut mpd_connection, password: *const u8) -> bool;
+    fn mpd_run_password(connection: *mut mpd_connection, password: *const i8) -> bool;
 
     /*
     fn mpd_recv_pair(connection: *mut mpd_connection) -> *mut mpd_pair;
-    fn mpd_recv_pair_named(connection: *mut mpd_connection, name: *const u8) -> *mut mpd_pair;
+    fn mpd_recv_pair_named(connection: *mut mpd_connection, name: *const i8) -> *mut mpd_pair;
     fn mpd_return_pair(connection: *mut mpd_connection, pair: *mut mpd_pair);
     fn mpd_enqueue_pair(connection: *mut mpd_connection, pair: *mut mpd_pair);
 
@@ -90,8 +90,8 @@ extern {
 
     fn mpd_run_current_song(connection: *mut mpd_connection) -> *mut mpd_song;
 
-    fn mpd_run_rescan(connection: *mut mpd_connection, path: *const u8) -> libc::c_uint;
-    fn mpd_run_update(connection: *mut mpd_connection, path: *const u8) -> libc::c_uint;
+    fn mpd_run_rescan(connection: *mut mpd_connection, path: *const i8) -> libc::c_uint;
+    fn mpd_run_update(connection: *mut mpd_connection, path: *const i8) -> libc::c_uint;
 
     fn mpd_connection_get_error(connection: *const mpd_connection) -> MpdErrorKind;
     fn mpd_connection_get_error_message(connection: *const mpd_connection) -> *const u8;
@@ -115,7 +115,7 @@ impl MpdConnection {
         unsafe {
             let host = host.map(|v| v.to_c_str());
             let conn = mpd_connection_new(match host {
-                Some(v) => v.as_ptr() as *const u8,
+                Some(v) => v.as_ptr(),
                 None => ptr::null()
             }, port, timeout.num_milliseconds() as u32);
 
@@ -132,7 +132,7 @@ impl MpdConnection {
         }
     }
 
-    pub fn authorize(&mut self, password: String) -> MpdResult<()> { if ! password.with_c_str(|s| unsafe { mpd_run_password(self.conn, s as *const u8) }) { return Err(FromConn::from_conn(self).unwrap()) } Ok(()) }
+    pub fn authorize(&mut self, password: String) -> MpdResult<()> { if ! password.with_c_str(|s| unsafe { mpd_run_password(self.conn, s) }) { return Err(FromConn::from_conn(self).unwrap()) } Ok(()) }
 
     pub fn set_timeout(&mut self, timeout: Duration) { unsafe { mpd_connection_set_timeout(self.conn, timeout.num_milliseconds() as libc::c_uint) } }
 
@@ -171,7 +171,7 @@ impl MpdConnection {
     pub fn update(&mut self, path: Option<String>) -> MpdResult<u32> {
         let cpath = path.map(|p| p.to_c_str());
         match unsafe { mpd_run_update(self.conn, match cpath {
-            Some(p) => p.as_ptr() as *const u8,
+            Some(p) => p.as_ptr(),
             None => ptr::null()
         }) } {
             0 => match FromConn::from_conn(self) {
@@ -185,7 +185,7 @@ impl MpdConnection {
     pub fn rescan(&mut self, path: Option<String>) -> MpdResult<u32> {
         let cpath = path.map(|p| p.to_c_str());
         match unsafe { mpd_run_rescan(self.conn, match cpath {
-            Some(p) => p.as_ptr() as *const u8,
+            Some(p) => p.as_ptr(),
             None => ptr::null()
         }) } {
             0 => match FromConn::from_conn(self) {
