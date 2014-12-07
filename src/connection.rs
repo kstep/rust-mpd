@@ -56,6 +56,8 @@ extern {
 
     fn mpd_run_current_song(connection: *mut mpd_connection) -> *mut mpd_song;
 
+    fn mpd_run_rescan(connection: *mut mpd_connection, path: *const u8) -> libc::c_uint;
+    fn mpd_run_update(connection: *mut mpd_connection, path: *const u8) -> libc::c_uint;
 }
 
 pub struct MpdConnection {
@@ -123,6 +125,34 @@ impl MpdConnection {
 
     pub fn playlists(&mut self) -> MpdResult<MpdPlaylists> { FromConn::from_conn(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConn::from_conn(self.conn).unwrap())) }
     pub fn outputs(&mut self) -> MpdResult<MpdOutputs> { FromConn::from_conn(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConn::from_conn(self.conn).unwrap())) }
+
+    pub fn update(&mut self, path: Option<String>) -> MpdResult<u32> {
+        let cpath = path.map(|p| p.to_c_str());
+        match unsafe { mpd_run_update(self.conn, match cpath {
+            Some(p) => p.as_ptr() as *const u8,
+            None => ptr::null()
+        }) } {
+            0 => match FromConn::from_conn(self.conn) {
+                None => Ok(0),
+                Some(e) => Err(e)
+            },
+            uid @ _ => Ok(uid)
+        }
+    }
+
+    pub fn rescan(&mut self, path: Option<String>) -> MpdResult<u32> {
+        let cpath = path.map(|p| p.to_c_str());
+        match unsafe { mpd_run_rescan(self.conn, match cpath {
+            Some(p) => p.as_ptr() as *const u8,
+            None => ptr::null()
+        }) } {
+            0 => match FromConn::from_conn(self.conn) {
+                None => Ok(0),
+                Some(e) => Err(e)
+            },
+            uid @ _ => Ok(uid)
+        }
+    }
 }
 
 impl Drop for MpdConnection {
