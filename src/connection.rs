@@ -83,6 +83,7 @@ extern {
     fn mpd_run_play(connection: *mut mpd_connection) -> bool;
     fn mpd_run_play_pos(connection: *mut mpd_connection, song_pos: u32) -> bool;
     fn mpd_run_play_id(connection: *mut mpd_connection, song_id: u32) -> bool;
+    fn mpd_run_toggle_pause(connection: *mut mpd_connection) -> bool;
     fn mpd_run_pause(connection: *mut mpd_connection, mode: bool) -> bool;
     fn mpd_run_stop(connection: *mut mpd_connection) -> bool;
     fn mpd_run_next(connection: *mut mpd_connection) -> bool;
@@ -101,6 +102,15 @@ extern {
     fn mpd_connection_get_server_error_location(connection: *const mpd_connection) -> libc::c_uint;
     fn mpd_connection_get_system_error(connection: *const mpd_connection) -> libc::c_int;
     fn mpd_connection_clear_error(connection: *mut mpd_connection) -> bool;
+
+    fn mpd_run_repeat(connection: *mut mpd_connection, mode: bool) -> bool;
+    fn mpd_run_random(connection: *mut mpd_connection, mode: bool) -> bool;
+    fn mpd_run_single(connection: *mut mpd_connection, mode: bool) -> bool;
+    fn mpd_run_consume(connection: *mut mpd_connection, mode: bool) -> bool;
+    fn mpd_run_crossfade(connection: *mut mpd_connection, seconds: libc::c_uint) -> bool;
+    fn mpd_run_mixrampdb(connection: *mut mpd_connection, db: f32) -> bool;
+    fn mpd_run_mixrampdelay(connection: *mut mpd_connection, seconds: f32) -> bool;
+
 }
 
 pub struct MpdConnection {
@@ -147,14 +157,66 @@ impl MpdConnection {
     pub fn play(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_play(self.conn) } { return Err(FromConn::from_conn(self).unwrap()) } Ok(()) }
     pub fn stop(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_stop(self.conn) } { return Err(FromConn::from_conn(self).unwrap()) } Ok(()) }
     pub fn pause(&mut self, mode: bool) -> MpdResult<()> { if ! unsafe { mpd_run_pause(self.conn, mode) } { return Err(FromConn::from_conn(self).unwrap()) } Ok(()) }
+    pub fn toggle_pause(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_toggle_pause(self.conn) } { return Err(FromConn::from_conn(self).unwrap()) } Ok(()) }
+
     pub fn set_volume(&mut self, vol: u32) -> MpdResult<()> { if ! unsafe { mpd_run_set_volume(self.conn, vol) } { return Err(FromConn::from_conn(self).unwrap()) } Ok(()) }
     pub fn change_volume(&mut self, vol: i32) -> MpdResult<()> { if ! unsafe { mpd_run_change_volume(self.conn, vol) } { return Err(FromConn::from_conn(self).unwrap()) } Ok(()) }
+
+    pub fn set_repeat(&mut self, value: bool) -> MpdResult<()> {
+        if unsafe { mpd_run_repeat(self.conn, value) } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(self).unwrap())
+        }
+    }
+    pub fn set_single(&mut self, value: bool) -> MpdResult<()> {
+        if unsafe { mpd_run_single(self.conn, value) } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(self).unwrap())
+        }
+    }
+    pub fn set_consume(&mut self, value: bool) -> MpdResult<()> {
+        if unsafe { mpd_run_consume(self.conn, value) } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(self).unwrap())
+        }
+    }
+    pub fn set_random(&mut self, value: bool) -> MpdResult<()> {
+        if unsafe { mpd_run_random(self.conn, value) } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(self).unwrap())
+        }
+    }
+    pub fn set_crossfade(&mut self, value: Duration) -> MpdResult<()> {
+        if unsafe { mpd_run_crossfade(self.conn, value.num_seconds() as libc::c_uint) } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(self).unwrap())
+        }
+    }
+    pub fn set_mixrampdb(&mut self, value: f32) -> MpdResult<()> {
+        if unsafe { mpd_run_mixrampdb(self.conn, value) } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(self).unwrap())
+        }
+    }
+    pub fn set_mixrampdelay(&mut self, value: Duration) -> MpdResult<()> {
+        if unsafe { mpd_run_mixrampdelay(self.conn, value.num_milliseconds() as f32 / 1000f32) } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(self).unwrap())
+        }
+    }
 
     pub fn next(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_next(self.conn) } { return Err(FromConn::from_conn(self).unwrap()) } Ok(()) }
     pub fn prev(&mut self) -> MpdResult<()> { if ! unsafe { mpd_run_previous(self.conn) } { return Err(FromConn::from_conn(self).unwrap()) } Ok(()) }
 
     pub fn play_pos(&mut self, pos: uint) -> MpdResult<()> { if ! unsafe { mpd_run_play_pos(self.conn, pos as libc::c_uint) } { return Err(FromConn::from_conn(self).unwrap()) } Ok(()) }
-    pub fn play_id(&mut self, pos: uint) -> MpdResult<()> { if ! unsafe { mpd_run_play_id(self.conn, pos as libc::c_uint) } { return Err(FromConn::from_conn(self).unwrap()) } Ok(()) }
+    pub fn play_id(&mut self, id: uint) -> MpdResult<()> { if ! unsafe { mpd_run_play_id(self.conn, id as libc::c_uint) } { return Err(FromConn::from_conn(self).unwrap()) } Ok(()) }
 
     pub fn status(&self) -> MpdResult<MpdStatus> { FromConn::from_conn(self).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConn::from_conn(self).unwrap())) }
     pub fn stats(&self) -> MpdResult<MpdStats> { FromConn::from_conn(self).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConn::from_conn(self).unwrap())) }

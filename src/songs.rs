@@ -91,6 +91,10 @@ impl MpdSong {
             Err(FromConn::from_conn(conn).unwrap())
         }
     }
+
+    pub fn play(&self, conn: &mut MpdConnection) -> MpdResult<()> {
+        conn.play_id(self.id())
+    }
 }
 
 impl FromConn for MpdSong {

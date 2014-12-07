@@ -129,7 +129,7 @@ impl MpdStatus {
     pub fn queue_len(&self) -> uint { unsafe { mpd_status_get_queue_length(self.p as *const _) as uint } }
     pub fn queue_version(&self) -> uint { unsafe { mpd_status_get_queue_version(self.p as *const _) as uint } }
     pub fn mixrampdb(&self) -> f32 { unsafe { mpd_status_get_mixrampdb(self.p as *const _) } }
-    pub fn mixrampdelay(&self) -> Option<f32> { let v = unsafe { mpd_status_get_mixrampdelay(self.p as *const _) }; if v < 0f32 { None } else { Some(v) } }
+    pub fn mixrampdelay(&self) -> Option<Duration> { let v = unsafe { mpd_status_get_mixrampdelay(self.p as *const _) }; if v < 0f32 { None } else { Some(Duration::milliseconds((v * 1000f32) as i64)) } }
     pub fn song(&self) -> Option<(uint, uint)> {
         let song_id = unsafe { mpd_status_get_song_id(self.p as *const _) };
         if song_id < 0 { None } else { Some((song_id as uint, unsafe { mpd_status_get_song_pos(self.p as *const _) as uint })) }
