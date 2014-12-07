@@ -1,7 +1,7 @@
 
 use error::MpdResult;
 use connection::{FromConn, MpdConnection, mpd_connection};
-use songs::{MpdSong, mpd_song};
+use songs::{MpdSong, MpdSongs, mpd_song};
 use std::c_str::CString;
 use libc;
 
@@ -12,6 +12,8 @@ extern {
     fn mpd_run_swap(connection: *mut mpd_connection, pos1: libc::c_uint, pos2: libc::c_uint) -> bool;
     fn mpd_run_add_id(connection: *mut mpd_connection, file: *const i8) -> libc::c_int;
     fn mpd_run_add_id_to(connection: *mut mpd_connection, uri: *const i8, to: libc::c_uint) -> libc::c_int;
+    fn mpd_send_list_queue_meta(connection: *mut mpd_connection) -> bool;
+    fn mpd_send_list_queue_range_meta(connection: *mut mpd_connection, start: libc::c_uint, end: libc::c_uint) -> bool;
 }
 
 pub struct MpdQueue<'a> {
@@ -23,12 +25,21 @@ impl<'a> MpdQueue<'a> {
         MpdQueue { conn: conn }
     }
 
-    pub fn get(&self, index: uint) -> Option<MpdSong> {
+    pub fn get_by_id(&self, id: uint) -> MpdResult<MpdSong> {
+        let song = unsafe { mpd_run_get_queue_song_id(self.conn.conn, id as libc::c_uint) };
+        if song.is_null() {
+            Err(FromConn.from_conn(self.conn))
+        } else {
+            Ok(MpdSong { song: song })
+        }
+    }
+
+    pub fn get(&self, index: uint) -> MpdResult<MpdSong> {
         let song = unsafe { mpd_run_get_queue_song_pos(self.conn.conn, index as libc::c_uint) };
         if song.is_null() {
-            None
+            Err(FromConn.from_conn(self.conn))
         } else {
-            Some(MpdSong { song: song })
+            Ok(MpdSong { song: song })
         }
     }
 
@@ -71,6 +82,22 @@ impl<'a> MpdQueue<'a> {
             Ok(())
         } else {
             Err(FromConn::from_conn(self.conn).unwrap())
+        }
+    }
+
+    pub fn songs(&self) -> MpdResult<MpdSongs> {
+        if unsafe { mpd_send_list_queue_meta(self.conn.conn) } {
+            Ok(MpdSongs { conn: conn })
+        } else {
+            Err(FromConn::from_conn(self.conn))
+        }
+    }
+
+    pub fn songs_at(&self, start: uint, end: uint) -> MpdResult<MpdSongs> {
+        if unsafe { mpd_send_list_queue_range_meta(self.conn.conn, start as libc::c_uint, end: libc::c_uint) } {
+            Ok(MpdSongs { conn: conn })
+        } else {
+            Err(FromConn::from_conn(self.conn))
         }
     }
 }
