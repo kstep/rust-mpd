@@ -78,7 +78,9 @@ impl MpdPlaylist {
     }
 
     pub fn last_mod(&self) -> Timespec { Timespec::new(unsafe { mpd_playlist_get_last_modified(self.pl as *const _) }, 0) }
+}
 
+impl FromConn for MpdPlaylist {
     fn from_conn(connection: *mut mpd_connection) -> Option<MpdPlaylist> {
         let pl = unsafe { mpd_recv_playlist(connection) };
         if pl.is_null() {
@@ -87,7 +89,9 @@ impl MpdPlaylist {
             Some(MpdPlaylist { pl: pl })
         }
     }
+}
 
+impl MpdPlaylist {
     pub fn songs<'a>(&self, conn: &'a mut MpdConnection) -> MpdResult<MpdSongs<'a>> {
         if unsafe { mpd_send_list_playlist(conn.conn, mpd_playlist_get_path(self.pl as *const _)) } {
             Ok(MpdSongs { conn: conn })

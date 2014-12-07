@@ -4,6 +4,7 @@ use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
 use time::Timespec;
 
+use common::{FromConn, MpdResult};
 use connection::{mpd_connection, MpdConnection};
 use tags::MpdTagType;
 
@@ -74,7 +75,9 @@ impl MpdSong {
     pub fn last_mod(&self) -> Timespec { Timespec::new(unsafe { mpd_song_get_last_modified(self.song as *const _) }, 0) }
     pub fn get_pos(&self) -> u32 { unsafe { mpd_song_get_pos(self.song as *const _) } }
     pub fn set_pos(&mut self, pos: u32) { unsafe { mpd_song_set_pos(self.song, pos) } }
+}
 
+impl FromConn for MpdSong {
     fn from_conn(connection: *mut mpd_connection) -> Option<MpdSong> {
         let song = unsafe { mpd_recv_song(connection) };
         if song.is_null() {
