@@ -25,6 +25,8 @@ extern "C" {
     fn mpd_song_set_pos(song: *mut mpd_song, pos: libc::c_uint);
     fn mpd_song_get_prio(song: *const mpd_song) -> libc::c_uint;
     fn mpd_recv_song(connection: *mut mpd_connection) -> *mut mpd_song;
+
+    fn mpd_run_seek_id(connection: *mut mpd_connection, song_id: libc::c_uint, t: libc::c_uint) -> bool;
 }
 
 pub struct MpdSongs<'a> {
@@ -81,6 +83,14 @@ impl MpdSong {
     pub fn last_mod(&self) -> Timespec { Timespec::new(unsafe { mpd_song_get_last_modified(self.song as *const _) }, 0) }
     pub fn get_pos(&self) -> u32 { unsafe { mpd_song_get_pos(self.song as *const _) } }
     pub fn set_pos(&mut self, pos: u32) { unsafe { mpd_song_set_pos(self.song, pos) } }
+
+    pub fn seek(&mut self, conn: &mut MpdConnection, pos: Duration) -> MpdResult<()> {
+        if unsafe { mpd_run_seek_id(conn.conn, self.id(), pos.num_seconds() as libc::c_uint) } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(conn.conn).unwrap())
+        }
+    }
 }
 
 impl FromConn for MpdSong {
