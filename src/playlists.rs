@@ -35,9 +35,15 @@ impl<'a> FromConn for MpdPlaylists<'a> {
     }
 }
 
-impl<'a> Iterator<MpdPlaylist> for MpdPlaylists<'a> {
-    fn next(&mut self) -> Option<MpdPlaylist> {
-        MpdPlaylist::from_conn(self.conn)
+impl<'a> Iterator<MpdResult<MpdPlaylist>> for MpdPlaylists<'a> {
+    fn next(&mut self) -> Option<MpdResult<MpdPlaylist>> {
+        match FromConn::from_conn(self.conn) {
+            Some(pl) => Some(Ok(pl)),
+            None => match FromConn::from_conn(self.conn) {
+                None => None,
+                Some(e) => Some(Err(e))
+            }
+        }
     }
 }
 

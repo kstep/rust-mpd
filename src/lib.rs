@@ -34,7 +34,7 @@ mod test {
         println!("{}", conn.settings());
         println!("{}", conn.status());
 
-        let playlists: Vec<MpdPlaylist> = conn.playlists().unwrap().collect();
+        let playlists: Vec<MpdPlaylist> = conn.playlists().unwrap().map(|r| r.unwrap()).collect();
         for pl in playlists.iter() {
             println!("{}", pl);
             for s in pl.songs(&mut conn).unwrap() {

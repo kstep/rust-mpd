@@ -52,9 +52,15 @@ impl<'a> FromConn for MpdOutputs<'a> {
     }
 }
 
-impl<'a> Iterator<MpdOutput> for MpdOutputs<'a> {
-    fn next(&mut self) -> Option<MpdOutput> {
-        FromConn::from_conn(self.conn)
+impl<'a> Iterator<MpdResult<MpdOutput>> for MpdOutputs<'a> {
+    fn next(&mut self) -> Option<MpdResult<MpdOutput>> {
+        match FromConn::from_conn(self.conn) {
+            Some(o) => Some(Ok(o)),
+            None => match FromConn::from_conn(self.conn) {
+                None => None,
+                Some(e) => Some(Err(e))
+            }
+        }
     }
 }
 
