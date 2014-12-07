@@ -81,8 +81,8 @@ impl MpdSong {
     }
     pub fn slice(&self) -> (Duration, Option<Duration>) { (self.start(), self.end()) }
     pub fn last_mod(&self) -> Timespec { Timespec::new(unsafe { mpd_song_get_last_modified(self.song as *const _) }, 0) }
-    pub fn get_pos(&self) -> u32 { unsafe { mpd_song_get_pos(self.song as *const _) } }
-    pub fn set_pos(&mut self, pos: u32) { unsafe { mpd_song_set_pos(self.song, pos) } }
+    pub fn pos(&self) -> uint { unsafe { mpd_song_get_pos(self.song as *const _) as uint } }
+    pub fn set_pos(&mut self, pos: uint) { unsafe { mpd_song_set_pos(self.song, pos as libc::c_uint) } }
 
     pub fn seek(&mut self, conn: &mut MpdConnection, pos: Duration) -> MpdResult<()> {
         if unsafe { mpd_run_seek_id(conn.conn, self.id(), pos.num_seconds() as libc::c_uint) } {

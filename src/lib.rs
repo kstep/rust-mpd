@@ -5,6 +5,7 @@ extern crate time;
 
 pub mod connection;
 pub mod error;
+pub mod queue;
 pub mod settings;
 pub mod status;
 pub mod stats;
