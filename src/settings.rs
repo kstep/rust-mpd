@@ -3,6 +3,7 @@ use libc;
 use std::c_str::ToCStr;
 use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
+use std::io::net::ip::Port;
 use std::ptr;
 
 use connection::{MpdConnection, FromConn, mpd_connection};
@@ -71,8 +72,8 @@ impl MpdSettings {
         Some(unsafe { String::from_raw_buf(host) })
     }
 
-    pub fn port(&self) -> u32 {
-        unsafe { mpd_settings_get_port(self.as_ref()) }
+    pub fn port(&self) -> Port {
+        unsafe { mpd_settings_get_port(self.as_ref()) as Port }
     }
 
     pub fn timeout(&self) -> Duration {
@@ -85,7 +86,7 @@ impl MpdSettings {
         Some(unsafe { String::from_raw_buf(password) })
     }
 
-    pub fn new(host: Option<String>, port: u32, timeout: Duration, password: Option<String>) -> Option<MpdSettings> {
+    pub fn new(host: Option<&str>, port: Port, timeout: Duration, password: Option<&str>) -> Option<MpdSettings> {
         let host = host.map(|v| v.to_c_str());
         let password = password.map(|v| v.to_c_str());
 
@@ -95,8 +96,8 @@ impl MpdSettings {
                     Some(h) => h.as_ptr(),
                     None => ptr::null()
                 },
-                port,
-                timeout.num_milliseconds() as u32, ptr::null(),
+                port as libc::c_uint,
+                timeout.num_milliseconds() as libc::c_uint, ptr::null(),
                 match password {
                     Some(p) => p.as_ptr(),
                     None => ptr::null()

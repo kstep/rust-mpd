@@ -43,9 +43,9 @@ impl FromConn for MpdStats {
 }
 
 impl MpdStats {
-    fn artists(&self) -> u32 { unsafe { mpd_stats_get_number_of_artists(self.p as *const _) } }
-    fn albums(&self) -> u32 { unsafe { mpd_stats_get_number_of_albums(self.p as *const _) } }
-    fn songs(&self) -> u32 { unsafe { mpd_stats_get_number_of_songs(self.p as *const _) } }
+    fn artists(&self) -> uint { unsafe { mpd_stats_get_number_of_artists(self.p as *const _) as uint } }
+    fn albums(&self) -> uint { unsafe { mpd_stats_get_number_of_albums(self.p as *const _) as uint } }
+    fn songs(&self) -> uint { unsafe { mpd_stats_get_number_of_songs(self.p as *const _) as uint } }
     fn uptime(&self) -> Duration { Duration::seconds(unsafe { mpd_stats_get_uptime(self.p as *const _) as i64 }) }
     fn db_update_time(&self) -> Timespec { Timespec::new(unsafe { mpd_stats_get_db_update_time(self.p as *const _) as i64 }, 0) } 
     fn play_time(&self) -> Duration { Duration::seconds(unsafe { mpd_stats_get_play_time(self.p as *const _) as i64 }) }

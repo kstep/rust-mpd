@@ -76,12 +76,12 @@ impl FromConn for MpdOutput {
 }
 
 impl MpdOutput {
-    pub fn id(&self) -> u32 { unsafe { mpd_output_get_id(self.output as *const _) } }
+    pub fn id(&self) -> uint { unsafe { mpd_output_get_id(self.output as *const _) as uint } }
     pub fn name(&self) -> String { unsafe { String::from_raw_buf(mpd_output_get_name(self.output as *const _)) } }
     pub fn enabled(&self) -> bool { unsafe { mpd_output_get_enabled(self.output as *const _) } }
 
     pub fn toggle(&self, conn: &mut MpdConnection) -> MpdResult<()> {
-        if unsafe { mpd_run_toggle_output(conn.conn, self.id()) } {
+        if unsafe { mpd_run_toggle_output(conn.conn, self.id() as libc::c_uint) } {
             Ok(())
         } else {
             Err(FromConn::from_conn(conn).unwrap())
@@ -89,7 +89,7 @@ impl MpdOutput {
     }
 
     pub fn disable(&self, conn: &mut MpdConnection) -> MpdResult<()> {
-        if unsafe { mpd_run_disable_output(conn.conn, self.id()) } {
+        if unsafe { mpd_run_disable_output(conn.conn, self.id() as libc::c_uint) } {
             Ok(())
         } else {
             Err(FromConn::from_conn(conn).unwrap())
@@ -97,7 +97,7 @@ impl MpdOutput {
     }
 
     pub fn enable(&self, conn: &mut MpdConnection) -> MpdResult<()> {
-        if unsafe { mpd_run_enable_output(conn.conn, self.id()) } {
+        if unsafe { mpd_run_enable_output(conn.conn, self.id() as libc::c_uint) } {
             Ok(())
         } else {
             Err(FromConn::from_conn(conn).unwrap())

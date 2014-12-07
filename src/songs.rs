@@ -30,7 +30,7 @@ extern "C" {
 }
 
 pub struct MpdSongs<'a> {
-    pub conn: &'a mut MpdConnection
+    pub conn: &'a MpdConnection
 }
 
 impl<'a> Iterator<MpdResult<MpdSong>> for MpdSongs<'a> {
@@ -61,8 +61,8 @@ impl Show for MpdSong {
 
 impl MpdSong {
     pub fn uri(&self) -> String { unsafe { String::from_raw_buf(mpd_song_get_uri(self.song as *const _)) } }
-    pub fn tags(&self, kind: MpdTagType, index: u32) -> Option<String> {
-        let tag = unsafe { mpd_song_get_tag(self.song as *const _, kind, index) };
+    pub fn tags(&self, kind: MpdTagType, index: uint) -> Option<String> {
+        let tag = unsafe { mpd_song_get_tag(self.song as *const _, kind, index as libc::c_uint) };
         if tag.is_null() {
             None
         } else {
@@ -70,8 +70,8 @@ impl MpdSong {
         }
     }
     pub fn duration(&self) -> Duration { Duration::seconds(unsafe { mpd_song_get_duration(self.song as *const _) } as i64) }
-    pub fn id(&self) -> u32 { unsafe { mpd_song_get_id(self.song as *const _) } }
-    pub fn prio(&self) -> u32 { unsafe { mpd_song_get_prio(self.song as *const _) } }
+    pub fn id(&self) -> uint { unsafe { mpd_song_get_id(self.song as *const _) as uint } }
+    pub fn prio(&self) -> uint { unsafe { mpd_song_get_prio(self.song as *const _) as uint } }
     pub fn start(&self) -> Duration { Duration::seconds(unsafe { mpd_song_get_start(self.song as *const _) } as i64) }
     pub fn end(&self) -> Option<Duration> {
         match unsafe { mpd_song_get_end(self.song as *const _) } {
@@ -85,7 +85,7 @@ impl MpdSong {
     pub fn set_pos(&mut self, pos: uint) { unsafe { mpd_song_set_pos(self.song, pos as libc::c_uint) } }
 
     pub fn seek(&mut self, conn: &mut MpdConnection, pos: Duration) -> MpdResult<()> {
-        if unsafe { mpd_run_seek_id(conn.conn, self.id(), pos.num_seconds() as libc::c_uint) } {
+        if unsafe { mpd_run_seek_id(conn.conn, self.id() as libc::c_uint, pos.num_seconds() as libc::c_uint) } {
             Ok(())
         } else {
             Err(FromConn::from_conn(conn).unwrap())

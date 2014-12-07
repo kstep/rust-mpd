@@ -126,26 +126,26 @@ impl MpdStatus {
     pub fn consume(&self) -> bool { unsafe { mpd_status_get_consume(self.p as *const _) } }
     pub fn state(&self) -> MpdState { unsafe { mpd_status_get_state(self.p as *const _) } }
     pub fn crossfade(&self) -> Duration { Duration::seconds(unsafe { mpd_status_get_crossfade(self.p as *const _) as i64 }) }
-    pub fn queue_len(&self) -> u32 { unsafe { mpd_status_get_queue_length(self.p as *const _) } }
-    pub fn queue_version(&self) -> u32 { unsafe { mpd_status_get_queue_version(self.p as *const _) } }
+    pub fn queue_len(&self) -> uint { unsafe { mpd_status_get_queue_length(self.p as *const _) as uint } }
+    pub fn queue_version(&self) -> uint { unsafe { mpd_status_get_queue_version(self.p as *const _) as uint } }
     pub fn mixrampdb(&self) -> f32 { unsafe { mpd_status_get_mixrampdb(self.p as *const _) } }
     pub fn mixrampdelay(&self) -> Option<f32> { let v = unsafe { mpd_status_get_mixrampdelay(self.p as *const _) }; if v < 0f32 { None } else { Some(v) } }
-    pub fn song(&self) -> Option<(i32, i32)> {
+    pub fn song(&self) -> Option<(uint, uint)> {
         let song_id = unsafe { mpd_status_get_song_id(self.p as *const _) };
-        if song_id < 0 { None } else { Some((song_id, unsafe { mpd_status_get_song_pos(self.p as *const _) })) }
+        if song_id < 0 { None } else { Some((song_id as uint, unsafe { mpd_status_get_song_pos(self.p as *const _) as uint })) }
     }
-    pub fn next_song(&self) -> Option<(i32, i32)> {
+    pub fn next_song(&self) -> Option<(uint, uint)> {
         let song_id = unsafe { mpd_status_get_next_song_id(self.p as *const _) };
-        if song_id < 0 { None } else { Some((song_id, unsafe { mpd_status_get_next_song_pos(self.p as *const _) })) }
+        if song_id < 0 { None } else { Some((song_id as uint, unsafe { mpd_status_get_next_song_pos(self.p as *const _) as uint })) }
     }
     pub fn elapsed_time(&self) -> Duration { Duration::milliseconds(unsafe { mpd_status_get_elapsed_ms(self.p as *const _) as i64 }) }
     pub fn total_time(&self) -> Duration { Duration::seconds(unsafe { mpd_status_get_total_time(self.p as *const _) as i64 }) }
-    pub fn kbit_rate(&self) -> u32 { unsafe { mpd_status_get_kbit_rate(self.p as *const _) } }
+    pub fn kbit_rate(&self) -> uint { unsafe { mpd_status_get_kbit_rate(self.p as *const _) as uint } }
     pub fn audio_format(&self) -> Option<AudioFormat> {
         let aformat = unsafe { mpd_status_get_audio_format(self.p as *const _) };
         if aformat.is_null() { None } else { Some(unsafe { ((*aformat).sample_rate, (*aformat).bits, (*aformat).channels) }) }
     }
-    pub fn update_id(&self) -> u32 { unsafe { mpd_status_get_update_id(self.p as *const _) } }
+    pub fn update_id(&self) -> uint { unsafe { mpd_status_get_update_id(self.p as *const _) as uint } }
     pub fn error(&self) -> Option<String> {
         let error = unsafe { mpd_status_get_error(self.p as *const _) };
         if error.is_null() { None } else { Some(unsafe { String::from_raw_buf(error) }) }
