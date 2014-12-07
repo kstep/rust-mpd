@@ -61,12 +61,12 @@ pub enum MpdError {
     Other { kind: MpdErrorKind, desc: String }
 }
 
-pub trait FromConnection {
-    fn from_connection(connection: *mut mpd_connection) -> Option<Self>;
+pub trait FromConn {
+    fn from_conn(connection: *mut mpd_connection) -> Option<Self>;
 }
 
-impl FromConnection for MpdError {
-    fn from_connection(connection: *mut mpd_connection) -> Option<MpdError> {
+impl FromConn for MpdError {
+    fn from_conn(connection: *mut mpd_connection) -> Option<MpdError> {
         unsafe {
             let error = mpd_connection_get_error(connection as *const _);
 

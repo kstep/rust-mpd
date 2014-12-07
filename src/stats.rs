@@ -2,7 +2,7 @@ use libc;
 use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
 use time::Timespec;
-use common::FromConnection;
+use common::FromConn;
 use connection::mpd_connection;
 
 #[repr(C)] struct mpd_stats;
@@ -32,8 +32,8 @@ impl Drop for MpdStats {
     }
 }
 
-impl FromConnection for MpdStats {
-    fn from_connection(connection: *mut mpd_connection) -> Option<MpdStats> {
+impl FromConn for MpdStats {
+    fn from_conn(connection: *mut mpd_connection) -> Option<MpdStats> {
         let stats = unsafe { mpd_run_stats(connection) };
         if stats.is_null() {
             return None;

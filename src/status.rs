@@ -3,7 +3,7 @@ use libc;
 use std::fmt::{Show, Error, Formatter};
 use std::time::duration::Duration;
 
-use common::FromConnection;
+use common::FromConn;
 use connection::mpd_connection;
 
 #[repr(C)] struct mpd_status;
@@ -108,8 +108,8 @@ impl Show for MpdStatus {
     }
 }
 
-impl FromConnection for MpdStatus {
-    fn from_connection(connection: *mut mpd_connection) -> Option<MpdStatus> {
+impl FromConn for MpdStatus {
+    fn from_conn(connection: *mut mpd_connection) -> Option<MpdStatus> {
         let status = unsafe { mpd_run_status(connection) };
         if status.is_null() {
             return None;

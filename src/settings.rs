@@ -5,7 +5,7 @@ use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
 use std::ptr;
 
-use common::FromConnection;
+use common::FromConn;
 use connection::mpd_connection;
 
 #[repr(C)] pub struct mpd_settings;
@@ -42,8 +42,8 @@ impl Show for MpdSettings {
     }
 }
 
-impl FromConnection for MpdSettings {
-    fn from_connection(connection: *mut mpd_connection) -> Option<MpdSettings> {
+impl FromConn for MpdSettings {
+    fn from_conn(connection: *mut mpd_connection) -> Option<MpdSettings> {
         let settings = unsafe { mpd_connection_get_settings(connection as *const _) };
         if settings.is_null() { return None; }
         Some(MpdSettings::Borrowed(settings))

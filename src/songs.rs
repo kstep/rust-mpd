@@ -32,7 +32,7 @@ pub struct Songs<'a> {
 
 impl<'a> Iterator<Song> for Songs<'a> {
     fn next(&mut self) -> Option<Song> {
-        Song::from_connection(self.conn.conn)
+        Song::from_conn(self.conn.conn)
     }
 }
 
@@ -75,7 +75,7 @@ impl Song {
     pub fn get_pos(&self) -> u32 { unsafe { mpd_song_get_pos(self.song as *const _) } }
     pub fn set_pos(&mut self, pos: u32) { unsafe { mpd_song_set_pos(self.song, pos) } }
 
-    fn from_connection(connection: *mut mpd_connection) -> Option<Song> {
+    fn from_conn(connection: *mut mpd_connection) -> Option<Song> {
         let song = unsafe { mpd_recv_song(connection) };
         if song.is_null() {
             None
