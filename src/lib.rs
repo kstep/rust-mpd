@@ -51,6 +51,10 @@ mod test {
             println!("{}", o);
         }
 
+        for s in conn.queue().songs().unwrap() {
+            println!("{}", s);
+        }
+
         println!("{}", conn.stop());
 
         println!("{}", conn.current_song());

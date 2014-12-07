@@ -13,6 +13,7 @@ use songs::{MpdSong, mpd_song};
 use status::MpdStatus;
 use settings::MpdSettings;
 use stats::MpdStats;
+use queue::MpdQueue;
 
 pub use error::mpd_connection;
 
@@ -195,6 +196,10 @@ impl MpdConnection {
             },
             uid @ _ => Ok(uid as uint)
         }
+    }
+
+    pub fn queue(&self) -> MpdQueue {
+        MpdQueue { conn: self }
     }
 }
 

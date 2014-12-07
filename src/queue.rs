@@ -18,7 +18,7 @@ extern {
 }
 
 pub struct MpdQueue<'a> {
-    conn: &'a MpdConnection
+    pub conn: &'a MpdConnection
 }
 
 impl<'a> MpdQueue<'a> {
@@ -100,6 +100,10 @@ impl<'a> MpdQueue<'a> {
         } else {
             Err(FromConn::from_conn(self.conn).unwrap())
         }
+    }
+
+    pub fn len(&self) -> MpdResult<uint> {
+        self.conn.status().map(|s| s.queue_len())
     }
 }
 
