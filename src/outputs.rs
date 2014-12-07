@@ -20,9 +20,9 @@ extern "C" {
     fn mpd_recv_output(connection: *mut mpd_connection) -> *mut mpd_output;
 }
 
-impl Show for Output {
+impl Show for MpdOutput {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        try!(f.write(b"Output { "));
+        try!(f.write(b"MpdOutput { "));
         try!(f.write(b"name: "));
         try!(self.name().fmt(f));
         try!(f.write(b", id: "));
@@ -34,42 +34,42 @@ impl Show for Output {
     }
 }
 
-pub struct Output {
+pub struct MpdOutput {
     output: *mut mpd_output
 }
 
-pub struct Outputs<'a> {
+pub struct MpdOutputs<'a> {
     conn: *mut mpd_connection
 }
 
-impl<'a> FromConn for Outputs<'a> {
-    fn from_conn<'a>(connection: *mut mpd_connection) -> Option<Outputs<'a>> {
+impl<'a> FromConn for MpdOutputs<'a> {
+    fn from_conn<'a>(connection: *mut mpd_connection) -> Option<MpdOutputs<'a>> {
         if unsafe { mpd_send_outputs(connection) } {
-            Some(Outputs { conn: connection })
+            Some(MpdOutputs { conn: connection })
         } else {
             None
         }
     }
 }
 
-impl<'a> Iterator<Output> for Outputs<'a> {
-    fn next(&mut self) -> Option<Output> {
+impl<'a> Iterator<MpdOutput> for MpdOutputs<'a> {
+    fn next(&mut self) -> Option<MpdOutput> {
         FromConn::from_conn(self.conn)
     }
 }
 
-impl FromConn for Output {
-    fn from_conn(connection: *mut mpd_connection) -> Option<Output> {
+impl FromConn for MpdOutput {
+    fn from_conn(connection: *mut mpd_connection) -> Option<MpdOutput> {
         let output = unsafe { mpd_recv_output(connection) };
         if output.is_null() {
             None
         } else {
-            Some(Output { output: output })
+            Some(MpdOutput { output: output })
         }
     }
 }
 
-impl Output {
+impl MpdOutput {
     pub fn id(&self) -> u32 { unsafe { mpd_output_get_id(self.output as *const _) } }
     pub fn name(&self) -> String { unsafe { String::from_raw_buf(mpd_output_get_name(self.output as *const _)) } }
     pub fn enabled(&self) -> bool { unsafe { mpd_output_get_enabled(self.output as *const _) } }
@@ -99,7 +99,7 @@ impl Output {
     }
 }
 
-impl Drop for Output {
+impl Drop for MpdOutput {
     fn drop(&mut self) {
         unsafe { mpd_output_free(self.output) }
     }

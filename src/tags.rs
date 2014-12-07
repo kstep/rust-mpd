@@ -3,13 +3,13 @@ use std::str::FromStr;
 
 #[link(name = "mpdclient")]
 extern "C" {
-    fn mpd_tag_name(typ: TagType) -> *const u8;
-    fn mpd_tag_name_parse(name: *const u8) -> TagType;
+    fn mpd_tag_name(typ: MpdTagType) -> *const u8;
+    fn mpd_tag_name_parse(name: *const u8) -> MpdTagType;
 }
 
 #[repr(C)]
 #[deriving(Show)]
-pub enum TagType {
+pub enum MpdTagType {
     Unknown = -1,
     Artist = 0,
     Album = 1,
@@ -30,7 +30,7 @@ pub enum TagType {
     MbTrackId = 15,
 }
 
-impl TagType {
+impl MpdTagType {
     pub fn name(&self) -> Option<String> {
         let name = unsafe { mpd_tag_name(*self) };
         if name.is_null() {
@@ -41,8 +41,8 @@ impl TagType {
     }
 }
 
-impl FromStr for TagType {
-    fn from_str(s: &str) -> Option<TagType> {
+impl FromStr for MpdTagType {
+    fn from_str(s: &str) -> Option<MpdTagType> {
         Some(s.with_c_str(|s| unsafe { mpd_tag_name_parse(s as *const u8) }))
     }
 }

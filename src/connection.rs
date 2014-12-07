@@ -8,9 +8,9 @@ use std::os::unix::prelude::{AsRawFd, Fd};
 pub use common::mpd_connection;
 
 use common::{FromConn, MpdResult};
-use outputs::Outputs;
-use playlists::Playlists;
-use songs::{Song, mpd_song};
+use outputs::MpdOutputs;
+use playlists::MpdPlaylists;
+use songs::{MpdSong, mpd_song};
 use status::MpdStatus;
 use settings::MpdSettings;
 use stats::MpdStats;
@@ -112,17 +112,17 @@ impl MpdConnection {
 
     pub fn status(&self) -> MpdResult<MpdStatus> { FromConn::from_conn(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConn::from_conn(self.conn).unwrap())) }
     pub fn stats(&self) -> MpdResult<MpdStats> { FromConn::from_conn(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConn::from_conn(self.conn).unwrap())) }
-    pub fn current_song(&self) -> MpdResult<Song> {
+    pub fn current_song(&self) -> MpdResult<MpdSong> {
         let song = unsafe { mpd_run_current_song(self.conn) };
         if song.is_null() {
             Err(FromConn::from_conn(self.conn).unwrap())
         } else {
-            Ok(Song { song: song })
+            Ok(MpdSong { song: song })
         }
     }
 
-    pub fn playlists(&mut self) -> MpdResult<Playlists> { FromConn::from_conn(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConn::from_conn(self.conn).unwrap())) }
-    pub fn outputs(&mut self) -> MpdResult<Outputs> { FromConn::from_conn(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConn::from_conn(self.conn).unwrap())) }
+    pub fn playlists(&mut self) -> MpdResult<MpdPlaylists> { FromConn::from_conn(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConn::from_conn(self.conn).unwrap())) }
+    pub fn outputs(&mut self) -> MpdResult<MpdOutputs> { FromConn::from_conn(self.conn).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConn::from_conn(self.conn).unwrap())) }
 }
 
 impl Drop for MpdConnection {

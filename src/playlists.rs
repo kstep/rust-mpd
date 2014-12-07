@@ -5,7 +5,7 @@ use libc;
 
 use common::{MpdResult, FromConn};
 use connection::{mpd_connection, MpdConnection};
-use songs::Songs;
+use songs::MpdSongs;
 
 #[repr(C)] struct mpd_playlist;
 
@@ -21,46 +21,46 @@ extern "C" {
     fn mpd_send_list_playlist(connection: *mut mpd_connection, name: *const u8) -> bool;
 }
 
-pub struct Playlists<'a> {
+pub struct MpdPlaylists<'a> {
     conn: *mut mpd_connection
 }
 
-impl<'a> FromConn for Playlists<'a> {
-    fn from_conn<'a>(connection: *mut mpd_connection) -> Option<Playlists<'a>> {
+impl<'a> FromConn for MpdPlaylists<'a> {
+    fn from_conn<'a>(connection: *mut mpd_connection) -> Option<MpdPlaylists<'a>> {
         if unsafe { mpd_send_list_playlists(connection) } {
-            Some(Playlists { conn: connection })
+            Some(MpdPlaylists { conn: connection })
         } else {
             None
         }
     }
 }
 
-impl<'a> Iterator<Playlist> for Playlists<'a> {
-    fn next(&mut self) -> Option<Playlist> {
-        Playlist::from_conn(self.conn)
+impl<'a> Iterator<MpdPlaylist> for MpdPlaylists<'a> {
+    fn next(&mut self) -> Option<MpdPlaylist> {
+        MpdPlaylist::from_conn(self.conn)
     }
 }
 
-impl Drop for Playlist {
+impl Drop for MpdPlaylist {
     fn drop(&mut self) {
         unsafe { mpd_playlist_free(self.pl) }
     }
 }
 
-impl Clone for Playlist {
-    fn clone(&self) -> Playlist {
+impl Clone for MpdPlaylist {
+    fn clone(&self) -> MpdPlaylist {
         let pl = unsafe { mpd_playlist_dup(self.pl as *const _) };
         if pl.is_null() {
             panic!("Out of memory!")
         }
 
-        Playlist { pl: pl }
+        MpdPlaylist { pl: pl }
     }
 }
 
-impl Show for Playlist {
+impl Show for MpdPlaylist {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        try!(f.write(b"Playlist { "));
+        try!(f.write(b"MpdPlaylist { "));
         try!(f.write(b"path: "));
         try!(self.path().fmt(f));
         try!(f.write(b" }"));
@@ -68,29 +68,29 @@ impl Show for Playlist {
     }
 }
 
-pub struct Playlist {
+pub struct MpdPlaylist {
     pl: *mut mpd_playlist
 }
 
-impl Playlist {
+impl MpdPlaylist {
     pub fn path(&self) -> String {
         unsafe { String::from_raw_buf(mpd_playlist_get_path(self.pl as *const _)) }
     }
 
     pub fn last_mod(&self) -> Timespec { Timespec::new(unsafe { mpd_playlist_get_last_modified(self.pl as *const _) }, 0) }
 
-    fn from_conn(connection: *mut mpd_connection) -> Option<Playlist> {
+    fn from_conn(connection: *mut mpd_connection) -> Option<MpdPlaylist> {
         let pl = unsafe { mpd_recv_playlist(connection) };
         if pl.is_null() {
             None
         } else {
-            Some(Playlist { pl: pl })
+            Some(MpdPlaylist { pl: pl })
         }
     }
 
-    pub fn songs<'a>(&self, conn: &'a mut MpdConnection) -> MpdResult<Songs<'a>> {
+    pub fn songs<'a>(&self, conn: &'a mut MpdConnection) -> MpdResult<MpdSongs<'a>> {
         if unsafe { mpd_send_list_playlist(conn.conn, mpd_playlist_get_path(self.pl as *const _)) } {
-            Ok(Songs { conn: conn })
+            Ok(MpdSongs { conn: conn })
         } else {
             Err(FromConn::from_conn(conn.conn).unwrap())
         }
