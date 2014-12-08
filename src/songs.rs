@@ -3,6 +3,8 @@ use libc::{c_uint, time_t, c_uchar};
 use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
 use time::Timespec;
+use std::iter::count;
+use std::collections::TreeMap;
 
 use error::MpdResult;
 use connection::{mpd_connection, MpdConnection, FromConn};
@@ -68,7 +70,7 @@ impl Show for MpdSong {
 
 impl<S: Encoder<E>, E> Encodable<S, E> for MpdSong {
     fn encode(&self, s: &mut S) -> Result<(), E> {
-        s.emit_struct("MpdSong", 7, |s| {
+        s.emit_struct("MpdSong", 8, |s| {
             s.emit_struct_field("uri", 0, |s| s.emit_str(self.uri()[])).and_then(|()|
             s.emit_struct_field("duration", 1, |s| s.emit_i64(self.duration().num_milliseconds()))).and_then(|()|
             s.emit_struct_field("id", 2, |s| s.emit_uint(self.id()))).and_then(|()|
@@ -81,14 +83,16 @@ impl<S: Encoder<E>, E> Encodable<S, E> for MpdSong {
                            })))
                     ))).and_then(|()|
             s.emit_struct_field("last_modified", 5, |s| s.emit_i64(self.last_mod().sec))).and_then(|()|
-            s.emit_struct_field("pos", 6, |s| s.emit_uint(self.pos())))
+            s.emit_struct_field("pos", 6, |s| s.emit_uint(self.pos()))).and_then(|()|
+            s.emit_struct_field("tags", 7, |s| self.first_tags().encode(s)))
         })
     }
 }
 
 impl MpdSong {
     pub fn uri(&self) -> String { unsafe { String::from_raw_buf(mpd_song_get_uri(self.song as *const _)) } }
-    pub fn tags(&self, kind: MpdTagType, index: uint) -> Option<String> {
+
+    pub fn tag(&self, kind: MpdTagType, index: uint) -> Option<String> {
         let tag = unsafe { mpd_song_get_tag(self.song as *const _, kind, index as c_uint) };
         if tag.is_null() {
             None
@@ -96,6 +100,21 @@ impl MpdSong {
             Some(unsafe { String::from_raw_buf(tag) })
         }
     }
+
+    pub fn tags(&self, kind: MpdTagType) -> Vec<String> {
+        let song = self.song as *const _;
+        count(0, 1).map(|idx| unsafe { mpd_song_get_tag(song, kind, idx) }).take_while(|v| !v.is_null())
+            .map(|v| unsafe { String::from_raw_buf(v) }).collect()
+    }
+
+    pub fn all_tags(&self) -> TreeMap<MpdTagType, Vec<String>> {
+        MpdTagType::variants().iter().map(|k| (*k, self.tags(*k))).filter(|&(_, ref v)| !v.is_empty()).collect()
+    }
+
+    pub fn first_tags(&self) -> TreeMap<MpdTagType, String> {
+        MpdTagType::variants().iter().filter_map(|k| self.tag(*k, 0).map(|v| (*k, v))).collect()
+    }
+
     pub fn duration(&self) -> Duration { Duration::seconds(unsafe { mpd_song_get_duration(self.song as *const _) } as i64) }
     pub fn id(&self) -> uint { unsafe { mpd_song_get_id(self.song as *const _) as uint } }
     pub fn prio(&self) -> uint { unsafe { mpd_song_get_prio(self.song as *const _) as uint } }

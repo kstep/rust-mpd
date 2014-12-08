@@ -1,6 +1,7 @@
 
 use std::str::FromStr;
 use libc::{c_char, c_uchar};
+use serialize::Encodable;
 
 #[link(name = "mpdclient")]
 extern "C" {
@@ -9,7 +10,7 @@ extern "C" {
 }
 
 #[repr(C)]
-#[deriving(Show)]
+#[deriving(Show, Encodable, PartialOrd, PartialEq, Eq, Ord)]
 pub enum MpdTagType {
     Unknown = -1,
     Artist = 0,
@@ -39,6 +40,29 @@ impl MpdTagType {
         } else {
             Some(unsafe { String::from_raw_buf(name) })
         }
+    }
+
+    pub fn variants() -> Vec<MpdTagType> {
+        vec![
+            //MpdTagType::Unknown,
+            MpdTagType::Artist,
+            MpdTagType::Album,
+            MpdTagType::AlbumArtist,
+            MpdTagType::Title,
+            MpdTagType::Track,
+            MpdTagType::Name,
+            MpdTagType::Genre,
+            MpdTagType::Date,
+            MpdTagType::Composer,
+            MpdTagType::Performer,
+            MpdTagType::Comment,
+            MpdTagType::Disc,
+
+            MpdTagType::MbArtistId,
+            MpdTagType::MbAlbumId,
+            MpdTagType::MbAlbumArtistId,
+            MpdTagType::MbTrackId,
+        ]
     }
 }
 
