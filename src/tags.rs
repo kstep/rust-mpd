@@ -1,10 +1,11 @@
 
 use std::str::FromStr;
+use libc::{c_char, c_uchar};
 
 #[link(name = "mpdclient")]
 extern "C" {
-    fn mpd_tag_name(typ: MpdTagType) -> *const u8;
-    fn mpd_tag_name_parse(name: *const i8) -> MpdTagType;
+    fn mpd_tag_name(typ: MpdTagType) -> *const c_uchar;
+    fn mpd_tag_name_parse(name: *const c_char) -> MpdTagType;
 }
 
 #[repr(C)]

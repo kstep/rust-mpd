@@ -1,5 +1,5 @@
 
-use libc::c_uint;
+use libc::{c_uint, c_uchar};
 use std::fmt::{Show, Error, Formatter};
 
 use error::MpdResult;
@@ -10,7 +10,7 @@ use connection::{MpdConnection, mpd_connection, FromConn};
 #[link(name = "mpdclient")]
 extern "C" {
     fn mpd_output_free(output: *mut mpd_output);
-    fn mpd_output_get_name(output: *const mpd_output) -> *const u8;
+    fn mpd_output_get_name(output: *const mpd_output) -> *const c_uchar;
     fn mpd_output_get_id(output: *const mpd_output) -> c_uint;
     fn mpd_output_get_enabled(output: *const mpd_output) -> bool;
     fn mpd_run_enable_output(connection: *mut mpd_connection, output_id: c_uint) -> bool;

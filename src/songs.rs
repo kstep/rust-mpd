@@ -1,5 +1,5 @@
 
-use libc::{c_uint, time_t};
+use libc::{c_uint, time_t, c_uchar};
 use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
 use time::Timespec;
@@ -15,8 +15,8 @@ use tags::MpdTagType;
 extern "C" {
     fn mpd_song_dup(song: *const mpd_song) -> *mut mpd_song;
     fn mpd_song_free(song: *mut mpd_song);
-    fn mpd_song_get_uri(song: *const mpd_song) -> *const u8;
-    fn mpd_song_get_tag(song: *const mpd_song, typ: MpdTagType, idx: c_uint) -> *const u8;
+    fn mpd_song_get_uri(song: *const mpd_song) -> *const c_uchar;
+    fn mpd_song_get_tag(song: *const mpd_song, typ: MpdTagType, idx: c_uint) -> *const c_uchar;
     fn mpd_song_get_duration(song: *const mpd_song) -> c_uint;
     fn mpd_song_get_start(song: *const mpd_song) -> c_uint;
     fn mpd_song_get_end(song: *const mpd_song) -> c_uint;

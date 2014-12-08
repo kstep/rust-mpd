@@ -1,7 +1,7 @@
 
 use std::fmt::{Show, Error, Formatter};
 use time::Timespec;
-use libc::time_t;
+use libc::{time_t, c_uchar};
 
 use error::MpdResult;
 use connection::{FromConn, MpdConnection, mpd_connection};
@@ -16,10 +16,10 @@ extern "C" {
     fn mpd_recv_playlist(playlist: *mut mpd_connection) -> *mut mpd_playlist;
     fn mpd_playlist_free(playlist: *mut mpd_playlist);
     fn mpd_playlist_get_last_modified(playlist: *const mpd_playlist) -> time_t;
-    fn mpd_playlist_get_path(playlist: *const mpd_playlist) -> *const u8;
+    fn mpd_playlist_get_path(playlist: *const mpd_playlist) -> *const c_uchar;
 
     fn mpd_send_list_playlists(connection: *mut mpd_connection) -> bool;
-    fn mpd_send_list_playlist(connection: *mut mpd_connection, name: *const u8) -> bool;
+    fn mpd_send_list_playlist(connection: *mut mpd_connection, name: *const c_uchar) -> bool;
 }
 
 pub struct MpdPlaylists<'a> {

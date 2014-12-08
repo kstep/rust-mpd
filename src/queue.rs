@@ -3,7 +3,7 @@ use error::MpdResult;
 use connection::{FromConn, MpdConnection, mpd_connection};
 use songs::{MpdSong, MpdSongs, mpd_song};
 use std::c_str::CString;
-use libc::{c_uint, c_int};
+use libc::{c_uint, c_int, c_char};
 
 extern {
     fn mpd_run_get_queue_song_pos(connection: *mut mpd_connection, pos: c_uint) -> *mut mpd_song;
@@ -11,8 +11,8 @@ extern {
     fn mpd_run_move_id(connection: *mut mpd_connection, from: c_uint, to: c_uint) -> bool;
     fn mpd_run_swap_id(connection: *mut mpd_connection, id1: c_uint, id2: c_uint) -> bool;
     fn mpd_run_swap(connection: *mut mpd_connection, pos1: c_uint, pos2: c_uint) -> bool;
-    fn mpd_run_add_id(connection: *mut mpd_connection, file: *const i8) -> c_int;
-    fn mpd_run_add_id_to(connection: *mut mpd_connection, uri: *const i8, to: c_uint) -> c_int;
+    fn mpd_run_add_id(connection: *mut mpd_connection, file: *const c_char) -> c_int;
+    fn mpd_run_add_id_to(connection: *mut mpd_connection, uri: *const c_char, to: c_uint) -> c_int;
     fn mpd_send_list_queue_meta(connection: *mut mpd_connection) -> bool;
     fn mpd_send_list_queue_range_meta(connection: *mut mpd_connection, start: c_uint, end: c_uint) -> bool;
 }

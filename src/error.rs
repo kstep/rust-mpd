@@ -4,8 +4,8 @@ use std::error::Error;
 
 //#[repr(C)]
 //pub struct mpd_pair {
-    //name: *const u8,
-    //value: *const u8
+    //name: *const c_uchar,
+    //value: *const c_uchar
 //}
 
 #[repr(C)]

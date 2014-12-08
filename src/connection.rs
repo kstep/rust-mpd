@@ -1,5 +1,5 @@
 
-use libc::{c_uint, c_int};
+use libc::{c_uint, c_int, c_char, c_uchar, c_float};
 use std::time::duration::Duration;
 use std::c_str::ToCStr;
 use std::ptr;
@@ -53,7 +53,7 @@ impl FromConn for MpdError {
 
 #[link(name = "mpdclient")]
 extern {
-    fn mpd_connection_new(host: *const i8, port: c_uint, timeout_ms: c_uint) -> *mut mpd_connection;
+    fn mpd_connection_new(host: *const c_char, port: c_uint, timeout_ms: c_uint) -> *mut mpd_connection;
     fn mpd_connection_free(connection: *mut mpd_connection);
     fn mpd_connection_set_timeout(connection: *mut mpd_connection, timeout_ms: c_uint);
     fn mpd_connection_get_fd(connection: *const mpd_connection) -> c_int;
@@ -61,18 +61,18 @@ extern {
     //fn mpd_connection_cmp_server_version(connection: *const mpd_connection, major: c_uint, minor: c_uint, patch: c_uint) -> c_int;
 
     /*
-    fn mpd_send_command(connection: *mut mpd_connection, command: *const i8, ...) -> bool;
+    fn mpd_send_command(connection: *mut mpd_connection, command: *const c_char, ...) -> bool;
 
     fn mpd_response_finish(connection: *mut mpd_connection) -> bool;
     fn mpd_response_next(connection: *mut mpd_connection) -> bool;
 
-    fn mpd_send_password(connection: *mut mpd_connection, password: *const i8) -> bool;
+    fn mpd_send_password(connection: *mut mpd_connection, password: *const c_char) -> bool;
     */
-    fn mpd_run_password(connection: *mut mpd_connection, password: *const i8) -> bool;
+    fn mpd_run_password(connection: *mut mpd_connection, password: *const c_char) -> bool;
 
     /*
     fn mpd_recv_pair(connection: *mut mpd_connection) -> *mut mpd_pair;
-    fn mpd_recv_pair_named(connection: *mut mpd_connection, name: *const i8) -> *mut mpd_pair;
+    fn mpd_recv_pair_named(connection: *mut mpd_connection, name: *const c_char) -> *mut mpd_pair;
     fn mpd_return_pair(connection: *mut mpd_connection, pair: *mut mpd_pair);
     fn mpd_enqueue_pair(connection: *mut mpd_connection, pair: *mut mpd_pair);
 
@@ -93,11 +93,11 @@ extern {
 
     fn mpd_run_current_song(connection: *mut mpd_connection) -> *mut mpd_song;
 
-    fn mpd_run_rescan(connection: *mut mpd_connection, path: *const i8) -> c_uint;
-    fn mpd_run_update(connection: *mut mpd_connection, path: *const i8) -> c_uint;
+    fn mpd_run_rescan(connection: *mut mpd_connection, path: *const c_char) -> c_uint;
+    fn mpd_run_update(connection: *mut mpd_connection, path: *const c_char) -> c_uint;
 
     fn mpd_connection_get_error(connection: *const mpd_connection) -> MpdErrorKind;
-    fn mpd_connection_get_error_message(connection: *const mpd_connection) -> *const u8;
+    fn mpd_connection_get_error_message(connection: *const mpd_connection) -> *const c_uchar;
     fn mpd_connection_get_server_error(connection: *const mpd_connection) -> MpdServerErrorKind;
     fn mpd_connection_get_server_error_location(connection: *const mpd_connection) -> c_uint;
     fn mpd_connection_get_system_error(connection: *const mpd_connection) -> c_int;
@@ -108,8 +108,8 @@ extern {
     fn mpd_run_single(connection: *mut mpd_connection, mode: bool) -> bool;
     fn mpd_run_consume(connection: *mut mpd_connection, mode: bool) -> bool;
     fn mpd_run_crossfade(connection: *mut mpd_connection, seconds: c_uint) -> bool;
-    fn mpd_run_mixrampdb(connection: *mut mpd_connection, db: f32) -> bool;
-    fn mpd_run_mixrampdelay(connection: *mut mpd_connection, seconds: f32) -> bool;
+    fn mpd_run_mixrampdb(connection: *mut mpd_connection, db: c_float) -> bool;
+    fn mpd_run_mixrampdelay(connection: *mut mpd_connection, seconds: c_float) -> bool;
 
 }
 
@@ -198,14 +198,14 @@ impl MpdConnection {
         }
     }
     pub fn set_mixrampdb(&mut self, value: f32) -> MpdResult<()> {
-        if unsafe { mpd_run_mixrampdb(self.conn, value) } {
+        if unsafe { mpd_run_mixrampdb(self.conn, value as c_float) } {
             Ok(())
         } else {
             Err(FromConn::from_conn(self).unwrap())
         }
     }
     pub fn set_mixrampdelay(&mut self, value: Duration) -> MpdResult<()> {
-        if unsafe { mpd_run_mixrampdelay(self.conn, value.num_milliseconds() as f32 / 1000f32) } {
+        if unsafe { mpd_run_mixrampdelay(self.conn, (value.num_milliseconds() as f32 / 1000f32) as c_float) } {
             Ok(())
         } else {
             Err(FromConn::from_conn(self).unwrap())

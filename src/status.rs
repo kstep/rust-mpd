@@ -1,5 +1,5 @@
 
-use libc::{c_uint, c_int};
+use libc::{c_uint, c_int, c_float, c_uchar};
 use std::fmt::{Show, Error, Formatter};
 use std::time::duration::Duration;
 
@@ -48,8 +48,8 @@ extern "C" {
     fn mpd_status_get_queue_version(status: *const mpd_status) -> c_uint;
     fn mpd_status_get_state(status: *const mpd_status) -> MpdState;
     fn mpd_status_get_crossfade(status: *const mpd_status) -> c_uint;
-    fn mpd_status_get_mixrampdb(status: *const mpd_status) -> f32;
-    fn mpd_status_get_mixrampdelay(status: *const mpd_status) -> f32;
+    fn mpd_status_get_mixrampdb(status: *const mpd_status) -> c_float;
+    fn mpd_status_get_mixrampdelay(status: *const mpd_status) -> c_float;
     fn mpd_status_get_song_pos(status: *const mpd_status) -> c_int;
     fn mpd_status_get_song_id(status: *const mpd_status) -> c_int;
     fn mpd_status_get_next_song_pos(status: *const mpd_status) -> c_int;
@@ -60,7 +60,7 @@ extern "C" {
     fn mpd_status_get_kbit_rate(status: *const mpd_status) -> c_uint;
     fn mpd_status_get_audio_format(status: *const mpd_status) -> *const mpd_audio_format;
     fn mpd_status_get_update_id(status: *const mpd_status) -> c_uint;
-    fn mpd_status_get_error(status: *const mpd_status) -> *const u8;
+    fn mpd_status_get_error(status: *const mpd_status) -> *const c_uchar;
 }
 
 pub struct MpdStatus {
