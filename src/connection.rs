@@ -135,10 +135,7 @@ impl MpdConnection {
                 let mut result = MpdConnection { conn: conn };
                 Some(match FromConn::from_conn(&mut result) {
                     None => Ok(result),
-                    Some(e) => {
-                        mpd_connection_free(conn);
-                        Err(e)
-                    }
+                    Some(e) => Err(e)
                 })
             }
         }
