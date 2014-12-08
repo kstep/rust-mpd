@@ -1,5 +1,5 @@
 
-use libc;
+use libc::{c_uint, time_t};
 use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
 use time::Timespec;
@@ -16,18 +16,18 @@ extern "C" {
     fn mpd_song_dup(song: *const mpd_song) -> *mut mpd_song;
     fn mpd_song_free(song: *mut mpd_song);
     fn mpd_song_get_uri(song: *const mpd_song) -> *const u8;
-    fn mpd_song_get_tag(song: *const mpd_song, typ: MpdTagType, idx: libc::c_uint) -> *const u8;
-    fn mpd_song_get_duration(song: *const mpd_song) -> libc::c_uint;
-    fn mpd_song_get_start(song: *const mpd_song) -> libc::c_uint;
-    fn mpd_song_get_end(song: *const mpd_song) -> libc::c_uint;
-    fn mpd_song_get_last_modified(song: *const mpd_song) -> libc::time_t;
-    fn mpd_song_get_id(song: *const mpd_song) -> libc::c_uint;
-    fn mpd_song_get_pos(song: *const mpd_song) -> libc::c_uint;
-    fn mpd_song_set_pos(song: *mut mpd_song, pos: libc::c_uint);
-    fn mpd_song_get_prio(song: *const mpd_song) -> libc::c_uint;
+    fn mpd_song_get_tag(song: *const mpd_song, typ: MpdTagType, idx: c_uint) -> *const u8;
+    fn mpd_song_get_duration(song: *const mpd_song) -> c_uint;
+    fn mpd_song_get_start(song: *const mpd_song) -> c_uint;
+    fn mpd_song_get_end(song: *const mpd_song) -> c_uint;
+    fn mpd_song_get_last_modified(song: *const mpd_song) -> time_t;
+    fn mpd_song_get_id(song: *const mpd_song) -> c_uint;
+    fn mpd_song_get_pos(song: *const mpd_song) -> c_uint;
+    fn mpd_song_set_pos(song: *mut mpd_song, pos: c_uint);
+    fn mpd_song_get_prio(song: *const mpd_song) -> c_uint;
     fn mpd_recv_song(connection: *mut mpd_connection) -> *mut mpd_song;
 
-    fn mpd_run_seek_id(connection: *mut mpd_connection, song_id: libc::c_uint, t: libc::c_uint) -> bool;
+    fn mpd_run_seek_id(connection: *mut mpd_connection, song_id: c_uint, t: c_uint) -> bool;
 }
 
 pub struct MpdSongs<'a> {
@@ -83,7 +83,7 @@ impl<S: Encoder<E>, E> Encodable<S, E> for MpdSong {
 impl MpdSong {
     pub fn uri(&self) -> String { unsafe { String::from_raw_buf(mpd_song_get_uri(self.song as *const _)) } }
     pub fn tags(&self, kind: MpdTagType, index: uint) -> Option<String> {
-        let tag = unsafe { mpd_song_get_tag(self.song as *const _, kind, index as libc::c_uint) };
+        let tag = unsafe { mpd_song_get_tag(self.song as *const _, kind, index as c_uint) };
         if tag.is_null() {
             None
         } else {
@@ -103,10 +103,10 @@ impl MpdSong {
     pub fn slice(&self) -> (Duration, Option<Duration>) { (self.start(), self.end()) }
     pub fn last_mod(&self) -> Timespec { Timespec::new(unsafe { mpd_song_get_last_modified(self.song as *const _) }, 0) }
     pub fn pos(&self) -> uint { unsafe { mpd_song_get_pos(self.song as *const _) as uint } }
-    pub fn set_pos(&mut self, pos: uint) { unsafe { mpd_song_set_pos(self.song, pos as libc::c_uint) } }
+    pub fn set_pos(&mut self, pos: uint) { unsafe { mpd_song_set_pos(self.song, pos as c_uint) } }
 
     pub fn seek(&mut self, conn: &mut MpdConnection, pos: Duration) -> MpdResult<()> {
-        if unsafe { mpd_run_seek_id(conn.conn, self.id() as libc::c_uint, pos.num_seconds() as libc::c_uint) } {
+        if unsafe { mpd_run_seek_id(conn.conn, self.id() as c_uint, pos.num_seconds() as c_uint) } {
             Ok(())
         } else {
             Err(FromConn::from_conn(conn).unwrap())

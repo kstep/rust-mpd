@@ -1,5 +1,5 @@
 
-use libc;
+use libc::c_uint;
 use std::c_str::ToCStr;
 use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
@@ -19,11 +19,11 @@ pub enum MpdSettings {
 extern {
     fn mpd_connection_get_settings(connection: *const mpd_connection) -> *const mpd_settings;
 
-    fn mpd_settings_new(host: *const i8, port: libc::c_uint, timeout_ms: libc::c_uint, reserved: *const i8, password: *const i8) -> *mut mpd_settings;
+    fn mpd_settings_new(host: *const i8, port: c_uint, timeout_ms: c_uint, reserved: *const i8, password: *const i8) -> *mut mpd_settings;
     fn mpd_settings_free(settings: *mut mpd_settings);
     fn mpd_settings_get_host(settings: *const mpd_settings) -> *const u8;
-    fn mpd_settings_get_port(settings: *const mpd_settings) -> libc::c_uint;
-    fn mpd_settings_get_timeout_ms(settings: *const mpd_settings) -> libc::c_uint;
+    fn mpd_settings_get_port(settings: *const mpd_settings) -> c_uint;
+    fn mpd_settings_get_timeout_ms(settings: *const mpd_settings) -> c_uint;
     fn mpd_settings_get_password(settings: *const mpd_settings) -> *const u8;
 }
 
@@ -96,8 +96,8 @@ impl MpdSettings {
                     Some(h) => h.as_ptr(),
                     None => ptr::null()
                 },
-                port as libc::c_uint,
-                timeout.num_milliseconds() as libc::c_uint, ptr::null(),
+                port as c_uint,
+                timeout.num_milliseconds() as c_uint, ptr::null(),
                 match password {
                     Some(p) => p.as_ptr(),
                     None => ptr::null()

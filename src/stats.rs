@@ -1,4 +1,4 @@
-use libc;
+use libc::{c_uint, c_ulong};
 use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
 use time::Timespec;
@@ -11,13 +11,13 @@ use serialize::{Encoder, Encodable};
 extern "C" {
     fn mpd_run_stats(connection: *mut mpd_connection) -> *mut mpd_stats;
     fn mpd_stats_free(stats: *mut mpd_stats);
-    fn mpd_stats_get_number_of_artists(stats: *const mpd_stats) -> libc::c_uint;
-    fn mpd_stats_get_number_of_albums(stats: *const mpd_stats) -> libc::c_uint;
-    fn mpd_stats_get_number_of_songs(stats: *const mpd_stats) -> libc::c_uint;
-    fn mpd_stats_get_uptime(stats: *const mpd_stats) -> libc::c_ulong;
-    fn mpd_stats_get_db_update_time(stats: *const mpd_stats) -> libc::c_ulong;
-    fn mpd_stats_get_play_time(stats: *const mpd_stats) -> libc::c_ulong;
-    fn mpd_stats_get_db_play_time(stats: *const mpd_stats) -> libc::c_ulong;
+    fn mpd_stats_get_number_of_artists(stats: *const mpd_stats) -> c_uint;
+    fn mpd_stats_get_number_of_albums(stats: *const mpd_stats) -> c_uint;
+    fn mpd_stats_get_number_of_songs(stats: *const mpd_stats) -> c_uint;
+    fn mpd_stats_get_uptime(stats: *const mpd_stats) -> c_ulong;
+    fn mpd_stats_get_db_update_time(stats: *const mpd_stats) -> c_ulong;
+    fn mpd_stats_get_play_time(stats: *const mpd_stats) -> c_ulong;
+    fn mpd_stats_get_db_play_time(stats: *const mpd_stats) -> c_ulong;
 }
 
 pub struct MpdStats {

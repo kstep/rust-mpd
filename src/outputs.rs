@@ -1,5 +1,5 @@
 
-use libc;
+use libc::c_uint;
 use std::fmt::{Show, Error, Formatter};
 
 use error::MpdResult;
@@ -11,11 +11,11 @@ use connection::{MpdConnection, mpd_connection, FromConn};
 extern "C" {
     fn mpd_output_free(output: *mut mpd_output);
     fn mpd_output_get_name(output: *const mpd_output) -> *const u8;
-    fn mpd_output_get_id(output: *const mpd_output) -> libc::c_uint;
+    fn mpd_output_get_id(output: *const mpd_output) -> c_uint;
     fn mpd_output_get_enabled(output: *const mpd_output) -> bool;
-    fn mpd_run_enable_output(connection: *mut mpd_connection, output_id: libc::c_uint) -> bool;
-    fn mpd_run_disable_output(connection: *mut mpd_connection, output_id: libc::c_uint) -> bool;
-    fn mpd_run_toggle_output(connection: *mut mpd_connection, output_id: libc::c_uint) -> bool;
+    fn mpd_run_enable_output(connection: *mut mpd_connection, output_id: c_uint) -> bool;
+    fn mpd_run_disable_output(connection: *mut mpd_connection, output_id: c_uint) -> bool;
+    fn mpd_run_toggle_output(connection: *mut mpd_connection, output_id: c_uint) -> bool;
     fn mpd_send_outputs(connection: *mut mpd_connection) -> bool;
     fn mpd_recv_output(connection: *mut mpd_connection) -> *mut mpd_output;
 }
@@ -81,7 +81,7 @@ impl MpdOutput {
     pub fn enabled(&self) -> bool { unsafe { mpd_output_get_enabled(self.output as *const _) } }
 
     pub fn toggle(&self, conn: &mut MpdConnection) -> MpdResult<()> {
-        if unsafe { mpd_run_toggle_output(conn.conn, self.id() as libc::c_uint) } {
+        if unsafe { mpd_run_toggle_output(conn.conn, self.id() as c_uint) } {
             Ok(())
         } else {
             Err(FromConn::from_conn(conn).unwrap())
@@ -89,7 +89,7 @@ impl MpdOutput {
     }
 
     pub fn disable(&self, conn: &mut MpdConnection) -> MpdResult<()> {
-        if unsafe { mpd_run_disable_output(conn.conn, self.id() as libc::c_uint) } {
+        if unsafe { mpd_run_disable_output(conn.conn, self.id() as c_uint) } {
             Ok(())
         } else {
             Err(FromConn::from_conn(conn).unwrap())
@@ -97,7 +97,7 @@ impl MpdOutput {
     }
 
     pub fn enable(&self, conn: &mut MpdConnection) -> MpdResult<()> {
-        if unsafe { mpd_run_enable_output(conn.conn, self.id() as libc::c_uint) } {
+        if unsafe { mpd_run_enable_output(conn.conn, self.id() as c_uint) } {
             Ok(())
         } else {
             Err(FromConn::from_conn(conn).unwrap())
