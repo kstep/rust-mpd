@@ -1,4 +1,5 @@
 use std::error::Error;
+use serialize::{Encoder, Encodable};
 
 #[repr(C)] pub struct mpd_connection;
 
@@ -10,7 +11,7 @@ use std::error::Error;
 
 #[repr(C)]
 #[allow(dead_code)]
-#[deriving(Show)]
+#[deriving(Show, Encodable)]
 pub enum MpdErrorKind {
     Success = 0,
     Oom = 1,
@@ -26,7 +27,7 @@ pub enum MpdErrorKind {
 
 #[repr(C)]
 #[allow(dead_code)]
-#[deriving(Show)]
+#[deriving(Show, Encodable)]
 pub enum MpdServerErrorKind {
     Unknown = -1,
     NotList = 1,
@@ -43,7 +44,7 @@ pub enum MpdServerErrorKind {
     Exist = 56,
 }
 
-#[deriving(Show)]
+#[deriving(Show, Encodable)]
 pub enum MpdError {
     Server { kind: MpdServerErrorKind, index: uint, desc: String },
     System { code: int, desc: String },
@@ -96,3 +97,14 @@ impl Error for MpdError {
 }
 
 pub type MpdResult<T> = Result<T, MpdError>;
+
+impl<S, E, T> Encodable<S, E> for MpdResult<T>
+    where S: Encoder<E>, T: Encodable<S, E> {
+
+    fn encode(&self, s: &mut S) -> Result<(), E> {
+        match *self {
+            Ok(ref v) => v.encode(s),
+            Err(ref e) => e.encode(s)
+        }
+    }
+}
