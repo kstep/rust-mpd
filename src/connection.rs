@@ -14,6 +14,7 @@ use status::MpdStatus;
 use settings::MpdSettings;
 use stats::MpdStats;
 use queue::MpdQueue;
+use idle::{MpdIdle, MpdEvent};
 
 pub use error::mpd_connection;
 
@@ -259,6 +260,10 @@ impl MpdConnection {
 
     pub fn queue(&self) -> MpdQueue {
         MpdQueue { conn: self }
+    }
+
+    pub fn wait(&self, mask: Option<MpdEvent>) -> MpdIdle {
+        MpdIdle::from_conn(self, mask)
     }
 }
 
