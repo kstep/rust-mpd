@@ -4,6 +4,7 @@ use std::fmt::{Show, Error, Formatter};
 
 use error::MpdResult;
 use connection::{MpdConnection, mpd_connection, FromConn};
+use serialize::{Encoder, Encodable};
 
 #[repr(C)] struct mpd_output;
 
@@ -31,6 +32,16 @@ impl Show for MpdOutput {
         try!(self.enabled().fmt(f));
         try!(f.write(b" }"));
         Ok(())
+    }
+}
+
+impl<S: Encoder<E>, E> Encodable<S, E> for MpdOutput {
+    fn encode(&self, s: &mut S) -> Result<(), E> {
+        s.emit_struct("MpdOutput", 3, |s| {
+            s.emit_struct_field("name", 0, |s| s.emit_str(self.name()[])).and_then(|()|
+            s.emit_struct_field("id", 1, |s| s.emit_uint(self.id()))).and_then(|()|
+            s.emit_struct_field("enabled", 2, |s| s.emit_bool(self.enabled())))
+        })
     }
 }
 

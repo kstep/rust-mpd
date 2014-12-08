@@ -34,6 +34,12 @@ pub struct MpdSongs<'a> {
     pub conn: &'a MpdConnection
 }
 
+impl<'a, S: Encoder<E>, E> Encodable<S, E> for MpdSongs<'a> {
+    fn encode(&self, s: &mut S) -> Result<(), E> {
+        s.emit_seq(0, |s| self.enumerate().fold(Ok(()), |r, (i, v)| r.and_then(|()| s.emit_seq_elt(i, |s| v.encode(s)))))
+    }
+}
+
 impl<'a> Iterator<MpdResult<MpdSong>> for MpdSongs<'a> {
     fn next(&mut self) -> Option<MpdResult<MpdSong>> {
         match FromConn::from_conn(self.conn) {
