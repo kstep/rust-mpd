@@ -93,7 +93,7 @@ impl<S: Encoder<E>, E> Encodable<S, E> for MpdStatus {
                 None => s.emit_option_none()
             }))).and_then(|()|
             s.emit_struct_field("elapsed_time", 13, |s| s.emit_i64(self.elapsed_time().num_milliseconds()))).and_then(|()|
-            s.emit_struct_field("total_time", 14, |s| s.emit_i64(self.elapsed_time().num_milliseconds()))).and_then(|()|
+            s.emit_struct_field("total_time", 14, |s| s.emit_i64(self.total_time().num_milliseconds()))).and_then(|()|
             s.emit_struct_field("kbit_rate", 15, |s| s.emit_uint(self.kbit_rate()))).and_then(|()|
             s.emit_struct_field("audio_format", 16, |s| self.audio_format().encode(s))).and_then(|()|
             s.emit_struct_field("update_id", 17, |s| s.emit_uint(self.update_id()))).and_then(|()|
