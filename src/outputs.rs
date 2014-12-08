@@ -53,6 +53,12 @@ pub struct MpdOutputs<'a> {
     conn: &'a MpdConnection
 }
 
+impl<'a, S: Encoder<E>, E> Encodable<S, E> for MpdOutputs<'a> {
+    fn encode(&self, s: &mut S) -> Result<(), E> {
+        s.emit_seq(0, |s| self.enumerate().fold(Ok(()), |r, (i, v)| r.and_then(|()| s.emit_seq_elt(i, |s| v.encode(s)))))
+    }
+}
+
 impl<'a> MpdOutputs<'a> {
     pub fn from_conn<'a>(conn: &'a MpdConnection) -> Option<MpdOutputs<'a>> {
         if unsafe { mpd_send_outputs(conn.conn) } {
