@@ -1,4 +1,4 @@
-#![feature(macro_rules, slicing_syntax, if_let)]
+#![feature(macro_rules, slicing_syntax)]
 
 extern crate libc;
 extern crate time;
