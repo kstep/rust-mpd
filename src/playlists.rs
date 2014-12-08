@@ -26,6 +26,12 @@ pub struct MpdPlaylists<'a> {
     conn: &'a MpdConnection
 }
 
+impl<'a, S: Encoder<E>, E> Encodable<S, E> for MpdPlaylists<'a> {
+    fn encode(&self, s: &mut S) -> Result<(), E> {
+        s.emit_seq(0, |s| self.enumerate().fold(Ok(()), |r, (i, v)| r.and_then(|()| s.emit_seq_elt(i, |s| v.encode(s)))))
+    }
+}
+
 impl<'a> MpdPlaylists<'a> {
     pub fn from_conn<'a>(conn: &'a MpdConnection) -> Option<MpdPlaylists<'a>> {
         if unsafe { mpd_send_list_playlists(conn.conn) } {
