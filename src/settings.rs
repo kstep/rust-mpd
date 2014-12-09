@@ -68,7 +68,7 @@ impl MpdSettings {
 
     pub fn host(&self) -> Option<String> {
         let host = unsafe { mpd_settings_get_host(self.as_ref()) };
-        if host == ptr::null() { return None; }
+        if host.is_null() { return None; }
         Some(unsafe { String::from_raw_buf(host) })
     }
 
@@ -82,7 +82,7 @@ impl MpdSettings {
 
     pub fn password(&self) -> Option<String> {
         let password = unsafe { mpd_settings_get_password(self.as_ref()) };
-        if password == ptr::null() { return None; }
+        if password.is_null() { return None; }
         Some(unsafe { String::from_raw_buf(password) })
     }
 
