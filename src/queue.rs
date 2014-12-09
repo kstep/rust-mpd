@@ -91,7 +91,11 @@ impl<'a> MpdQueue<'a> {
 
     /// Move song to some position in queue by id
     pub fn move_to(&mut self, pos: uint, song: &MpdSong) -> MpdResult<()> {
-        if unsafe { mpd_run_move_id(self.conn.conn, song.id() as c_uint, pos as c_uint) } {
+        self.move_id(pos, song.id())
+    }
+
+    pub fn move_id(&mut self, pos: uint, id: uint) -> MpdResult<()> {
+        if unsafe { mpd_run_move_id(self.conn.conn, id as c_uint, pos as c_uint) } {
             Ok(())
         } else {
             Err(FromConn::from_conn(self.conn).unwrap())
@@ -109,7 +113,11 @@ impl<'a> MpdQueue<'a> {
 
     /// Swap two songs in given positions by id
     pub fn swap(&mut self, song1: &MpdSong, song2: &MpdSong) -> MpdResult<()> {
-        if unsafe { mpd_run_swap_id(self.conn.conn, song1.id() as c_uint, song2.id() as c_uint) } {
+        self.swap_id(song1.id(), song2.id())
+    }
+
+    pub fn swap_id(&mut self, song1: uint, song2: uint) -> MpdResult<()> {
+        if unsafe { mpd_run_swap_id(self.conn.conn, song1 as c_uint, song2 as c_uint) } {
             Ok(())
         } else {
             Err(FromConn::from_conn(self.conn).unwrap())
@@ -118,7 +126,11 @@ impl<'a> MpdQueue<'a> {
 
     /// Remove a song
     pub fn remove(&mut self, song: &MpdSong) -> MpdResult<()> {
-        if unsafe { mpd_run_delete_id(self.conn.conn, song.id() as c_uint) } {
+        self.remove_id(song.id())
+    }
+
+    pub fn remove_id(&mut self, id: uint) -> MpdResult<()> {
+        if unsafe { mpd_run_delete_id(self.conn.conn, id as c_uint) } {
             Ok(())
         } else {
             Err(FromConn::from_conn(self.conn).unwrap())
