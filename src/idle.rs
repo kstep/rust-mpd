@@ -82,5 +82,13 @@ impl<'a> MpdIdle<'a> {
     pub fn from_conn<'a>(conn: &'a MpdConnection, mask: Option<MpdEvent>) -> MpdIdle<'a> {
         MpdIdle { conn: conn, mask: mask }
     }
+
+    pub fn stop(self) -> MpdResult<()> {
+        if unsafe { mpd_run_noidle(self.conn.conn) } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(self.conn).unwrap())
+        }
+    }
 }
 
