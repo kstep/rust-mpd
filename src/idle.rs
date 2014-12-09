@@ -1,4 +1,3 @@
-use std::bitflags;
 use libc::{c_uint, c_char, c_uchar};
 use std::fmt::{Show, Error, Formatter};
 use connection::{mpd_connection, MpdConnection, FromConn};

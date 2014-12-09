@@ -1,7 +1,6 @@
 
 use std::str::FromStr;
 use libc::{c_char, c_uchar};
-use serialize::Encodable;
 
 #[link(name = "mpdclient")]
 extern "C" {
