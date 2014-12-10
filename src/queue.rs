@@ -11,6 +11,8 @@ extern {
     fn mpd_run_move_id(connection: *mut mpd_connection, from: c_uint, to: c_uint) -> bool;
     fn mpd_run_move(connection: *mut mpd_connection, from: c_uint, to: c_uint) -> bool;
     fn mpd_run_move_range(connection: *mut mpd_connection, start: c_uint, end: c_uint, to: c_uint) -> bool;
+    fn mpd_run_shuffle(connection: *mut mpd_connection) -> bool;
+    fn mpd_run_shuffle_range(connection: *mut mpd_connection, start: c_uint, end: c_uint) -> bool;
     fn mpd_run_swap_id(connection: *mut mpd_connection, id1: c_uint, id2: c_uint) -> bool;
     fn mpd_run_swap(connection: *mut mpd_connection, pos1: c_uint, pos2: c_uint) -> bool;
     fn mpd_run_add_id(connection: *mut mpd_connection, file: *const c_char) -> c_int;
@@ -20,6 +22,7 @@ extern {
     fn mpd_run_delete(connection: *mut mpd_connection, pos: c_uint) -> bool;
     fn mpd_run_delete_range(connection: *mut mpd_connection, start: c_uint, end: c_uint) -> bool;
     fn mpd_run_delete_id(connection: *mut mpd_connection, id: c_uint) -> bool;
+    fn mpd_run_clear(connection: *mut mpd_connection) -> bool;
 }
 
 pub struct MpdQueue<'a> {
@@ -124,6 +127,22 @@ impl<'a> MpdQueue<'a> {
         }
     }
 
+    pub fn shuffle(&mut self) -> MpdResult<()> {
+        if unsafe { mpd_run_shuffle(self.conn.conn) } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(self.conn).unwrap())
+        }
+    }
+
+    pub fn shuffle_range(&mut self, start: uint, end: uint) -> MpdResult<()> {
+        if unsafe { mpd_run_shuffle_range(self.conn.conn, start as c_uint, end as c_uint) } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(self.conn).unwrap())
+        }
+    }
+
     /// Remove a song
     pub fn remove(&mut self, song: &MpdSong) -> MpdResult<()> {
         self.remove_id(song.id())
@@ -181,6 +200,15 @@ impl<'a> MpdQueue<'a> {
     /// Returns true if queue is empty
     pub fn is_empty(&self) -> MpdResult<bool> {
         self.len().map(|v| v == 0)
+    }
+
+    /// Clear queue
+    pub fn clear(&mut self) -> MpdResult<()> {
+        if unsafe { mpd_run_clear(self.conn.conn) } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(self.conn).unwrap())
+        }
     }
 }
 
