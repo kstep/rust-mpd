@@ -2,6 +2,7 @@
 use error::MpdResult;
 use connection::{FromConn, MpdConnection, mpd_connection};
 use songs::{MpdSong, MpdSongs, mpd_song};
+use playlists::MpdPlaylist;
 use std::c_str::CString;
 use libc::{c_uint, c_int, c_char};
 
@@ -23,6 +24,8 @@ extern {
     fn mpd_run_delete_range(connection: *mut mpd_connection, start: c_uint, end: c_uint) -> bool;
     fn mpd_run_delete_id(connection: *mut mpd_connection, id: c_uint) -> bool;
     fn mpd_run_clear(connection: *mut mpd_connection) -> bool;
+    fn mpd_run_save(connection: *mut mpd_connection, name: *const c_char) -> bool;
+    fn mpd_run_load(connection: *mut mpd_connection, name: *const c_char) -> bool;
 }
 
 pub struct MpdQueue<'a> {
@@ -209,6 +212,29 @@ impl<'a> MpdQueue<'a> {
         } else {
             Err(FromConn::from_conn(self.conn).unwrap())
         }
+    }
+
+    /// Save queue into new playlist
+    pub fn save(&mut self, name: &str) -> MpdResult<()> {
+        if unsafe { mpd_run_save(self.conn.conn, name.to_c_str().as_ptr()) } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(self.conn).unwrap())
+        }
+    }
+
+    /// Load queue from playlist
+    pub fn load(&mut self, name: &str) -> MpdResult<()> {
+        if unsafe { mpd_run_load(self.conn.conn, name.to_c_str().as_ptr()) } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(self.conn).unwrap())
+        }
+    }
+
+    /// Load queue from playlist object
+    #[inline] pub fn load_playlist(&mut self, pl: &MpdPlaylist) -> MpdResult<()> {
+        self.load(pl.path()[])
     }
 }
 
