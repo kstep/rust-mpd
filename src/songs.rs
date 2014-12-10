@@ -5,6 +5,7 @@ use std::fmt::{Show, Error, Formatter};
 use time::Timespec;
 use std::iter::count;
 use std::collections::TreeMap;
+use std::c_str::CString;
 
 use error::MpdResult;
 use connection::{mpd_connection, MpdConnection, FromConn};
@@ -168,5 +169,21 @@ impl Clone for MpdSong {
         }
 
         MpdSong { song: song }
+    }
+}
+
+pub trait ToSongUri {
+    fn song_uri(&self) -> CString;
+}
+
+impl ToSongUri for MpdSong {
+    #[inline] fn song_uri(&self) -> CString {
+        self.uri().to_c_str()
+    }
+}
+
+impl<T: ToCStr> ToSongUri for T {
+    #[inline] fn song_uri(&self) -> CString {
+        self.to_c_str()
     }
 }

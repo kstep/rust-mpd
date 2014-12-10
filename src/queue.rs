@@ -1,9 +1,8 @@
 
 use error::MpdResult;
 use connection::{FromConn, MpdConnection, mpd_connection};
-use songs::{MpdSong, MpdSongs, mpd_song};
+use songs::{MpdSong, MpdSongs, ToSongUri, mpd_song};
 use playlists::MpdPlaylist;
-use std::c_str::CString;
 use libc::{c_uint, c_int, c_char};
 
 extern {
@@ -235,21 +234,5 @@ impl<'a> MpdQueue<'a> {
     /// Load queue from playlist object
     #[inline] pub fn load_playlist(&mut self, pl: &MpdPlaylist) -> MpdResult<()> {
         self.load(pl.path()[])
-    }
-}
-
-pub trait ToSongUri {
-    fn song_uri(&self) -> CString;
-}
-
-impl ToSongUri for MpdSong {
-    #[inline] fn song_uri(&self) -> CString {
-        self.uri().to_c_str()
-    }
-}
-
-impl<T: ToCStr> ToSongUri for T {
-    #[inline] fn song_uri(&self) -> CString {
-        self.to_c_str()
     }
 }
