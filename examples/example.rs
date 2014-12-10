@@ -1,8 +1,11 @@
+#![allow(unused_imports)]
+
 extern crate mpd;
 extern crate serialize;
 
 use mpd::connection::MpdConnection;
 use mpd::playlists::MpdPlaylist;
+use mpd::outputs::MpdOutput;
 use mpd::idle::{MpdEvent, PLAYER, UPDATE};
 use serialize::json;
 use std::str::from_str;
@@ -18,9 +21,13 @@ fn main() {
 
     //println!("{}", json::encode(&conn.status()));
     //println!("{}", json::encode(&conn.stats()));
-    //println!("{}", json::encode(&conn.playlists()));
-    //println!("{}", json::encode(&conn.outputs()));
+    println!("{}", json::encode(&conn.playlists()));
+    println!("{}", json::encode(&conn.outputs()));
     //println!("{}", json::encode(&conn.queue().songs()));
+
+    for mut out in conn.outputs().unwrap().map(|v| v.unwrap()) {
+        println!("enabling {}", out.enable(true));
+    }
 
     //println!("{}", conn.stop());
 
@@ -29,10 +36,10 @@ fn main() {
     let v = conn.version();
     println!("version: {}", v);
 
-    for e in conn.wait(None) {
-        match e {
-            Err(ref v) => panic!("{}", v),
-            Ok(ref v) => println!("{}", v)
-        }
-    }
+    //for e in conn.wait(None) {
+        //match e {
+            //Err(ref v) => panic!("{}", v),
+            //Ok(ref v) => println!("{}", v)
+        //}
+    //}
 }
