@@ -14,9 +14,6 @@ extern "C" {
     fn mpd_output_get_name(output: *const mpd_output) -> *const c_uchar;
     fn mpd_output_get_id(output: *const mpd_output) -> c_uint;
     fn mpd_output_get_enabled(output: *const mpd_output) -> bool;
-    fn mpd_run_enable_output(connection: *mut mpd_connection, output_id: c_uint) -> bool;
-    fn mpd_run_disable_output(connection: *mut mpd_connection, output_id: c_uint) -> bool;
-    fn mpd_run_toggle_output(connection: *mut mpd_connection, output_id: c_uint) -> bool;
     fn mpd_send_outputs(connection: *mut mpd_connection) -> bool;
     fn mpd_recv_output(connection: *mut mpd_connection) -> *mut mpd_output;
 }
@@ -67,50 +64,6 @@ impl<'a> MpdOutputs<'a> {
             None
         }
     }
-
-    pub fn set(&mut self, output: &MpdOutput, enabled: bool) -> MpdResult<()> {
-        self.set_id(output.id(), enabled)
-    }
-    pub fn set_id(&mut self, output: uint, enabled: bool) -> MpdResult<()> {
-        if enabled {
-            self.enable_id(output)
-        } else {
-            self.disable_id(output)
-        }
-    }
-
-    pub fn enable(&mut self, output: &MpdOutput) -> MpdResult<()> {
-        self.enable_id(output.id())
-    }
-    pub fn enable_id(&mut self, output: uint) -> MpdResult<()> {
-        if unsafe { mpd_run_enable_output(self.conn.conn, output as c_uint) } {
-            Ok(())
-        } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
-        }
-    }
-
-    pub fn disable(&mut self, output: &MpdOutput) -> MpdResult<()> {
-        self.disable_id(output.id())
-    }
-    pub fn disable_id(&mut self, output: uint) -> MpdResult<()> {
-        if unsafe { mpd_run_disable_output(self.conn.conn, output as c_uint) } {
-            Ok(())
-        } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
-        }
-    }
-
-    pub fn toggle(&mut self, output: &MpdOutput) -> MpdResult<()> {
-        self.toggle_id(output.id())
-    }
-    pub fn toggle_id(&mut self, output: uint) -> MpdResult<()> {
-        if unsafe { mpd_run_toggle_output(self.conn.conn, output as c_uint) } {
-            Ok(())
-        } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
-        }
-    }
 }
 
 impl<'a> Iterator<MpdResult<MpdOutput>> for MpdOutputs<'a> {
@@ -140,30 +93,6 @@ impl MpdOutput {
     pub fn id(&self) -> uint { unsafe { mpd_output_get_id(self.output as *const _) as uint } }
     pub fn name(&self) -> String { unsafe { String::from_raw_buf(mpd_output_get_name(self.output as *const _)) } }
     pub fn enabled(&self) -> bool { unsafe { mpd_output_get_enabled(self.output as *const _) } }
-
-    pub fn toggle(&self, conn: &mut MpdConnection) -> MpdResult<()> {
-        if unsafe { mpd_run_toggle_output(conn.conn, self.id() as c_uint) } {
-            Ok(())
-        } else {
-            Err(FromConn::from_conn(conn).unwrap())
-        }
-    }
-
-    pub fn disable(&self, conn: &mut MpdConnection) -> MpdResult<()> {
-        if unsafe { mpd_run_disable_output(conn.conn, self.id() as c_uint) } {
-            Ok(())
-        } else {
-            Err(FromConn::from_conn(conn).unwrap())
-        }
-    }
-
-    pub fn enable(&self, conn: &mut MpdConnection) -> MpdResult<()> {
-        if unsafe { mpd_run_enable_output(conn.conn, self.id() as c_uint) } {
-            Ok(())
-        } else {
-            Err(FromConn::from_conn(conn).unwrap())
-        }
-    }
 }
 
 impl Drop for MpdOutput {

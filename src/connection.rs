@@ -7,7 +7,7 @@ use std::os::unix::prelude::{AsRawFd, Fd};
 use std::io::net::ip::Port;
 
 use error::{MpdResult, MpdError, MpdErrorKind, MpdServerErrorKind};
-use outputs::MpdOutputs;
+use outputs::{MpdOutputs, MpdOutput};
 use playlists::MpdPlaylists;
 use songs::{MpdSong, mpd_song};
 use status::MpdStatus;
@@ -112,6 +112,9 @@ extern {
     fn mpd_run_mixrampdb(connection: *mut mpd_connection, db: c_float) -> bool;
     fn mpd_run_mixrampdelay(connection: *mut mpd_connection, seconds: c_float) -> bool;
 
+    fn mpd_run_enable_output(connection: *mut mpd_connection, output_id: c_uint) -> bool;
+    fn mpd_run_disable_output(connection: *mut mpd_connection, output_id: c_uint) -> bool;
+    fn mpd_run_toggle_output(connection: *mut mpd_connection, output_id: c_uint) -> bool;
 }
 
 pub struct MpdConnection {
@@ -229,6 +232,36 @@ impl MpdConnection {
 
     pub fn playlists(&self) -> MpdResult<MpdPlaylists> { MpdPlaylists::from_conn(self).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConn::from_conn(self).unwrap())) }
     pub fn outputs(&self) -> MpdResult<MpdOutputs> { MpdOutputs::from_conn(self).map(|s| Ok(s)).unwrap_or_else(|| Err(FromConn::from_conn(self).unwrap())) }
+
+    pub fn enable_output_id(&mut self, id: uint, enabled: bool) -> MpdResult<()> {
+        if unsafe {
+            if enabled {
+                mpd_run_enable_output(self.conn, id as c_uint)
+            } else {
+                mpd_run_disable_output(self.conn, id as c_uint)
+            }
+        } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(self).unwrap())
+        }
+    }
+
+    pub fn toggle_output_id(&mut self, id: uint) -> MpdResult<()> {
+        if unsafe { mpd_run_toggle_output(self.conn, id as c_uint) } {
+            Ok(())
+        } else {
+            Err(FromConn::from_conn(self).unwrap())
+        }
+    }
+
+    pub fn enable_output(&mut self, output: &MpdOutput, enabled: bool) -> MpdResult<()> {
+        self.enable_output_id(output.id(), enabled)
+    }
+
+    pub fn toggle_output(&mut self, output: &MpdOutput) -> MpdResult<()> {
+        self.toggle_output_id(output.id())
+    }
 
     pub fn update(&mut self, path: Option<&str>) -> MpdResult<uint> {
         let cpath = path.map(|p| p.to_c_str());
