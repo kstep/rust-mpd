@@ -1,6 +1,7 @@
 
 use libc::{c_uint, c_uchar};
 use std::fmt::{Show, Error, Formatter};
+use std::ptr;
 
 use error::MpdResult;
 use connection::{MpdConnection, mpd_connection, FromConn};
@@ -48,6 +49,7 @@ impl<'a, S: Encoder<E>, E> Encodable<S, E> for MpdOutput<'a> {
 
 pub struct MpdOutput<'a> {
     output: *mut mpd_output,
+    id: c_uint,
     conn: &'a MpdConnection
 }
 
@@ -84,16 +86,16 @@ impl<'a> Iterator<MpdResult<MpdOutput<'a>>> for MpdOutputs<'a> {
 }
 
 impl<'a> MpdOutput<'a> {
-    pub fn id(&self) -> uint { unsafe { mpd_output_get_id(self.output as *const _) as uint } }
-    pub fn name(&self) -> String { unsafe { String::from_raw_buf(mpd_output_get_name(self.output as *const _)) } }
-    pub fn enabled(&self) -> bool { unsafe { mpd_output_get_enabled(self.output as *const _) } }
+    pub fn id(&self) -> uint { self.id as uint }
+    pub fn name(&self) -> String { if self.output.is_null() { "".into_string() } else { unsafe { String::from_raw_buf(mpd_output_get_name(self.output as *const _)) } } }
+    pub fn enabled(&self) -> bool { if self.output.is_null() { true } else { unsafe { mpd_output_get_enabled(self.output as *const _) } } }
 
     pub fn enable(&mut self, enabled: bool) -> MpdResult<()> {
         if unsafe {
             if enabled {
-                mpd_run_enable_output(self.conn.conn, self.id() as c_uint)
+                mpd_run_enable_output(self.conn.conn, self.id)
             } else {
-                mpd_run_disable_output(self.conn.conn, self.id() as c_uint)
+                mpd_run_disable_output(self.conn.conn, self.id)
             }
         } {
             Ok(())
@@ -103,27 +105,33 @@ impl<'a> MpdOutput<'a> {
     }
 
     pub fn toggle(&mut self) -> MpdResult<()> {
-        if unsafe { mpd_run_toggle_output(self.conn.conn, self.id() as c_uint) } {
+        if unsafe { mpd_run_toggle_output(self.conn.conn, self.id) } {
             Ok(())
         } else {
             Err(FromConn::from_conn(self.conn).unwrap())
         }
     }
 
-    fn from_conn<'a>(conn: &'a MpdConnection) -> Option<MpdOutput<'a>> {
+    pub fn from_conn<'a>(conn: &'a MpdConnection) -> Option<MpdOutput<'a>> {
         let output = unsafe { mpd_recv_output(conn.conn) };
         if output.is_null() {
             None
         } else {
-            Some(MpdOutput { output: output, conn: conn })
+            Some(MpdOutput { output: output, conn: conn, id: unsafe { mpd_output_get_id(output as *const _) } })
         }
+    }
+
+    pub fn new<'a>(conn: &'a MpdConnection, id: uint) -> MpdOutput<'a> {
+        MpdOutput { output: ptr::null::<mpd_output>() as *mut _, conn: conn, id: id as c_uint }
     }
 }
 
 #[unsafe_destructor]
 impl<'a> Drop for MpdOutput<'a> {
     fn drop(&mut self) {
-        unsafe { mpd_output_free(self.output) }
+        if !self.output.is_null() {
+            unsafe { mpd_output_free(self.output) }
+        }
     }
 }
 
