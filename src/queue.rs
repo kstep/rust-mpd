@@ -1,6 +1,6 @@
 
 use error::MpdResult;
-use connection::{FromConn, MpdConnection, mpd_connection};
+use client::{FromClient, MpdClient, mpd_connection};
 use songs::{MpdSong, MpdSongs, ToSongUri, mpd_song};
 use playlists::MpdPlaylist;
 use libc::{c_uint, c_int, c_char};
@@ -28,11 +28,11 @@ extern {
 }
 
 pub struct MpdQueue<'a> {
-    pub conn: &'a MpdConnection
+    pub conn: &'a MpdClient
 }
 
 impl<'a> MpdQueue<'a> {
-    pub fn from_conn(conn: &'a MpdConnection) -> MpdQueue<'a> {
+    pub fn from_client(conn: &'a MpdClient) -> MpdQueue<'a> {
         MpdQueue { conn: conn }
     }
 
@@ -40,7 +40,7 @@ impl<'a> MpdQueue<'a> {
     pub fn nth(&self, index: uint) -> MpdResult<MpdSong> {
         let song = unsafe { mpd_run_get_queue_song_pos(self.conn.conn, index as c_uint) };
         if song.is_null() {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         } else {
             Ok(MpdSong { song: song })
         }
@@ -50,7 +50,7 @@ impl<'a> MpdQueue<'a> {
     pub fn get(&self, id: uint) -> MpdResult<MpdSong> {
         let song = unsafe { mpd_run_get_queue_song_id(self.conn.conn, id as c_uint) };
         if song.is_null() {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         } else {
             Ok(MpdSong { song: song })
         }
@@ -60,7 +60,7 @@ impl<'a> MpdQueue<'a> {
     pub fn insert<T: ToSongUri>(&mut self, pos: uint, song: T) -> MpdResult<uint> {
         let uid = unsafe { mpd_run_add_id_to(self.conn.conn, song.song_uri().as_ptr(), pos as c_uint) };
         if uid < 0 {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         } else {
             Ok(uid as uint)
         }
@@ -70,7 +70,7 @@ impl<'a> MpdQueue<'a> {
     pub fn push<T: ToSongUri>(&mut self, song: T) -> MpdResult<uint> {
         let uid = unsafe { mpd_run_add_id(self.conn.conn, song.song_uri().as_ptr()) };
         if uid < 0 {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         } else {
             Ok(uid as uint)
         }
@@ -81,7 +81,7 @@ impl<'a> MpdQueue<'a> {
         if unsafe { mpd_run_move(self.conn.conn, from as c_uint, to as c_uint) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -90,7 +90,7 @@ impl<'a> MpdQueue<'a> {
         if unsafe { mpd_run_move_range(self.conn.conn, start as c_uint, end as c_uint, pos as c_uint) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -103,7 +103,7 @@ impl<'a> MpdQueue<'a> {
         if unsafe { mpd_run_move_id(self.conn.conn, id as c_uint, pos as c_uint) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -112,7 +112,7 @@ impl<'a> MpdQueue<'a> {
         if unsafe { mpd_run_swap(self.conn.conn, song1 as c_uint, song2 as c_uint) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -125,7 +125,7 @@ impl<'a> MpdQueue<'a> {
         if unsafe { mpd_run_swap_id(self.conn.conn, song1 as c_uint, song2 as c_uint) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -133,7 +133,7 @@ impl<'a> MpdQueue<'a> {
         if unsafe { mpd_run_shuffle(self.conn.conn) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -141,7 +141,7 @@ impl<'a> MpdQueue<'a> {
         if unsafe { mpd_run_shuffle_range(self.conn.conn, start as c_uint, end as c_uint) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -154,7 +154,7 @@ impl<'a> MpdQueue<'a> {
         if unsafe { mpd_run_delete_id(self.conn.conn, id as c_uint) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -163,7 +163,7 @@ impl<'a> MpdQueue<'a> {
         if unsafe { mpd_run_delete(self.conn.conn, pos as c_uint) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -172,7 +172,7 @@ impl<'a> MpdQueue<'a> {
         if unsafe { mpd_run_delete_range(self.conn.conn, start as c_uint, end as c_uint) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -181,7 +181,7 @@ impl<'a> MpdQueue<'a> {
         if unsafe { mpd_send_list_queue_meta(self.conn.conn) } {
             Ok(MpdSongs { conn: self.conn })
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -190,7 +190,7 @@ impl<'a> MpdQueue<'a> {
         if unsafe { mpd_send_list_queue_range_meta(self.conn.conn, start as c_uint, end as c_uint) } {
             Ok(MpdSongs { conn: self.conn })
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -209,7 +209,7 @@ impl<'a> MpdQueue<'a> {
         if unsafe { mpd_run_clear(self.conn.conn) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -218,7 +218,7 @@ impl<'a> MpdQueue<'a> {
         if unsafe { mpd_run_save(self.conn.conn, name.to_c_str().as_ptr()) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -227,7 +227,7 @@ impl<'a> MpdQueue<'a> {
         if unsafe { mpd_run_load(self.conn.conn, name.to_c_str().as_ptr()) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 

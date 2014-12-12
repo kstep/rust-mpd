@@ -6,7 +6,7 @@ use std::fmt::{Show, Error, Formatter};
 use std::io::net::ip::Port;
 use std::ptr;
 
-use connection::{MpdConnection, FromConn, mpd_connection};
+use client::{MpdClient, FromClient, mpd_connection};
 
 #[repr(C)] pub struct mpd_settings;
 
@@ -42,9 +42,9 @@ impl Show for MpdSettings {
     }
 }
 
-impl FromConn for MpdSettings {
-    fn from_conn(conn: &MpdConnection) -> Option<MpdSettings> {
-        let settings = unsafe { mpd_connection_get_settings(conn.conn as *const _) };
+impl FromClient for MpdSettings {
+    fn from_client(cli: &MpdClient) -> Option<MpdSettings> {
+        let settings = unsafe { mpd_connection_get_settings(cli.conn as *const _) };
         if settings.is_null() { return None; }
         Some(MpdSettings::Borrowed(settings))
     }

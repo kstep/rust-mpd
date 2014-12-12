@@ -5,7 +5,7 @@ use std::ptr;
 use std::c_str::CString;
 
 use error::MpdResult;
-use connection::{FromConn, MpdConnection, mpd_connection};
+use client::{FromClient, MpdClient, mpd_connection};
 use rustc_serialize::{Encoder, Encodable};
 use songs::{MpdSongs, ToSongUri};
 
@@ -33,7 +33,7 @@ extern "C" {
 }
 
 pub struct MpdPlaylists<'a> {
-    conn: &'a MpdConnection
+    conn: &'a MpdClient
 }
 
 impl<'a, S: Encoder<E>, E> Encodable<S, E> for MpdPlaylists<'a> {
@@ -43,7 +43,7 @@ impl<'a, S: Encoder<E>, E> Encodable<S, E> for MpdPlaylists<'a> {
 }
 
 impl<'a> MpdPlaylists<'a> {
-    pub fn from_conn<'a>(conn: &'a MpdConnection) -> Option<MpdPlaylists<'a>> {
+    pub fn from_client<'a>(conn: &'a MpdClient) -> Option<MpdPlaylists<'a>> {
         if unsafe { mpd_send_list_playlists(conn.conn) } {
             Some(MpdPlaylists { conn: conn })
         } else {
@@ -54,9 +54,9 @@ impl<'a> MpdPlaylists<'a> {
 
 impl<'a> Iterator<MpdResult<MpdPlaylist<'a>>> for MpdPlaylists<'a> {
     fn next(&mut self) -> Option<MpdResult<MpdPlaylist<'a>>> {
-        match MpdPlaylist::from_conn(self.conn) {
+        match MpdPlaylist::from_client(self.conn) {
             Some(pl) => Some(Ok(pl)),
-            None => match FromConn::from_conn(self.conn) {
+            None => match FromClient::from_client(self.conn) {
                 None => None,
                 Some(e) => Some(Err(e))
             }
@@ -101,11 +101,11 @@ impl<'a> Show for MpdPlaylist<'a> {
 pub struct MpdPlaylist<'a> {
     pl: *mut mpd_playlist,
     path: CString,
-    conn: &'a MpdConnection
+    conn: &'a MpdClient
 }
 
 impl<'a> MpdPlaylist<'a> {
-    pub fn from_conn<'a>(conn: &'a MpdConnection) -> Option<MpdPlaylist<'a>> {
+    pub fn from_client<'a>(conn: &'a MpdClient) -> Option<MpdPlaylist<'a>> {
         let pl = unsafe { mpd_recv_playlist(conn.conn) };
         if pl.is_null() {
             None
@@ -114,7 +114,7 @@ impl<'a> MpdPlaylist<'a> {
         }
     }
 
-    pub fn new<'a>(conn: &'a MpdConnection, path: &str) -> MpdPlaylist<'a> {
+    pub fn new<'a>(conn: &'a MpdClient, path: &str) -> MpdPlaylist<'a> {
         MpdPlaylist { pl: ptr::null::<mpd_playlist>() as *mut _, path: path.to_c_str(), conn: conn }
     }
 
@@ -128,7 +128,7 @@ impl<'a> MpdPlaylist<'a> {
         if unsafe { mpd_send_list_playlist(self.conn.conn, self.path.as_ptr()) } {
             Ok(MpdSongs { conn: self.conn })
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -136,7 +136,7 @@ impl<'a> MpdPlaylist<'a> {
         if unsafe { mpd_run_playlist_add(self.conn.conn, self.path.as_ptr(), song.song_uri().as_ptr()) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -144,7 +144,7 @@ impl<'a> MpdPlaylist<'a> {
         if unsafe { mpd_run_playlist_clear(self.conn.conn, self.path.as_ptr()) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -152,7 +152,7 @@ impl<'a> MpdPlaylist<'a> {
         if unsafe { mpd_run_playlist_delete(self.conn.conn, self.path.as_ptr(), pos as c_uint) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -160,7 +160,7 @@ impl<'a> MpdPlaylist<'a> {
         if unsafe { mpd_run_playlist_move(self.conn.conn, self.path.as_ptr(), from as c_uint, to as c_uint) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -170,7 +170,7 @@ impl<'a> MpdPlaylist<'a> {
             self.path = name;
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -178,7 +178,7 @@ impl<'a> MpdPlaylist<'a> {
         if unsafe { mpd_run_rm(self.conn.conn, self.path.as_ptr()) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -186,7 +186,7 @@ impl<'a> MpdPlaylist<'a> {
         if unsafe { mpd_run_load(self.conn.conn, self.path.as_ptr()) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -194,7 +194,7 @@ impl<'a> MpdPlaylist<'a> {
         if unsafe { mpd_run_save(self.conn.conn, self.path.as_ptr()) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 }

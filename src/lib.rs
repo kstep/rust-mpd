@@ -4,7 +4,7 @@ extern crate libc;
 extern crate time;
 extern crate "rustc-serialize" as rustc_serialize;
 
-pub mod connection;
+pub mod client;
 pub mod error;
 pub mod queue;
 pub mod settings;

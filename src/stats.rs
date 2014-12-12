@@ -2,7 +2,7 @@ use libc::{c_uint, c_ulong};
 use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
 use time::Timespec;
-use connection::{MpdConnection, FromConn, mpd_connection};
+use client::{MpdClient, FromClient, mpd_connection};
 use rustc_serialize::{Encoder, Encodable};
 
 #[repr(C)] struct mpd_stats;
@@ -32,9 +32,9 @@ impl Drop for MpdStats {
     }
 }
 
-impl FromConn for MpdStats {
-    fn from_conn(conn: &MpdConnection) -> Option<MpdStats> {
-        let stats = unsafe { mpd_run_stats(conn.conn) };
+impl FromClient for MpdStats {
+    fn from_client(cli: &MpdClient) -> Option<MpdStats> {
+        let stats = unsafe { mpd_run_stats(cli.conn) };
         if stats.is_null() {
             return None;
         }

@@ -4,7 +4,7 @@ use std::fmt::{Show, Error, Formatter};
 use std::ptr;
 
 use error::MpdResult;
-use connection::{MpdConnection, mpd_connection, FromConn};
+use client::{MpdClient, mpd_connection, FromClient};
 use rustc_serialize::{Encoder, Encodable};
 
 #[repr(C)] struct mpd_output;
@@ -50,11 +50,11 @@ impl<'a, S: Encoder<E>, E> Encodable<S, E> for MpdOutput<'a> {
 pub struct MpdOutput<'a> {
     output: *mut mpd_output,
     id: c_uint,
-    conn: &'a MpdConnection
+    conn: &'a MpdClient
 }
 
 pub struct MpdOutputs<'a> {
-    conn: &'a MpdConnection
+    conn: &'a MpdClient
 }
 
 impl<'a, S: Encoder<E>, E> Encodable<S, E> for MpdOutputs<'a> {
@@ -64,7 +64,7 @@ impl<'a, S: Encoder<E>, E> Encodable<S, E> for MpdOutputs<'a> {
 }
 
 impl<'a> MpdOutputs<'a> {
-    pub fn from_conn<'a>(conn: &'a MpdConnection) -> Option<MpdOutputs<'a>> {
+    pub fn from_client<'a>(conn: &'a MpdClient) -> Option<MpdOutputs<'a>> {
         if unsafe { mpd_send_outputs(conn.conn) } {
             Some(MpdOutputs { conn: conn })
         } else {
@@ -75,9 +75,9 @@ impl<'a> MpdOutputs<'a> {
 
 impl<'a> Iterator<MpdResult<MpdOutput<'a>>> for MpdOutputs<'a> {
     fn next(&mut self) -> Option<MpdResult<MpdOutput<'a>>> {
-        match MpdOutput::from_conn(self.conn) {
+        match MpdOutput::from_client(self.conn) {
             Some(o) => Some(Ok(o)),
-            None => match FromConn::from_conn(self.conn) {
+            None => match FromClient::from_client(self.conn) {
                 None => None,
                 Some(e) => Some(Err(e))
             }
@@ -100,7 +100,7 @@ impl<'a> MpdOutput<'a> {
         } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
@@ -108,11 +108,11 @@ impl<'a> MpdOutput<'a> {
         if unsafe { mpd_run_toggle_output(self.conn.conn, self.id) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 
-    pub fn from_conn<'a>(conn: &'a MpdConnection) -> Option<MpdOutput<'a>> {
+    pub fn from_client<'a>(conn: &'a MpdClient) -> Option<MpdOutput<'a>> {
         let output = unsafe { mpd_recv_output(conn.conn) };
         if output.is_null() {
             None
@@ -121,7 +121,7 @@ impl<'a> MpdOutput<'a> {
         }
     }
 
-    pub fn new<'a>(conn: &'a MpdConnection, id: uint) -> MpdOutput<'a> {
+    pub fn new<'a>(conn: &'a MpdClient, id: uint) -> MpdOutput<'a> {
         MpdOutput { output: ptr::null::<mpd_output>() as *mut _, conn: conn, id: id as c_uint }
     }
 }

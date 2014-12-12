@@ -3,7 +3,7 @@ use libc::{c_uint, c_int, c_float, c_uchar};
 use std::fmt::{Show, Error, Formatter};
 use std::time::duration::Duration;
 
-use connection::{FromConn, MpdConnection, mpd_connection};
+use client::{FromClient, MpdClient, mpd_connection};
 use rustc_serialize::{Encoder, Encodable};
 
 #[repr(C)] struct mpd_status;
@@ -150,9 +150,9 @@ impl Show for MpdStatus {
     }
 }
 
-impl FromConn for MpdStatus {
-    fn from_conn(conn: &MpdConnection) -> Option<MpdStatus> {
-        let status = unsafe { mpd_run_status(conn.conn) };
+impl FromClient for MpdStatus {
+    fn from_client(cli: &MpdClient) -> Option<MpdStatus> {
+        let status = unsafe { mpd_run_status(cli.conn) };
         if status.is_null() {
             return None;
         }

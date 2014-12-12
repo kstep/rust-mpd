@@ -1,6 +1,6 @@
 use libc::{c_uint, c_char, c_uchar};
 use std::fmt::{Show, Error, Formatter};
-use connection::{mpd_connection, MpdConnection, FromConn};
+use client::{mpd_connection, MpdClient, FromClient};
 use error::MpdResult;
 use std::str::FromStr;
 
@@ -57,7 +57,7 @@ extern {
 }
 
 pub struct MpdIdle<'a> {
-    conn: &'a MpdConnection,
+    conn: &'a MpdClient,
     mask: Option<MpdEvent>
 }
 
@@ -71,7 +71,7 @@ impl<'a> Iterator<MpdResult<MpdEvent>> for MpdIdle<'a> {
         };
 
         if idle.is_empty() {
-            FromConn::from_conn(self.conn).map(|e| Err(e))
+            FromClient::from_client(self.conn).map(|e| Err(e))
         } else {
             Some(Ok(idle))
         }
@@ -79,7 +79,7 @@ impl<'a> Iterator<MpdResult<MpdEvent>> for MpdIdle<'a> {
 }
 
 impl<'a> MpdIdle<'a> {
-    pub fn from_conn<'a>(conn: &'a MpdConnection, mask: Option<MpdEvent>) -> MpdIdle<'a> {
+    pub fn from_client<'a>(conn: &'a MpdClient, mask: Option<MpdEvent>) -> MpdIdle<'a> {
         MpdIdle { conn: conn, mask: mask }
     }
 
@@ -87,7 +87,7 @@ impl<'a> MpdIdle<'a> {
         if unsafe { mpd_run_noidle(self.conn.conn) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(self.conn).unwrap())
+            Err(FromClient::from_client(self.conn).unwrap())
         }
     }
 }

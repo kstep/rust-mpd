@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use std::c_str::CString;
 
 use error::MpdResult;
-use connection::{mpd_connection, MpdConnection, FromConn};
+use client::{mpd_connection, MpdClient, FromClient};
 use rustc_serialize::{Encoder, Encodable};
 use tags::MpdTagType;
 
@@ -34,7 +34,7 @@ extern "C" {
 }
 
 pub struct MpdSongs<'a> {
-    pub conn: &'a MpdConnection
+    pub conn: &'a MpdClient
 }
 
 impl<'a, S: Encoder<E>, E> Encodable<S, E> for MpdSongs<'a> {
@@ -45,9 +45,9 @@ impl<'a, S: Encoder<E>, E> Encodable<S, E> for MpdSongs<'a> {
 
 impl<'a> Iterator<MpdResult<MpdSong>> for MpdSongs<'a> {
     fn next(&mut self) -> Option<MpdResult<MpdSong>> {
-        match FromConn::from_conn(self.conn) {
+        match FromClient::from_client(self.conn) {
             Some(song) => Some(Ok(song)),
-            None => match FromConn::from_conn(self.conn) {
+            None => match FromClient::from_client(self.conn) {
                 None => None,
                 Some(e) => Some(Err(e))
             }
@@ -131,22 +131,22 @@ impl MpdSong {
     pub fn pos(&self) -> uint { unsafe { mpd_song_get_pos(self.song as *const _) as uint } }
     pub fn set_pos(&mut self, pos: uint) { unsafe { mpd_song_set_pos(self.song, pos as c_uint) } }
 
-    pub fn seek(&mut self, conn: &mut MpdConnection, pos: Duration) -> MpdResult<()> {
+    pub fn seek(&mut self, conn: &mut MpdClient, pos: Duration) -> MpdResult<()> {
         if unsafe { mpd_run_seek_id(conn.conn, self.id() as c_uint, pos.num_seconds() as c_uint) } {
             Ok(())
         } else {
-            Err(FromConn::from_conn(conn).unwrap())
+            Err(FromClient::from_client(conn).unwrap())
         }
     }
 
-    pub fn play(&self, conn: &mut MpdConnection) -> MpdResult<()> {
+    pub fn play(&self, conn: &mut MpdClient) -> MpdResult<()> {
         conn.play_id(self.id())
     }
 }
 
-impl FromConn for MpdSong {
-    fn from_conn(conn: &MpdConnection) -> Option<MpdSong> {
-        let song = unsafe { mpd_recv_song(conn.conn) };
+impl FromClient for MpdSong {
+    fn from_client(cli: &MpdClient) -> Option<MpdSong> {
+        let song = unsafe { mpd_recv_song(cli.conn) };
         if song.is_null() {
             None
         } else {
