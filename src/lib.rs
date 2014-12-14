@@ -6,14 +6,14 @@ extern crate "rustc-serialize" as rustc_serialize;
 
 pub mod client;
 pub mod error;
-pub mod queue;
-pub mod settings;
-pub mod status;
-pub mod stats;
-pub mod outputs;
-pub mod tags;
-pub mod songs;
-pub mod playlists;
-pub mod idle;
+//pub mod queue;
+//pub mod settings;
+//pub mod status;
+//pub mod stats;
+//pub mod outputs;
+//pub mod tags;
+//pub mod songs;
+//pub mod playlists;
+//pub mod idle;
 
 
