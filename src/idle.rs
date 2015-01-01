@@ -30,7 +30,7 @@ impl Show for MpdEvent {
             self.bits.fmt(f)
         } else {
             unsafe { String::from_raw_buf(name).fmt(f) }
-        })
+        });
         try!(f.write(b")"));
         Ok(())
     }
