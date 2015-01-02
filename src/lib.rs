@@ -2,7 +2,7 @@
 
 extern crate libc;
 extern crate time;
-extern crate serialize;
+extern crate "rustc-serialize" as rustc_serialize;
 
 pub mod connection;
 pub mod error;

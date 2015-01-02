@@ -5,3 +5,6 @@ authors = ["Konstantin Stepanov <me@kstep.me>"]
 
 [dependencies.time]
 git = "https://github.com/rust-lang/time.git"
+
+[dependencies]
+rustc-serialize = "*"

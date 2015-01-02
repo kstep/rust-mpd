@@ -6,7 +6,7 @@ use std::c_str::CString;
 
 use error::MpdResult;
 use connection::{FromConn, MpdConnection, mpd_connection};
-use serialize::{Encoder, Encodable};
+use rustc_serialize::{Encoder, Encodable};
 use songs::{MpdSongs, ToSongUri};
 
 #[repr(C)] struct mpd_playlist;

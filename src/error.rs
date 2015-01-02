@@ -1,5 +1,5 @@
 use std::error::Error;
-use serialize::{Encoder, Encodable};
+use rustc_serialize::{Encoder, Encodable};
 
 #[repr(C)] pub struct mpd_connection;
 
@@ -11,7 +11,7 @@ use serialize::{Encoder, Encodable};
 
 #[repr(C)]
 #[allow(dead_code)]
-#[deriving(Show, Encodable)]
+#[deriving(Show, RustcEncodable)]
 pub enum MpdErrorKind {
     Success = 0,
     Oom = 1,
@@ -27,7 +27,7 @@ pub enum MpdErrorKind {
 
 #[repr(C)]
 #[allow(dead_code)]
-#[deriving(Show, Encodable)]
+#[deriving(Show, RustcEncodable)]
 pub enum MpdServerErrorKind {
     Unknown = -1,
     NotList = 1,
@@ -44,7 +44,7 @@ pub enum MpdServerErrorKind {
     Exist = 56,
 }
 
-#[deriving(Show, Encodable)]
+#[deriving(Show, RustcEncodable)]
 pub enum MpdError {
     Server { kind: MpdServerErrorKind, index: uint, desc: String },
     System { code: int, desc: String },

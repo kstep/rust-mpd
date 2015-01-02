@@ -4,12 +4,12 @@ use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
 use time::Timespec;
 use std::iter::count;
-use std::collections::TreeMap;
+use std::collections::BTreeMap;
 use std::c_str::CString;
 
 use error::MpdResult;
 use connection::{mpd_connection, MpdConnection, FromConn};
-use serialize::{Encoder, Encodable};
+use rustc_serialize::{Encoder, Encodable};
 use tags::MpdTagType;
 
 #[repr(C)] pub struct mpd_song;
@@ -108,11 +108,11 @@ impl MpdSong {
             .map(|v| unsafe { String::from_raw_buf(v) }).collect()
     }
 
-    pub fn all_tags(&self) -> TreeMap<MpdTagType, Vec<String>> {
+    pub fn all_tags(&self) -> BTreeMap<MpdTagType, Vec<String>> {
         MpdTagType::variants().iter().map(|k| (*k, self.tags(*k))).filter(|&(_, ref v)| !v.is_empty()).collect()
     }
 
-    pub fn first_tags(&self) -> TreeMap<MpdTagType, String> {
+    pub fn first_tags(&self) -> BTreeMap<MpdTagType, String> {
         MpdTagType::variants().iter().filter_map(|k| self.tag(*k, 0).map(|v| (*k, v))).collect()
     }
 

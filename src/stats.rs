@@ -3,7 +3,7 @@ use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
 use time::Timespec;
 use connection::{MpdConnection, FromConn, mpd_connection};
-use serialize::{Encoder, Encodable};
+use rustc_serialize::{Encoder, Encodable};
 
 #[repr(C)] struct mpd_stats;
 

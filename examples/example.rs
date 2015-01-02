@@ -1,13 +1,13 @@
 #![allow(unused_imports)]
 
 extern crate mpd;
-extern crate serialize;
+extern crate "rustc-serialize" as rustc_serialize;
 
 use mpd::connection::MpdConnection;
 use mpd::playlists::MpdPlaylist;
 use mpd::outputs::MpdOutput;
 use mpd::idle::{MpdEvent, PLAYER, UPDATE};
-use serialize::json;
+use rustc_serialize::json;
 use std::str::from_str;
 
 fn main() {

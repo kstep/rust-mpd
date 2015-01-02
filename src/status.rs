@@ -4,7 +4,7 @@ use std::fmt::{Show, Error, Formatter};
 use std::time::duration::Duration;
 
 use connection::{FromConn, MpdConnection, mpd_connection};
-use serialize::{Encoder, Encodable};
+use rustc_serialize::{Encoder, Encodable};
 
 #[repr(C)] struct mpd_status;
 
@@ -19,7 +19,7 @@ struct mpd_audio_format {
     reserved1: u32
 }
 
-#[deriving(Show, Encodable)]
+#[deriving(Show, RustcEncodable)]
 pub struct AudioFormat {
     pub rate: u32,
     pub bits: u8,
@@ -27,7 +27,7 @@ pub struct AudioFormat {
 }
 
 #[repr(C)]
-#[deriving(Show, Encodable)]
+#[deriving(Show, RustcEncodable)]
 pub enum MpdState {
     Unknown = 0,
     Stop = 1,

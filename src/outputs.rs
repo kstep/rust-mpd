@@ -5,7 +5,7 @@ use std::ptr;
 
 use error::MpdResult;
 use connection::{MpdConnection, mpd_connection, FromConn};
-use serialize::{Encoder, Encodable};
+use rustc_serialize::{Encoder, Encodable};
 
 #[repr(C)] struct mpd_output;
 

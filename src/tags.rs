@@ -9,7 +9,7 @@ extern "C" {
 }
 
 #[repr(C)]
-#[deriving(Show, Encodable, PartialOrd, PartialEq, Eq, Ord)]
+#[deriving(Show, RustcEncodable, PartialOrd, PartialEq, Eq, Ord)]
 pub enum MpdTagType {
     Unknown = -1,
     Artist = 0,
