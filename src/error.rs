@@ -2,6 +2,7 @@ use std::error::{Error, FromError};
 use rustc_serialize::{Encoder, Encodable};
 use std::io::{IoError, standard_error, IoErrorKind};
 use std::collections::enum_set::CLike;
+use std::str::FromStr;
 
 #[deriving(Show, RustcEncodable)]
 pub enum MpdErrorCode {
@@ -18,6 +19,28 @@ pub enum MpdErrorCode {
     PlayerSync,
     Exist,
     Other(uint)
+}
+
+impl FromStr for MpdErrorCode {
+    fn from_str(s: &str) -> Option<MpdErrorCode> {
+        match s {
+            "1" => Some(MpdErrorCode::NotList),
+            "2" => Some(MpdErrorCode::Argument),
+            "3" => Some(MpdErrorCode::Password),
+            "4" => Some(MpdErrorCode::Permission),
+            "5" => Some(MpdErrorCode::UnknownCmd),
+
+            "50" => Some(MpdErrorCode::NoExist),
+            "51" => Some(MpdErrorCode::PlaylistMax),
+            "52" => Some(MpdErrorCode::System),
+            "53" => Some(MpdErrorCode::PlaylistLoad),
+            "54" => Some(MpdErrorCode::UpdateAlready),
+            "55" => Some(MpdErrorCode::PlayerSync),
+            "56" => Some(MpdErrorCode::Exist),
+
+            _ => s.parse().map(|v| MpdErrorCode::Other(v))
+        }
+    }
 }
 
 impl CLike for MpdErrorCode {
@@ -59,19 +82,6 @@ impl CLike for MpdErrorCode {
 }
 
 #[deriving(Show, RustcEncodable)]
-pub enum MpdProtoError {
-    InvalidInput,
-    MissingMpdBanner
-}
-
-#[deriving(Show, RustcEncodable)]
-pub enum MpdParserError {
-    NotAPair,
-    NotAnAck,
-    NotOk
-}
-
-#[deriving(Show, RustcEncodable)]
 pub struct MpdServerError {
     pub code: MpdErrorCode,
     pub pos: uint,
@@ -83,8 +93,6 @@ pub struct MpdServerError {
 pub enum MpdError {
     Mpd(MpdServerError),
     Io(IoError),
-    Proto(MpdProtoError),
-    Parser(MpdParserError),
 }
 
 impl Error for MpdServerError {
@@ -112,15 +120,6 @@ impl Error for MpdError {
         match *self {
             MpdError::Io(ref err) => err.description(),
             MpdError::Mpd(ref err) => err.description(),
-            MpdError::Proto(ref err) => match *err {
-                MpdProtoError::InvalidInput => "invalid input",
-                MpdProtoError::MissingMpdBanner => "missing or invalid mpd banner"
-            },
-            MpdError::Parser(ref err) => match *err {
-                MpdParserError::NotAPair => "pair expected",
-                MpdParserError::NotAnAck => "pair error expected",
-                MpdParserError::NotOk => "ok expected"
-            }
         }
     }
 
@@ -128,7 +127,6 @@ impl Error for MpdError {
         match *self {
             MpdError::Mpd(ref err) => err.detail(),
             MpdError::Io(ref err) => err.detail(),
-            _ => None
         }
     }
 
@@ -136,7 +134,6 @@ impl Error for MpdError {
         match *self {
             MpdError::Io(ref err) => Some(err as &Error),
             MpdError::Mpd(ref err) => Some(err as &Error),
-            _ => None
         }
     }
 }
@@ -150,6 +147,31 @@ impl FromError<IoError> for MpdError {
 impl FromError<MpdServerError> for MpdError {
     fn from_error(err: MpdServerError) -> MpdError {
         MpdError::Mpd(err)
+    }
+}
+
+impl FromStr for MpdServerError {
+    fn from_str(s: &str) -> Option<MpdServerError> {
+        // ACK [<code>@<index>] {<command>} <description>
+        if s.starts_with("ACK [") {
+            let s = s[5..];
+            if let (Some(atsign), Some(right_bracket)) = (s.find('@'), s.find(']')) {
+                if let (Some(code), Some(pos)) = (s[..atsign].parse(), s[atsign + 1..right_bracket].parse()) {
+                    let s = s[right_bracket + 1..];
+                    if let (Some(left_brace), Some(right_brace)) = (s.find('{'), s.find('}')) {
+                        let command = s[left_brace + 1..right_brace].to_string();
+                        let detail = s[right_brace + 1..].trim().to_string();
+                        return Some(MpdServerError {
+                            code: code,
+                            pos: pos,
+                            command: command,
+                            detail: detail
+                        });
+                    }
+                }
+            }
+        }
+        None
     }
 }
 
