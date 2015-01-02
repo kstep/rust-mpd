@@ -20,6 +20,19 @@ use status::MpdStatus;
 //use queue::MpdQueue;
 //use idle::{MpdIdle, MpdEvent};
 
+struct MpdResultIterator<I: Iterator<_>> {
+  inner: I
+}
+
+impl<I: Iterator<IoResult<String>>> Iterator<MpdResult<MpdPair>> for MpdResultIterator<I> {
+  fn next(&mut self) -> Option<MpdResult<MpdPair>> {
+    self.inner.next().map(
+		|res| res.map_err(FromError::from_error).and_then(
+		|s| s.parse().unwrap_or_else(
+			|| Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput))))
+	}
+}
+
 pub trait FromClient {
     fn from_client<S: Stream>(client: &MpdClient<S>) -> Option<Self>;
 }
