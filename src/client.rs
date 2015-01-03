@@ -2,6 +2,7 @@ use std::time::duration::Duration;
 use std::string::ToString;
 use std::str::FromStr;
 use std::io::{Stream, BufferedStream, Lines, IoResult, IoErrorKind, standard_error};
+use std::iter::Peekable;
 use std::error::FromError;
 use time::Timespec;
 
@@ -13,7 +14,7 @@ use songs::MpdSong;
 //use settings::MpdSettings;
 //use queue::MpdQueue;
 //use playlists::MpdPlaylists;
-//use outputs::{MpdOutputs, MpdOutput};
+use outputs::MpdOutput;
 //use idle::{MpdIdle, MpdEvent};
 
 
@@ -158,7 +159,9 @@ impl<S: Stream> MpdClient<S> {
     }
 
     //pub fn playlists(&self) -> MpdResult<MpdPlaylists> { FromClient::from_client(self) }
-    //pub fn outputs(&self) -> MpdResult<MpdOutputs> { FromClient::from_client(self) }
+    pub fn outputs(&mut self) -> MpdResult<Vec<MpdOutput>> {
+        self.exec("outputs").and_then(|()| self.iter().collect())
+    }
 
     pub fn update(&mut self, rescan: bool, path: Option<&str>) -> MpdResult<uint> {
         try!(self.exec_args(if rescan { "rescan" } else { "update" }, &[path.unwrap_or("")]));
@@ -177,7 +180,9 @@ impl<S: Stream> MpdClient<S> {
         result
     }
 
-    //pub fn queue(&self) -> MpdResult<MpdQueue> { FromClient::from_client(self) }
+    pub fn playlist(&mut self) -> MpdResult<Vec<MpdSong>> {
+        self.exec("playlistinfo").and_then(|()| self.iter().collect())
+    }
 
     //pub fn wait(&self, mask: Option<MpdEvent>) -> MpdIdle {
         //MpdIdle::from_client(self, mask)
@@ -203,7 +208,6 @@ impl<S: Stream> MpdClient<S> {
     #[inline] fn exec_bool(&mut self, command: &str, val: bool) -> MpdResult<()> { self.exec_args(command, &[if val { "1" } else { "0" }]) }
     #[inline] fn exec_str(&mut self, command: &str, val: &str) -> MpdResult<()> { self.exec_args(command, &[val]) }
     #[inline] fn exec_arg<T: ToString>(&mut self, command: &str, val: T) -> MpdResult<()> { self.exec_args(command, &[val.to_string()[]]) }
-    #[inline] fn exec_arg2<T1: ToString, T2: ToString>(&mut self, command: &str, val1: T1, val2: T2) -> MpdResult<()> { self.exec_args(command, &[val1.to_string()[], val2.to_string()[]]) }
 }
 
 
@@ -235,3 +239,36 @@ impl<S: Encoder<E>, E, T: ForceEncodable<S, E>> ForceEncodable<S, E> for Option<
         })
     }
 }
+
+pub struct FieldCutIter<'a, I: 'a + Iterator<MpdResult<MpdPair>>> {
+    iter: &'a mut Peekable<MpdResult<MpdPair>, I>,
+    field: &'a str,
+    finished: bool
+}
+
+impl<'a, I: 'a + Iterator<MpdResult<MpdPair>>> FieldCutIter<'a, I> {
+    pub fn new(iter: &'a mut Peekable<MpdResult<MpdPair>, I>, field: &'a str) -> FieldCutIter<'a, I> {
+        FieldCutIter {
+            iter: iter,
+            field: field,
+            finished: false
+        }
+    }
+}
+
+impl<'a, I: 'a + Iterator<MpdResult<MpdPair>>> Iterator<MpdResult<MpdPair>> for FieldCutIter<'a, I> {
+    fn next(&mut self) -> Option<MpdResult<MpdPair>> {
+        if self.finished {
+            return None;
+        }
+
+        let item = self.iter.next();
+        self.finished = match self.iter.peek() {
+            Some(&Ok(MpdPair(ref name, _))) if name[] == self.field => true,
+            None => true,
+            _ => false
+        };
+        item
+    }
+}
+

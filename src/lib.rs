@@ -10,7 +10,7 @@ pub mod error;
 //pub mod settings;
 pub mod status;
 pub mod stats;
-//pub mod outputs;
+pub mod outputs;
 //pub mod tags;
 pub mod songs;
 //pub mod playlists;

@@ -5,7 +5,7 @@ use time::{Timespec, strptime};
 use rustc_serialize::{Encoder, Encodable};
 
 use error::MpdResult;
-use client::MpdPair;
+use client::{MpdPair, FieldCutIter};
 
 #[deriving(Show, Copy, RustcEncodable)]
 pub struct MpdQueuePlace {
@@ -69,6 +69,20 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdSong> {
         }
 
         Ok(song)
+    }
+}
+
+impl FromIterator<MpdResult<MpdPair>> for MpdResult<Vec<MpdSong>> {
+    fn from_iter<T: Iterator<MpdResult<MpdPair>>>(iterator: T) -> MpdResult<Vec<MpdSong>> {
+        let mut iter = iterator.fuse().peekable();
+        let mut result = Vec::new();
+
+        while !iter.is_empty() {
+            let song = try!(FieldCutIter::new(&mut iter, "file").collect());
+            result.push(song);
+        }
+
+        Ok(result)
     }
 }
 
