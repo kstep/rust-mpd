@@ -92,7 +92,7 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdStatus> {
             elapsed: None,
             duration: None,
             bitrate: None,
-            xfade: None,
+            crossfade: None,
             mixrampdb: 0.0f32,
             mixrampdelay: None,
             audio: None,

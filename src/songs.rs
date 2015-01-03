@@ -6,7 +6,7 @@ use time::{Timespec, strptime};
 use rustc_serialize::{Encoder, Encodable};
 
 use error::MpdResult;
-use client::{MpdPair, FieldCutIter};
+use client::{MpdPair, FieldCutIter, ForceEncodable};
 
 #[deriving(Show, Copy, RustcEncodable)]
 pub struct MpdQueuePlace {
@@ -15,7 +15,7 @@ pub struct MpdQueuePlace {
     pub prio: uint
 }
 
-#[deriving(Show)]
+#[deriving(Show, RustcEncodable)]
 pub struct MpdSong {
     pub file: String,
     pub last_mod: Timespec,
@@ -47,7 +47,7 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdSong> {
             let MpdPair(key, value) = try!(field);
             match key[] {
                 "file" => song.file = value,
-                "Last-Modified" => song.last_mod = try!(strptime(value[], "%Y-%m-%dT%H:%M:%S%Z").map_err(|e| standard_error(IoErrorKind::InvalidInput))).to_timespec(),
+                "Last-Modified" => song.last_mod = try!(strptime(value[], "%Y-%m-%dT%H:%M:%S%Z").map_err(|_| standard_error(IoErrorKind::InvalidInput))).to_timespec(),
                 "Time" => song.duration = Duration::seconds(value.parse().unwrap_or(0)),
                 "Range" => {
                     let mut splits = value[].split('-').flat_map(|v| v.parse::<i64>().into_iter());
