@@ -1,9 +1,9 @@
-use std::io::{standard_error, IoErrorKind};
+use std::io::{standard_error, IoErrorKind, Stream};
 use std::error::FromError;
 use time::{Timespec, strptime};
 
 use error::MpdResult;
-use client::MpdPair;
+use client::{MpdPair, MpdClient};
 use rustc_serialize::{Encoder, Encodable};
 use songs::MpdSong;
 use utils::{ForceEncodable, FieldCutIter};
@@ -12,6 +12,12 @@ use utils::{ForceEncodable, FieldCutIter};
 pub struct MpdPlaylist {
     name: String,
     last_mod: Timespec
+}
+
+impl MpdPlaylist {
+    pub fn songs<S: Stream>(&self, client: &mut MpdClient<S>) -> MpdResult<Vec<MpdSong>> {
+        client.exec_str("listplaylistinfo", self.name[]).and_then(|_| client.iter().collect())
+    }
 }
 
 impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdPlaylist> {

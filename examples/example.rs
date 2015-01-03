@@ -20,6 +20,13 @@ fn main() {
     //println!("song: {}", c.current_song());
     println!("queue: {}", c.queue());
     println!("outputs: {}", c.outputs());
+
+    println!("playlists:");
+    for pl in c.playlists().unwrap().iter() {
+        println!("{}", pl);
+        println!("{}", pl.songs(&mut c));
+    }
+
     //let conn = match c {
         //None => panic!("connection is None"),
         //Some(Err(e)) => panic!("connection error: {}", e),

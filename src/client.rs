@@ -10,12 +10,12 @@ use error::{MpdResult, MpdServerError};
 use songs::MpdSong;
 //use settings::MpdSettings;
 //use queue::MpdQueue;
-//use playlists::MpdPlaylists;
+use playlists::MpdPlaylist;
 use outputs::MpdOutput;
 //use idle::{MpdIdle, MpdEvent};
 
 
-struct MpdResultIterator<I: Iterator<IoResult<String>>> {
+pub struct MpdResultIterator<I: Iterator<IoResult<String>>> {
   inner: I
 }
 
@@ -155,7 +155,10 @@ impl<S: Stream> MpdClient<S> {
         self.exec("currentsong").and_then(|()| self.iter().collect())
     }
 
-    //pub fn playlists(&self) -> MpdResult<MpdPlaylists> { FromClient::from_client(self) }
+    pub fn playlists(&mut self) -> MpdResult<Vec<MpdPlaylist>> {
+        self.exec("listplaylists").and_then(|()| self.iter().collect())
+    }
+
     pub fn outputs(&mut self) -> MpdResult<Vec<MpdOutput>> {
         self.exec("outputs").and_then(|()| self.iter().collect())
     }
@@ -185,7 +188,7 @@ impl<S: Stream> MpdClient<S> {
         //MpdIdle::from_client(self, mask)
     //}
 
-    #[inline] fn iter(&mut self) -> MpdResultIterator<Lines<BufferedStream<S>>> {
+    #[inline] pub fn iter(&mut self) -> MpdResultIterator<Lines<BufferedStream<S>>> {
         MpdResultIterator::new(self.socket.lines())
     }
 
@@ -201,9 +204,9 @@ impl<S: Stream> MpdClient<S> {
         Ok(())
     }
 
-    #[inline] fn exec(&mut self, command: &str) -> MpdResult<()> { self.exec_args(command, &[]) }
-    #[inline] fn exec_bool(&mut self, command: &str, val: bool) -> MpdResult<()> { self.exec_args(command, &[if val { "1" } else { "0" }]) }
-    #[inline] fn exec_str(&mut self, command: &str, val: &str) -> MpdResult<()> { self.exec_args(command, &[val]) }
-    #[inline] fn exec_arg<T: ToString>(&mut self, command: &str, val: T) -> MpdResult<()> { self.exec_args(command, &[val.to_string()[]]) }
+    #[inline] pub fn exec(&mut self, command: &str) -> MpdResult<()> { self.exec_args(command, &[]) }
+    #[inline] pub fn exec_bool(&mut self, command: &str, val: bool) -> MpdResult<()> { self.exec_args(command, &[if val { "1" } else { "0" }]) }
+    #[inline] pub fn exec_str(&mut self, command: &str, val: &str) -> MpdResult<()> { self.exec_args(command, &[val]) }
+    #[inline] pub fn exec_arg<T: ToString>(&mut self, command: &str, val: T) -> MpdResult<()> { self.exec_args(command, &[val.to_string()[]]) }
 }
 
