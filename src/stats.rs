@@ -2,88 +2,51 @@ use libc::{c_uint, c_ulong};
 use std::time::duration::Duration;
 use std::fmt::{Show, Error, Formatter};
 use time::Timespec;
-use client::{MpdClient, FromClient, mpd_connection};
 use rustc_serialize::{Encoder, Encodable};
+use client::{MpdClient, MpdPair, ForceEncodable};
+use std::io::{IoError, standard_error, IoErrorKind};
+use std::error::FromError;
+use error::MpdResult;
 
-#[repr(C)] struct mpd_stats;
-
-#[link(name = "mpdclient")]
-extern "C" {
-    fn mpd_run_stats(connection: *mut mpd_connection) -> *mut mpd_stats;
-    fn mpd_stats_free(stats: *mut mpd_stats);
-    fn mpd_stats_get_number_of_artists(stats: *const mpd_stats) -> c_uint;
-    fn mpd_stats_get_number_of_albums(stats: *const mpd_stats) -> c_uint;
-    fn mpd_stats_get_number_of_songs(stats: *const mpd_stats) -> c_uint;
-    fn mpd_stats_get_uptime(stats: *const mpd_stats) -> c_ulong;
-    fn mpd_stats_get_db_update_time(stats: *const mpd_stats) -> c_ulong;
-    fn mpd_stats_get_play_time(stats: *const mpd_stats) -> c_ulong;
-    fn mpd_stats_get_db_play_time(stats: *const mpd_stats) -> c_ulong;
-}
-
+#[deriving(Show, RustcEncodable)]
 pub struct MpdStats {
-    p: *mut mpd_stats
+    uptime: Duration,
+    playtime: Duration,
+    artists: uint,
+    albums: uint,
+    songs: uint,
+    db_playtime: Duration,
+    db_update: Timespec
 }
 
-impl Drop for MpdStats {
-    fn drop(&mut self) {
-        unsafe {
-            mpd_stats_free(self.p);
+impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdStats> {
+    fn from_iter<T: Iterator<MpdResult<MpdPair>>>(iterator: T) -> MpdResult<MpdStats> {
+        let mut stats = MpdStats {
+            uptime: Duration::zero(),
+            playtime: Duration::zero(),
+            artists: 0,
+            albums: 0,
+            songs: 0,
+            db_playtime: Duration::zero(),
+            db_update: Timespec::new(0, 0)
+        };
+
+        let mut iter = iterator;
+
+        for field in iter {
+            let MpdPair(key, value) = try!(field);
+            match key[] {
+                "uptime" => stats.uptime = Duration::seconds(value.parse().unwrap_or(0)),
+                "playtime" => stats.playtime = Duration::seconds(value.parse().unwrap_or(0)),
+                "artists" => stats.artists = value.parse().unwrap_or(0),
+                "albums" => stats.albums = value.parse().unwrap_or(0),
+                "songs" => stats.songs = value.parse().unwrap_or(0),
+                "db_playtime" => stats.db_playtime = Duration::seconds(value.parse().unwrap_or(0)),
+                "db_update" => stats.db_update = Timespec::new(value.parse().unwrap_or(0), 0),
+                _ => return Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))
+            }
         }
-    }
-}
 
-impl FromClient for MpdStats {
-    fn from_client(cli: &MpdClient) -> Option<MpdStats> {
-        let stats = unsafe { mpd_run_stats(cli.conn) };
-        if stats.is_null() {
-            return None;
-        }
-
-        Some(MpdStats { p: stats })
-    }
-}
-
-impl MpdStats {
-    fn artists(&self) -> uint { unsafe { mpd_stats_get_number_of_artists(self.p as *const _) as uint } }
-    fn albums(&self) -> uint { unsafe { mpd_stats_get_number_of_albums(self.p as *const _) as uint } }
-    fn songs(&self) -> uint { unsafe { mpd_stats_get_number_of_songs(self.p as *const _) as uint } }
-    fn uptime(&self) -> Duration { Duration::seconds(unsafe { mpd_stats_get_uptime(self.p as *const _) as i64 }) }
-    fn db_update_time(&self) -> Timespec { Timespec::new(unsafe { mpd_stats_get_db_update_time(self.p as *const _) as i64 }, 0) } 
-    fn play_time(&self) -> Duration { Duration::seconds(unsafe { mpd_stats_get_play_time(self.p as *const _) as i64 }) }
-    fn db_play_time(&self) -> Duration { Duration::seconds(unsafe { mpd_stats_get_db_play_time(self.p as *const _) as i64 }) }
-}
-
-impl<S: Encoder<E>, E> Encodable<S, E> for MpdStats {
-    fn encode(&self, s: &mut S) -> Result<(), E> {
-        s.emit_struct("MpdStats", 7, |s| {
-            s.emit_struct_field("artists", 0, |s| s.emit_uint(self.artists())).and_then(|()|
-            s.emit_struct_field("albums", 1, |s| s.emit_uint(self.albums()))).and_then(|()|
-            s.emit_struct_field("songs", 2, |s| s.emit_uint(self.songs()))).and_then(|()|
-            s.emit_struct_field("uptime", 3, |s| s.emit_i64(self.uptime().num_milliseconds()))).and_then(|()|
-            s.emit_struct_field("play_time", 4, |s| s.emit_i64(self.play_time().num_milliseconds()))).and_then(|()|
-            s.emit_struct_field("db_play_time", 5, |s| s.emit_i64(self.db_play_time().num_milliseconds()))).and_then(|()|
-            s.emit_struct_field("db_update_time", 6, |s| s.emit_i64(self.db_update_time().sec)))
-        })
-    }
-}
-
-impl Show for MpdStats {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        try!(f.write(b"MpdStats { artists: "));
-        try!(self.artists().fmt(f));
-        try!(f.write(b", albums: "));
-        try!(self.albums().fmt(f));
-        try!(f.write(b", songs: "));
-        try!(self.songs().fmt(f));
-        try!(f.write(b", uptime: "));
-        try!(self.uptime().fmt(f));
-        try!(f.write(b", db_update_time: "));
-        try!(self.db_update_time().fmt(f));
-        try!(f.write(b", play_time: "));
-        try!(self.play_time().fmt(f));
-        try!(f.write(b", db_play_time: "));
-        try!(self.db_play_time().fmt(f));
-        try!(f.write(b" }"));
-        Ok(())
+        Ok(stats)
     }
 }

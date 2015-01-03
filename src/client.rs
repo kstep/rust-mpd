@@ -2,12 +2,15 @@
 use std::time::duration::Duration;
 use std::c_str::ToCStr;
 use std::ptr;
-use std::io::{Stream, BufferedStream};
+use std::io::{Stream, BufferedStream, IoResult};
 use std::io::net::ip::{Port, ToSocketAddr};
 use std::io::net::tcp::TcpStream;
 use std::str::FromStr;
 use std::collections::enum_set::CLike;
 use std::error::{Error, FromError};
+use std::string::ToString;
+use rustc_serialize::{Encoder, Encodable};
+use time::Timespec;
 
 use std::io::{IoError, standard_error, IoErrorKind};
 use error::{MpdResult, MpdError, MpdErrorCode, MpdServerError};
@@ -16,33 +19,35 @@ use error::{MpdResult, MpdError, MpdErrorCode, MpdServerError};
 //use songs::{MpdSong, mpd_song};
 use status::MpdStatus;
 //use settings::MpdSettings;
-//use stats::MpdStats;
+use stats::MpdStats;
 //use queue::MpdQueue;
 //use idle::{MpdIdle, MpdEvent};
 
-struct MpdResultIterator<I: Iterator<_>> {
+struct MpdResultIterator<I: Iterator<IoResult<String>>> {
   inner: I
 }
 
-impl<I: Iterator<IoResult<String>>> Iterator<MpdResult<MpdPair>> for MpdResultIterator<I> {
-  fn next(&mut self) -> Option<MpdResult<MpdPair>> {
-    self.inner.next().map(
-		|res| res.map_err(FromError::from_error).and_then(
-		|s| s.parse().unwrap_or_else(
-			|| Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput))))
-	}
+impl<I: Iterator<IoResult<String>>> MpdResultIterator<I> {
+    pub fn new(iter: I) -> MpdResultIterator<I> {
+        MpdResultIterator { inner: iter }
+    }
 }
 
-pub trait FromClient {
-    fn from_client<S: Stream>(client: &MpdClient<S>) -> Option<Self>;
+impl<I: Iterator<IoResult<String>>> Iterator<MpdResult<MpdPair>> for MpdResultIterator<I> {
+    fn next(&mut self) -> Option<MpdResult<MpdPair>> {
+        match self.inner.next() {
+            Some(Ok(s)) => s.parse(),
+            Some(Err(e)) => Some(Err(FromError::from_error(e))),
+            None => None,
+        }
+    }
 }
 
 #[deriving(Show)]
-struct MpdPair(String, String);
+pub struct MpdPair(pub String, pub String);
 
 impl FromStr for MpdPair {
     fn from_str(s: &str) -> Option<MpdPair> {
-        println!("pair? {}", s);
         let mut it = s.splitn(1, ':');
         match (it.next(), it.next()) {
             (Some(a), Some(b)) => Some(MpdPair(a.to_string(), b.trim().to_string())),
@@ -124,62 +129,62 @@ impl<S: Stream> MpdClient<S> {
     }
 
     pub fn authorize(&mut self, password: &str) -> MpdResult<()> {
-        self.run_command(format!("password {}", password)[])
+        self.exec_str("password", password)
     }
 
-    pub fn play(&mut self) -> MpdResult<()> { self.run_command("play") }
-    pub fn stop(&mut self) -> MpdResult<()> { self.run_command("stop") }
-    pub fn pause(&mut self, mode: bool) -> MpdResult<()> { self.run_command(format!("pause {}", mode as uint)[]) }
+    pub fn play(&mut self) -> MpdResult<()> { self.exec("play") }
+    pub fn stop(&mut self) -> MpdResult<()> { self.exec("stop") }
+    pub fn pause(&mut self, mode: bool) -> MpdResult<()> { self.exec_bool("pause", mode) }
 
-    pub fn volume(&mut self, vol: uint) -> MpdResult<()> { self.run_command(format!("setvol {}", vol)[]) }
-    pub fn change_volume(&mut self, vol: int) -> MpdResult<()> { self.run_command(format!("volume {}", vol)[]) }
+    pub fn volume(&mut self, vol: uint) -> MpdResult<()> { self.exec_arg("setvol", vol) }
+    pub fn change_volume(&mut self, vol: int) -> MpdResult<()> { self.exec_arg("volume", vol) }
 
-    pub fn repeat(&mut self, value: bool) -> MpdResult<()> { self.run_command(format!("repeat {}", value as uint)[]) }
-    pub fn single(&mut self, value: bool) -> MpdResult<()> { self.run_command(format!("single {}", value as uint)[]) }
-    pub fn consume(&mut self, value: bool) -> MpdResult<()> { self.run_command(format!("consume {}", value as uint)[]) }
-    pub fn random(&mut self, value: bool) -> MpdResult<()> { self.run_command(format!("random {}", value as uint)[]) }
-    pub fn crossfade(&mut self, value: Duration) -> MpdResult<()> { self.run_command(format!("crossfade {}", value.num_seconds())[]) }
-    pub fn mixrampdb(&mut self, value: f32) -> MpdResult<()> { self.run_command(format!("mixrampdb {}", value)[]) }
-    pub fn mixrampdelay(&mut self, value: Duration) -> MpdResult<()> { self.run_command(format!("mixrampdelay {}", value.num_seconds())[]) }
+    pub fn repeat(&mut self, value: bool) -> MpdResult<()> { self.exec_bool("repeat", value) }
+    pub fn single(&mut self, value: bool) -> MpdResult<()> { self.exec_bool("single", value) }
+    pub fn consume(&mut self, value: bool) -> MpdResult<()> { self.exec_bool("consume", value) }
+    pub fn random(&mut self, value: bool) -> MpdResult<()> { self.exec_bool("random", value) }
+    pub fn crossfade(&mut self, value: Duration) -> MpdResult<()> { self.exec_arg("crossfade", value.num_seconds()) }
+    pub fn mixrampdb(&mut self, value: f32) -> MpdResult<()> { self.exec_arg("mixrampdb", value) }
+    pub fn mixrampdelay(&mut self, value: Duration) -> MpdResult<()> { self.exec_arg("mixrampdelay", value.num_seconds()) }
 
-    pub fn next(&mut self) -> MpdResult<()> { self.run_command("next") }
-    pub fn prev(&mut self) -> MpdResult<()> { self.run_command("previous") }
+    pub fn next(&mut self) -> MpdResult<()> { self.exec("next") }
+    pub fn prev(&mut self) -> MpdResult<()> { self.exec("previous") }
 
-    pub fn play_pos(&mut self, pos: uint) -> MpdResult<()> { self.run_command(format!("play {}", pos)[]) }
-    pub fn play_id(&mut self, id: uint) -> MpdResult<()> { self.run_command(format!("playid {}", id)[]) }
+    pub fn play_pos(&mut self, pos: uint) -> MpdResult<()> { self.exec_arg("play", pos) }
+    pub fn play_id(&mut self, id: uint) -> MpdResult<()> { self.exec_arg("playid", id) }
 
-    pub fn status(&self) -> MpdResult<MpdStatus> {
-        try!(self.run_command("status"));
-        FromClient::from_client(self)
+    pub fn status(&mut self) -> MpdResult<MpdStatus> {
+        try!(self.exec("status"));
+        MpdResultIterator::new(self.socket.lines()).collect()
     }
-    //pub fn stats(&self) -> MpdResult<MpdStats> { FromClient::from_client(self) }
-    //pub fn current_song(&self) -> MpdResult<MpdSong> { self.run_command("currentsong").and_then(|()| FromClient::from_client(self)) }
+    pub fn stats(&mut self) -> MpdResult<MpdStats> {
+        try!(self.exec("stats"));
+        MpdResultIterator::new(self.socket.lines()).collect()
+    }
+    //pub fn current_song(&self) -> MpdResult<MpdSong> { self.exec("currentsong").and_then(|()| FromClient::from_client(self)) }
 
     //pub fn playlists(&self) -> MpdResult<MpdPlaylists> { FromClient::from_client(self) }
     //pub fn outputs(&self) -> MpdResult<MpdOutputs> { FromClient::from_client(self) }
 
-    pub fn update(&mut self, path: Option<&str>) -> MpdResult<uint> {
-        try!(self.run_command(format!("xpdate {}", path.unwrap_or(""))[]));
-        let result = match try!(self.socket.read_line()).parse::<MpdResult<MpdPair>>() {
+    pub fn update(&mut self, rescan: bool, path: Option<&str>) -> MpdResult<uint> {
+        try!(self.exec_args(if rescan { "rescan" } else { "update" }, &[path.unwrap_or("")]));
+        let mut iter = MpdResultIterator::new(self.socket.lines());
+        let result = match iter.next() {
             Some(Ok(MpdPair(ref key, ref value))) if key[] == "updating_db" => match value.parse() {
                 Some(v) => Ok(v),
                 None => Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))
             },
-            None => return Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput))),
-            Some(Ok(_)) => Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput))),
-            Some(Err(e)) => return Err(FromError::from_error(e))
+            Some(Err(e)) => return Err(FromError::from_error(e)),
+            _ => return Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput))),
         };
-        for s in self.socket.lines() {
-            match try!(s)[] {
-                "OK\n" | "OK_list\n" => break,
-                _ => continue
-            }
+        for s in iter {
+            try!(s);
         }
         result
     }
 
     //pub fn rescan(&mut self, path: Option<&str>) -> MpdResult<uint> {
-        //try!(self.run_command(format!("rescan {}", path.unwrap_or(""))[]));
+        //try!(self.exec(format!("rescan {}", path.unwrap_or(""))[]));
 
     //}
 
@@ -189,11 +194,59 @@ impl<S: Stream> MpdClient<S> {
         //MpdIdle::from_client(self, mask)
     //}
 
-    fn run_command(&mut self, command: &str) -> MpdResult<()> {
+    fn exec_args(&mut self, command: &str, args: &[&str]) -> MpdResult<()> {
         try!(self.socket.write(command.as_bytes()));
+        for arg in args.iter() {
+            try!(self.socket.write(b" "));
+            try!(self.socket.write(arg.as_bytes()));
+        }
+
         try!(self.socket.write(b"\n"));
         try!(self.socket.flush());
         Ok(())
     }
+
+    #[inline] fn exec(&mut self, command: &str) -> MpdResult<()> { self.exec_args(command, &[]) }
+    #[inline] fn exec_bool(&mut self, command: &str, val: bool) -> MpdResult<()> { self.exec_args(command, &[if val { "1" } else { "0" }]) }
+    #[inline] fn exec_str(&mut self, command: &str, val: &str) -> MpdResult<()> { self.exec_args(command, &[val]) }
+    #[inline] fn exec_arg<T: ToString>(&mut self, command: &str, val: T) -> MpdResult<()> { self.exec_args(command, &[val.to_string()[]]) }
+    #[inline] fn exec_arg2<T1: ToString, T2: ToString>(&mut self, command: &str, val1: T1, val2: T2) -> MpdResult<()> { self.exec_args(command, &[val1.to_string()[], val2.to_string()[]]) }
 }
 
+
+pub trait ForceEncodable<S: Encoder<E>, E> {
+    fn encode(&self, s: &mut S) -> Result<(), E>;
+}
+
+impl<'a, S: Encoder<E>, E> Encodable<S, E> for ForceEncodable<S, E> + 'a {
+    #[inline] fn encode(&self, s: &mut S) -> Result<(), E> {
+        self.encode(s)
+    }
+}
+
+impl<S: Encoder<E>, E> ForceEncodable<S, E> for Duration {
+    #[inline] fn encode(&self, s: &mut S) -> Result<(), E> {
+        s.emit_i64(self.num_milliseconds())
+    }
+}
+impl<S: Encoder<E>, E> ForceEncodable<S, E> for Timespec {
+    #[inline] fn encode(&self, s: &mut S) -> Result<(), E> {
+        s.emit_i64(self.sec)
+    }
+}
+impl<S: Encoder<E>, E> ForceEncodable<S, E> for Option<Duration> {
+    #[inline] fn encode(&self, s: &mut S) -> Result<(), E> {
+        s.emit_option(|s| match *self {
+            Some(v) => s.emit_option_some(|s| s.emit_i64(v.num_milliseconds())),
+            None => s.emit_option_none()
+        })
+    }
+}
+impl<S: Encoder<E>, E> ForceEncodable<S, E> for Option<Timespec> {
+    #[inline] fn encode(&self, s: &mut S) -> Result<(), E> {
+        s.emit_option(|s| match *self {
+            Some(v) => s.emit_option_some(|s| s.emit_i64(v.sec)),
+            None => s.emit_option_none()
+        })
+    }
+}

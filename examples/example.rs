@@ -15,7 +15,8 @@ fn main() {
     //let c = MpdConnection::new(Some("192.168.1.10"), 6600);
     let mut c = MpdClient::new(TcpStream::connect("192.168.1.10:6600").unwrap()).unwrap();
     println!("version: {}", c.version);
-    println!("update: {}", c.update(None));
+    println!("status: {}", c.status());
+    println!("stats: {}", c.stats());
     //let conn = match c {
         //None => panic!("connection is None"),
         //Some(Err(e)) => panic!("connection error: {}", e),
