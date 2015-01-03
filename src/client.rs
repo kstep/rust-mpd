@@ -146,21 +146,21 @@ impl<S: Stream> MpdClient<S> {
     pub fn play_id(&mut self, id: uint) -> MpdResult<()> { self.exec_arg("playid", id) }
 
     pub fn status(&mut self) -> MpdResult<MpdStatus> {
-        self.exec("status").and_then(|()| self.iter().collect())
+        self.exec("status").and_then(|_| self.iter().collect())
     }
     pub fn stats(&mut self) -> MpdResult<MpdStats> {
-        self.exec("stats").and_then(|()| self.iter().collect())
+        self.exec("stats").and_then(|_| self.iter().collect())
     }
     pub fn current_song(&mut self) -> MpdResult<MpdSong> {
-        self.exec("currentsong").and_then(|()| self.iter().collect())
+        self.exec("currentsong").and_then(|_| self.iter().collect())
     }
 
     pub fn playlists(&mut self) -> MpdResult<Vec<MpdPlaylist>> {
-        self.exec("listplaylists").and_then(|()| self.iter().collect())
+        self.exec("listplaylists").and_then(|_| self.iter().collect())
     }
 
     pub fn outputs(&mut self) -> MpdResult<Vec<MpdOutput>> {
-        self.exec("outputs").and_then(|()| self.iter().collect())
+        self.exec("outputs").and_then(|_| self.iter().collect())
     }
 
     pub fn update(&mut self, rescan: bool, path: Option<&str>) -> MpdResult<uint> {
@@ -181,7 +181,7 @@ impl<S: Stream> MpdClient<S> {
     }
 
     pub fn queue(&mut self) -> MpdResult<Vec<MpdSong>> {
-        self.exec("playlistinfo").and_then(|()| self.iter().collect())
+        self.exec("playlistinfo").and_then(|_| self.iter().collect())
     }
 
     //pub fn wait(&self, mask: Option<MpdEvent>) -> MpdIdle {

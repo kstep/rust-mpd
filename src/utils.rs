@@ -72,7 +72,7 @@ impl<'a, I: 'a + Iterator<MpdResult<MpdPair>>> Iterator<MpdResult<MpdPair>> for 
 impl<S: Encoder<E>, E, T1: ForceEncodable<S, E>, T2: ForceEncodable<S, E>> ForceEncodable<S, E> for (T1, T2) {
     #[inline] fn encode(&self, s: &mut S) -> Result<(), E> {
         s.emit_tuple(2, |s| {
-            self.0.encode(s).and_then(|()| self.1.encode(s))
+            self.0.encode(s).and_then(|_| self.1.encode(s))
         })
     }
 }
