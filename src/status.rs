@@ -1,16 +1,13 @@
-
-use libc::{c_uint, c_int, c_float, c_uchar};
-use std::fmt::{Show, Error, Formatter};
 use std::time::duration::Duration;
 use std::str::FromStr;
-use std::io::{IoError, standard_error, IoErrorKind};
+use std::io::{standard_error, IoErrorKind};
 use std::error::FromError;
-
-use client::{MpdClient, MpdPair, ForceEncodable};
-use error::MpdResult;
 use rustc_serialize::{Encoder, Encodable};
 
-#[deriving(Show, RustcEncodable)]
+use error::MpdResult;
+use client::{MpdPair, ForceEncodable};
+
+#[deriving(Show, Copy, RustcEncodable)]
 pub struct AudioFormat {
     pub rate: u32,
     pub bits: u8,
@@ -35,7 +32,7 @@ impl FromStr for AudioFormat {
     }
 }
 
-#[deriving(Show, RustcEncodable)]
+#[deriving(Show, Copy, RustcEncodable)]
 pub enum MpdState {
     Stop,
     Play,

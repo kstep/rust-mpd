@@ -1,14 +1,13 @@
-use libc::{c_uint, c_ulong};
 use std::time::duration::Duration;
-use std::fmt::{Show, Error, Formatter};
+use std::io::{standard_error, IoErrorKind};
+use std::error::FromError;
 use time::Timespec;
 use rustc_serialize::{Encoder, Encodable};
-use client::{MpdClient, MpdPair, ForceEncodable};
-use std::io::{IoError, standard_error, IoErrorKind};
-use std::error::FromError;
-use error::MpdResult;
 
-#[deriving(Show, RustcEncodable)]
+use error::MpdResult;
+use client::{MpdPair, ForceEncodable};
+
+#[deriving(Show, Copy, RustcEncodable)]
 pub struct MpdStats {
     uptime: Duration,
     playtime: Duration,

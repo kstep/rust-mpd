@@ -1,27 +1,22 @@
-
 use std::time::duration::Duration;
-use std::c_str::ToCStr;
-use std::ptr;
-use std::io::{Stream, BufferedStream, IoResult};
-use std::io::net::ip::{Port, ToSocketAddr};
-use std::io::net::tcp::TcpStream;
-use std::str::FromStr;
-use std::collections::enum_set::CLike;
-use std::error::{Error, FromError};
 use std::string::ToString;
-use rustc_serialize::{Encoder, Encodable};
+use std::str::FromStr;
+use std::io::{standard_error, IoErrorKind};
+use std::io::{Stream, BufferedStream, IoResult};
+use std::error::FromError;
 use time::Timespec;
 
-use std::io::{IoError, standard_error, IoErrorKind};
-use error::{MpdResult, MpdError, MpdErrorCode, MpdServerError};
-//use outputs::{MpdOutputs, MpdOutput};
-//use playlists::MpdPlaylists;
-//use songs::{MpdSong, mpd_song};
 use status::MpdStatus;
-//use settings::MpdSettings;
 use stats::MpdStats;
+use rustc_serialize::{Encoder, Encodable};
+use error::{MpdResult, MpdServerError};
+//use songs::{MpdSong, mpd_song};
+//use settings::MpdSettings;
 //use queue::MpdQueue;
+//use playlists::MpdPlaylists;
+//use outputs::{MpdOutputs, MpdOutput};
 //use idle::{MpdIdle, MpdEvent};
+
 
 struct MpdResultIterator<I: Iterator<IoResult<String>>> {
   inner: I
@@ -94,8 +89,8 @@ impl FromStr for MpdResult<MpdPair> {
     }
 }
 
-#[deriving(Show)]
-pub struct MpdVersion(uint, uint, uint);
+#[deriving(Show, Copy)]
+pub struct MpdVersion(pub uint, pub uint, pub uint);
 
 impl FromStr for MpdVersion {
     fn from_str(s: &str) -> Option<MpdVersion> {
@@ -234,18 +229,10 @@ impl<S: Encoder<E>, E> ForceEncodable<S, E> for Timespec {
         s.emit_i64(self.sec)
     }
 }
-impl<S: Encoder<E>, E> ForceEncodable<S, E> for Option<Duration> {
+impl<S: Encoder<E>, E, T: ForceEncodable<S, E>> ForceEncodable<S, E> for Option<T> {
     #[inline] fn encode(&self, s: &mut S) -> Result<(), E> {
         s.emit_option(|s| match *self {
-            Some(v) => s.emit_option_some(|s| s.emit_i64(v.num_milliseconds())),
-            None => s.emit_option_none()
-        })
-    }
-}
-impl<S: Encoder<E>, E> ForceEncodable<S, E> for Option<Timespec> {
-    #[inline] fn encode(&self, s: &mut S) -> Result<(), E> {
-        s.emit_option(|s| match *self {
-            Some(v) => s.emit_option_some(|s| s.emit_i64(v.sec)),
+            Some(ref v) => s.emit_option_some(|s| v.encode(s)),
             None => s.emit_option_none()
         })
     }

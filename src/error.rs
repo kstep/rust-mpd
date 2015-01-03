@@ -1,10 +1,10 @@
-use std::error::{Error, FromError};
-use rustc_serialize::{Encoder, Encodable};
-use std::io::{IoError, standard_error, IoErrorKind};
-use std::collections::enum_set::CLike;
 use std::str::FromStr;
+use std::io::IoError;
+use std::error::{Error, FromError};
+use std::collections::enum_set::CLike;
+use rustc_serialize::{Encoder, Encodable};
 
-#[deriving(Show, RustcEncodable)]
+#[deriving(Show, Copy, RustcEncodable)]
 pub enum MpdErrorCode {
     NotList,
     Argument,
