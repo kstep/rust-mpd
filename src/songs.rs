@@ -6,7 +6,8 @@ use time::{Timespec, strptime};
 use rustc_serialize::{Encoder, Encodable};
 
 use error::MpdResult;
-use client::{MpdPair, FieldCutIter, ForceEncodable};
+use client::MpdPair;
+use utils::{FieldCutIter, ForceEncodable};
 
 #[deriving(Show, Copy, RustcEncodable)]
 pub struct MpdQueuePlace {

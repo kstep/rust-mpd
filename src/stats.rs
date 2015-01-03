@@ -5,7 +5,8 @@ use time::Timespec;
 use rustc_serialize::{Encoder, Encodable};
 
 use error::MpdResult;
-use client::{MpdPair, ForceEncodable};
+use client::MpdPair;
+use utils::ForceEncodable;
 
 #[deriving(Show, Copy, RustcEncodable)]
 pub struct MpdStats {

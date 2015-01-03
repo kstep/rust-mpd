@@ -3,7 +3,8 @@ use std::io::{standard_error, IoErrorKind};
 use std::error::FromError;
 
 use error::MpdResult;
-use client::{MpdPair, FieldCutIter};
+use client::MpdPair;
+use utils::FieldCutIter;
 use rustc_serialize::{Encoder, Encodable};
 
 #[deriving(RustcEncodable, Show)]
