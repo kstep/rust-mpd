@@ -9,7 +9,7 @@ use status::MpdStatus;
 use stats::MpdStats;
 use rustc_serialize::{Encoder, Encodable};
 use error::{MpdResult, MpdServerError};
-//use songs::{MpdSong, mpd_song};
+use songs::MpdSong;
 //use settings::MpdSettings;
 //use queue::MpdQueue;
 //use playlists::MpdPlaylists;
@@ -153,7 +153,9 @@ impl<S: Stream> MpdClient<S> {
     pub fn stats(&mut self) -> MpdResult<MpdStats> {
         self.exec("stats").and_then(|()| self.iter().collect())
     }
-    //pub fn current_song(&self) -> MpdResult<MpdSong> { self.exec("currentsong").and_then(|()| FromClient::from_client(self)) }
+    pub fn current_song(&mut self) -> MpdResult<MpdSong> {
+        self.exec("currentsong").and_then(|()| self.iter().collect())
+    }
 
     //pub fn playlists(&self) -> MpdResult<MpdPlaylists> { FromClient::from_client(self) }
     //pub fn outputs(&self) -> MpdResult<MpdOutputs> { FromClient::from_client(self) }

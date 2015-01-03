@@ -17,6 +17,7 @@ fn main() {
     println!("version: {}", c.version);
     println!("status: {}", c.status());
     println!("stats: {}", c.stats());
+    println!("song: {}", c.current_song());
     //let conn = match c {
         //None => panic!("connection is None"),
         //Some(Err(e)) => panic!("connection error: {}", e),
