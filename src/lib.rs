@@ -12,7 +12,6 @@ pub mod error;
 pub mod status;
 pub mod stats;
 pub mod outputs;
-//pub mod tags;
 pub mod songs;
 //pub mod playlists;
 //pub mod idle;
