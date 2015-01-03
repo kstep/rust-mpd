@@ -1,5 +1,6 @@
 
 use std::time::duration::Duration;
+use std::io::{standard_error, IoErrorKind};
 use std::collections::BTreeMap;
 use time::{Timespec, strptime};
 use rustc_serialize::{Encoder, Encodable};
