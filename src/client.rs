@@ -1,8 +1,7 @@
 use std::time::duration::Duration;
 use std::string::ToString;
 use std::str::FromStr;
-use std::io::{standard_error, IoErrorKind};
-use std::io::{Stream, BufferedStream, IoResult};
+use std::io::{Stream, BufferedStream, Lines, IoResult, IoErrorKind, standard_error};
 use std::error::FromError;
 use time::Timespec;
 
@@ -149,12 +148,10 @@ impl<S: Stream> MpdClient<S> {
     pub fn play_id(&mut self, id: uint) -> MpdResult<()> { self.exec_arg("playid", id) }
 
     pub fn status(&mut self) -> MpdResult<MpdStatus> {
-        try!(self.exec("status"));
-        MpdResultIterator::new(self.socket.lines()).collect()
+        self.exec("status").and_then(|()| self.iter().collect())
     }
     pub fn stats(&mut self) -> MpdResult<MpdStats> {
-        try!(self.exec("stats"));
-        MpdResultIterator::new(self.socket.lines()).collect()
+        self.exec("stats").and_then(|()| self.iter().collect())
     }
     //pub fn current_song(&self) -> MpdResult<MpdSong> { self.exec("currentsong").and_then(|()| FromClient::from_client(self)) }
 
@@ -163,7 +160,7 @@ impl<S: Stream> MpdClient<S> {
 
     pub fn update(&mut self, rescan: bool, path: Option<&str>) -> MpdResult<uint> {
         try!(self.exec_args(if rescan { "rescan" } else { "update" }, &[path.unwrap_or("")]));
-        let mut iter = MpdResultIterator::new(self.socket.lines());
+        let mut iter = self.iter();
         let result = match iter.next() {
             Some(Ok(MpdPair(ref key, ref value))) if key[] == "updating_db" => match value.parse() {
                 Some(v) => Ok(v),
@@ -178,16 +175,15 @@ impl<S: Stream> MpdClient<S> {
         result
     }
 
-    //pub fn rescan(&mut self, path: Option<&str>) -> MpdResult<uint> {
-        //try!(self.exec(format!("rescan {}", path.unwrap_or(""))[]));
-
-    //}
-
     //pub fn queue(&self) -> MpdResult<MpdQueue> { FromClient::from_client(self) }
 
     //pub fn wait(&self, mask: Option<MpdEvent>) -> MpdIdle {
         //MpdIdle::from_client(self, mask)
     //}
+
+    #[inline] fn iter(&mut self) -> MpdResultIterator<Lines<BufferedStream<S>>> {
+        MpdResultIterator::new(self.socket.lines())
+    }
 
     fn exec_args(&mut self, command: &str, args: &[&str]) -> MpdResult<()> {
         try!(self.socket.write(command.as_bytes()));
