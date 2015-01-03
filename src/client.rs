@@ -180,7 +180,7 @@ impl<S: Stream> MpdClient<S> {
         result
     }
 
-    pub fn playlist(&mut self) -> MpdResult<Vec<MpdSong>> {
+    pub fn queue(&mut self) -> MpdResult<Vec<MpdSong>> {
         self.exec("playlistinfo").and_then(|()| self.iter().collect())
     }
 

@@ -5,6 +5,7 @@ use std::error::FromError;
 use rustc_serialize::{Encoder, Encodable};
 
 use error::MpdResult;
+use songs::MpdQueuePlace;
 use client::{MpdPair, ForceEncodable};
 
 #[deriving(Show, Copy, RustcEncodable)]
@@ -57,13 +58,11 @@ pub struct MpdStatus {
     random: bool,
     single: bool,
     consume: bool,
-    playlist: uint,
-    playlistlength: uint,
+    queue_version: uint,
+    queue_len: uint,
     state: MpdState,
-    song: Option<uint>,
-    songid: Option<uint>,
-    nextsong: Option<uint>,
-    nextsongid: Option<uint>,
+    song: Option<MpdQueuePlace>,
+    nextsong: Option<MpdQueuePlace>,
     time: Option<Duration>,
     elapsed: Option<Duration>,
     duration: Option<Duration>,
@@ -84,13 +83,11 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdStatus> {
             random: false,
             single: false,
             consume: false,
-            playlist: 0,
-            playlistlength: 0,
+            queue_version: 0,
+            queue_len: 0,
             state: MpdState::Stop,
             song: None,
-            songid: None,
             nextsong: None,
-            nextsongid: None,
             time: None,
             elapsed: None,
             duration: None,
@@ -104,6 +101,8 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdStatus> {
         };
 
         let mut iter = iterator;
+        let mut song_place = MpdQueuePlace { id: 0, pos: 0, prio: 0 };
+        let mut next_song_place = MpdQueuePlace { id: 0, pos: 0, prio: 0 };
 
         for field in iter {
             let MpdPair(key, value) = try!(field);
@@ -113,13 +112,13 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdStatus> {
                 "random"         => status.random = value[] == "1",
                 "single"         => status.single = value[] == "1",
                 "consume"        => status.consume = value[] == "1",
-                "playlist"       => status.playlist = value.parse().unwrap_or(0),
-                "playlistlength" => status.playlistlength = value.parse().unwrap_or(0),
+                "playlist"       => status.queue_version = value.parse().unwrap_or(0),
+                "playlistlength" => status.queue_len = value.parse().unwrap_or(0),
                 "state"          => status.state = value.parse().unwrap_or(MpdState::Stop),
-                "song"           => status.song = value.parse(),
-                "songid"         => status.songid = value.parse(),
-                "nextsong"       => status.nextsong = value.parse(),
-                "nextsongid"     => status.nextsongid = value.parse(),
+                "song"           => song_place.pos = value.parse().unwrap_or(0),
+                "songid"         => song_place.id = value.parse().unwrap_or(0),
+                "nextsong"       => next_song_place.pos = value.parse().unwrap_or(0),
+                "nextsongid"     => next_song_place.id = value.parse().unwrap_or(0),
                 "time"           => status.time = value.parse().map(Duration::seconds),
                 "elapsed"        => status.elapsed = value.parse().map(Duration::seconds),
                 "duration"       => status.duration = value.parse().map(Duration::seconds),
@@ -132,6 +131,13 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdStatus> {
                 "error"          => status.error = Some(value),
                 _ => return Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))
             }
+        }
+
+        if song_place.id > 0 {
+            status.song = Some(song_place);
+        }
+        if next_song_place.id > 0 {
+            status.nextsong = Some(next_song_place);
         }
 
         Ok(status)

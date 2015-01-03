@@ -18,7 +18,7 @@ fn main() {
     println!("status: {}", c.status());
     println!("stats: {}", c.stats());
     //println!("song: {}", c.current_song());
-    println!("queue: {}", c.playlist());
+    println!("queue: {}", c.queue());
     println!("outputs: {}", c.outputs());
     //let conn = match c {
         //None => panic!("connection is None"),
