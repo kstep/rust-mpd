@@ -1,3 +1,5 @@
+#![macro_escape]
+
 use std::iter::Peekable;
 use std::time::duration::Duration;
 use time::Timespec;
@@ -72,5 +74,22 @@ impl<S: Encoder<E>, E, T1: ForceEncodable<S, E>, T2: ForceEncodable<S, E>> Force
         s.emit_tuple(2, |s| {
             self.0.encode(s).and_then(|()| self.1.encode(s))
         })
+    }
+}
+
+macro_rules! mpd_collectable {
+    ($typ:ty, $first_field:expr) => {
+        impl FromIterator<MpdResult<MpdPair>> for MpdResult<Vec<$typ>> {
+            fn from_iter<I: Iterator<MpdResult<MpdPair>>>(iterator: I) -> MpdResult<Vec<$typ>> {
+                let mut iter = iterator.fuse().peekable();
+                let mut result = Vec::new();
+
+                while !iter.is_empty() {
+                    result.push(try!(FieldCutIter::new(&mut iter, $first_field).collect()));
+                }
+
+                Ok(result)
+            }
+        }
     }
 }

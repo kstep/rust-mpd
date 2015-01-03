@@ -74,17 +74,4 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdSong> {
     }
 }
 
-impl FromIterator<MpdResult<MpdPair>> for MpdResult<Vec<MpdSong>> {
-    fn from_iter<T: Iterator<MpdResult<MpdPair>>>(iterator: T) -> MpdResult<Vec<MpdSong>> {
-        let mut iter = iterator.fuse().peekable();
-        let mut result = Vec::new();
-
-        while !iter.is_empty() {
-            let song = try!(FieldCutIter::new(&mut iter, "file").collect());
-            result.push(song);
-        }
-
-        Ok(result)
-    }
-}
-
+mpd_collectable!(MpdSong, "file");

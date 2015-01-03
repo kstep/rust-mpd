@@ -38,16 +38,4 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdOutput> {
     }
 }
 
-impl FromIterator<MpdResult<MpdPair>> for MpdResult<Vec<MpdOutput>> {
-    fn from_iter<T: Iterator<MpdResult<MpdPair>>>(iterator: T) -> MpdResult<Vec<MpdOutput>> {
-        let mut iter = iterator.fuse().peekable();
-        let mut result = Vec::new();
-
-        while !iter.is_empty() {
-            let output = try!(FieldCutIter::new(&mut iter, "outputid").collect());
-            result.push(output);
-        }
-
-        Ok(result)
-    }
-}
+mpd_collectable!(MpdOutput, "outputid");

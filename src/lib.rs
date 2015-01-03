@@ -8,12 +8,10 @@ pub mod client;
 mod utils;
 pub mod error;
 //pub mod queue;
-//pub mod settings;
 pub mod status;
 pub mod stats;
 pub mod outputs;
 pub mod songs;
-//pub mod playlists;
+pub mod playlists;
 //pub mod idle;
-
 
