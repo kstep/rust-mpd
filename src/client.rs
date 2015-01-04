@@ -208,5 +208,6 @@ impl<S: Stream> MpdClient<S> {
     #[inline] pub fn exec_bool(&mut self, command: &str, val: bool) -> MpdResult<()> { self.exec_args(command, &[if val { "1" } else { "0" }]) }
     #[inline] pub fn exec_str(&mut self, command: &str, val: &str) -> MpdResult<()> { self.exec_args(command, &[val]) }
     #[inline] pub fn exec_arg<T: ToString>(&mut self, command: &str, val: T) -> MpdResult<()> { self.exec_args(command, &[val.to_string()[]]) }
+    #[inline] pub fn exec_arg2<T1: ToString, T2: ToString>(&mut self, command: &str, val1: T1, val2: T2) -> MpdResult<()> { self.exec_args(command, &[val1.to_string()[], val2.to_string()[]]) }
 }
 

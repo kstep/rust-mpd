@@ -1,13 +1,13 @@
 
 use std::time::duration::Duration;
-use std::io::{standard_error, IoErrorKind};
+use std::io::{standard_error, IoErrorKind, Stream};
 use std::iter::FromIterator;
 use std::collections::BTreeMap;
 use time::{Timespec, strptime};
 use rustc_serialize::{Encoder, Encodable};
 
 use error::MpdResult;
-use client::MpdPair;
+use client::{MpdPair, MpdClient};
 use utils::{FieldCutIter, ForceEncodable};
 
 #[derive(Show, Copy, RustcEncodable)]
@@ -25,6 +25,12 @@ pub struct MpdSong {
     pub place: Option<MpdQueuePlace>,
     pub range: (Duration, Option<Duration>),
     pub tags: BTreeMap<String, String>,
+}
+
+impl MpdSong {
+    pub fn seek<S: Stream>(&self, cli: &mut MpdClient<S>, time: Duration) -> MpdResult<()> {
+        cli.exec_arg2("seekid", self.place.unwrap().id, time.num_milliseconds() as f32 / 1000f32)
+    }
 }
 
 impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdSong> {

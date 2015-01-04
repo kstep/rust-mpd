@@ -1,10 +1,10 @@
 
-use std::io::{standard_error, IoErrorKind};
+use std::io::{standard_error, IoErrorKind, Stream};
 use std::iter::FromIterator;
 use std::error::FromError;
 
 use error::MpdResult;
-use client::MpdPair;
+use client::{MpdPair, MpdClient};
 use utils::FieldCutIter;
 use rustc_serialize::{Encoder, Encodable};
 
@@ -13,6 +13,18 @@ pub struct MpdOutput {
     pub id: uint,
     pub name: String,
     pub enabled: bool
+}
+
+impl MpdOutput {
+    pub fn enable<S: Stream>(&mut self, cli: &mut MpdClient<S>) -> MpdResult<()> {
+        cli.exec_arg("enableoutput", self.id).map(|_| self.enabled = true)
+    }
+    pub fn disable<S: Stream>(&mut self, cli: &mut MpdClient<S>) -> MpdResult<()> {
+        cli.exec_arg("disableoutput", self.id).map(|_| self.enabled = false)
+    }
+    pub fn toggle<S: Stream>(&mut self, cli: &mut MpdClient<S>) -> MpdResult<()> {
+        cli.exec_arg("toggleoutput", self.id).map(|_| self.enabled = !self.enabled)
+    }
 }
 
 impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdOutput> {
