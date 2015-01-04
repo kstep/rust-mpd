@@ -95,6 +95,21 @@ pub enum MpdError {
     Io(IoError),
 }
 
+impl<S, E> Encodable<S, E> for MpdError where S: Encoder<E> {
+    fn encode(&self, s: &mut S) -> Result<(), E> {
+        match *self {
+            MpdError::Mpd(ref err) => err.encode(s),
+            MpdError::Io(ref err) => {
+                s.emit_struct("IoError", 3, |s| {
+                    s.emit_struct_field("kind", 0, |s| err.kind.to_string().encode(s)).and_then(|_|
+                    s.emit_struct_field("desc", 1, |s| err.desc.encode(s))).and_then(|_|
+                    s.emit_struct_field("detail", 2, |s| err.detail.encode(s)))
+                })
+            }
+        }
+    }
+}
+
 impl Error for MpdServerError {
     fn description(&self) -> &str {
         match self.code {
@@ -177,13 +192,13 @@ impl FromStr for MpdServerError {
 
 pub type MpdResult<T> = Result<T, MpdError>;
 
-//impl<S, E, T> Encodable<S, E> for MpdResult<T>
-    //where S: Encoder<E>, T: Encodable<S, E> {
+impl<S, E, T> Encodable<S, E> for MpdResult<T>
+    where S: Encoder<E>, T: Encodable<S, E> {
 
-    //fn encode(&self, s: &mut S) -> Result<(), E> {
-        //match *self {
-            //Ok(ref v) => v.encode(s),
-            //Err(ref e) => e.encode(s)
-        //}
-    //}
-//}
+    fn encode(&self, s: &mut S) -> Result<(), E> {
+        match *self {
+            Ok(ref v) => v.encode(s),
+            Err(ref e) => e.encode(s)
+        }
+    }
+}
