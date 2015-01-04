@@ -4,7 +4,7 @@ use std::error::{Error, FromError};
 use std::collections::enum_set::CLike;
 use rustc_serialize::{Encoder, Encodable};
 
-#[deriving(Show, Copy, RustcEncodable)]
+#[derive(Show, Copy, RustcEncodable)]
 pub enum MpdErrorCode {
     NotList,
     Argument,
@@ -81,7 +81,7 @@ impl CLike for MpdErrorCode {
     }
 }
 
-#[deriving(Show, RustcEncodable)]
+#[derive(Show, RustcEncodable)]
 pub struct MpdServerError {
     pub code: MpdErrorCode,
     pub pos: uint,
@@ -89,7 +89,7 @@ pub struct MpdServerError {
     pub detail: String
 }
 
-#[deriving(Show)]
+#[derive(Show)]
 pub enum MpdError {
     Mpd(MpdServerError),
     Io(IoError),

@@ -35,7 +35,7 @@ impl<I: Iterator<IoResult<String>>> Iterator<MpdResult<MpdPair>> for MpdResultIt
     }
 }
 
-#[deriving(Show)]
+#[derive(Show)]
 pub struct MpdPair(pub String, pub String);
 
 impl FromStr for MpdPair {
@@ -86,7 +86,7 @@ impl FromStr for MpdResult<MpdPair> {
     }
 }
 
-#[deriving(Show, Copy)]
+#[derive(Show, Copy)]
 pub struct MpdVersion(pub uint, pub uint, pub uint);
 
 impl FromStr for MpdVersion {

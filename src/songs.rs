@@ -1,6 +1,7 @@
 
 use std::time::duration::Duration;
 use std::io::{standard_error, IoErrorKind};
+use std::iter::FromIterator;
 use std::collections::BTreeMap;
 use time::{Timespec, strptime};
 use rustc_serialize::{Encoder, Encodable};
@@ -9,14 +10,14 @@ use error::MpdResult;
 use client::MpdPair;
 use utils::{FieldCutIter, ForceEncodable};
 
-#[deriving(Show, Copy, RustcEncodable)]
+#[derive(Show, Copy, RustcEncodable)]
 pub struct MpdQueuePlace {
     pub id: uint,
     pub pos: uint,
     pub prio: uint
 }
 
-#[deriving(Show, RustcEncodable)]
+#[derive(Show, RustcEncodable)]
 pub struct MpdSong {
     pub file: String,
     pub last_mod: Timespec,

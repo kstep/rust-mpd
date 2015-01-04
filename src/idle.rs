@@ -5,7 +5,7 @@ use error::MpdResult;
 use std::str::FromStr;
 
 bitflags! {
-    #[deriving(RustcEncodable)]
+    #[derive(RustcEncodable)]
     #[repr(C)]
     flags MpdEvent: c_uint {
         const DATABASE = 0x1,

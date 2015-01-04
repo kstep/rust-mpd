@@ -1,5 +1,6 @@
 
 use std::io::{standard_error, IoErrorKind};
+use std::iter::FromIterator;
 use std::error::FromError;
 
 use error::MpdResult;
@@ -7,7 +8,7 @@ use client::MpdPair;
 use utils::FieldCutIter;
 use rustc_serialize::{Encoder, Encodable};
 
-#[deriving(RustcEncodable, Show)]
+#[derive(RustcEncodable, Show)]
 pub struct MpdOutput {
     pub id: uint,
     pub name: String,
