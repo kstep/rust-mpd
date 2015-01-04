@@ -14,7 +14,7 @@ use utils::{FieldCutIter, ForceEncodable};
 pub struct MpdQueuePlace {
     pub id: uint,
     pub pos: uint,
-    pub prio: uint
+    pub prio: u8
 }
 
 #[derive(Show, RustcEncodable)]
