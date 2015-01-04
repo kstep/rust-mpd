@@ -1,215 +1,78 @@
 
 use error::MpdResult;
-use client::{FromClient, MpdClient, mpd_connection};
-use songs::{MpdSong, MpdSongs, ToSongUri, mpd_song};
+use client::MpdClient;
+use songs::MpdSong;
 use playlists::MpdPlaylist;
 
-pub struct MpdQueue {
-    pub conn: &'a MpdClient
+pub struct MpdQueue;
+
+pub trait MpdQueuePos {
+    fn to_pos(self) -> String;
 }
 
-impl<'a> MpdQueue<'a> {
-    pub fn from_client(conn: &'a MpdClient) -> MpdQueue<'a> {
-        MpdQueue { conn: conn }
+impl MpdQueuePos for uint {
+    fn to_pos(self) -> String { self.to_string() }
+}
+
+impl MpdQueuePos for (uint, uint) {
+    fn to_pos(self) -> String { format!("{}:{}", self.0, self.1) }
+}
+
+impl MpdQueue {
+    pub fn clear<S: Stream>(client: &mut MpdClient<S>) -> MpdResult<()> {
+        client.exec("clear").and_then(|_| client.ok())
     }
 
-    /// Get song at some position in queue
-    pub fn nth(&self, index: uint) -> MpdResult<MpdSong> {
-        let song = unsafe { mpd_run_get_queue_song_pos(self.conn.conn, index as c_uint) };
-        if song.is_null() {
-            Err(FromClient::from_client(self.conn).unwrap())
-        } else {
-            Ok(MpdSong { song: song })
-        }
+    pub fn push<S: Stream>(client: &mut MpdClient<S>, file: &str) -> MpdResult<()> {
+        client.exec_arg("add", file).and_then(|_| client.ok())
     }
 
-    /// Get song by queue id
-    pub fn get(&self, id: uint) -> MpdResult<MpdSong> {
-        let song = unsafe { mpd_run_get_queue_song_id(self.conn.conn, id as c_uint) };
-        if song.is_null() {
-            Err(FromClient::from_client(self.conn).unwrap())
-        } else {
-            Ok(MpdSong { song: song })
-        }
+    pub fn insert<S: Stream>(client: &mut MpdClient<S>, index: uint, file: &str) -> MpdResult<uint> {
+        let result = client.exec_arg2("addid", file, uint)
+            .and_then(|_| client.iter().next().unwrap_or(Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))))
+            .and_then(|Ok(MpdPair(ref name, ref value))| if name[] == "Id" { Ok(value.parse()) } else {
+                Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput))) });
+        try!(client.ok());
+        result
     }
 
-    /// Insert new song into queue at given position
-    pub fn insert<T: ToSongUri>(&mut self, pos: uint, song: T) -> MpdResult<uint> {
-        let uid = unsafe { mpd_run_add_id_to(self.conn.conn, song.song_uri().as_ptr(), pos as c_uint) };
-        if uid < 0 {
-            Err(FromClient::from_client(self.conn).unwrap())
-        } else {
-            Ok(uid as uint)
-        }
+    pub fn swap<S: Stream>(client: &mut MpdClient<S>, index1: uint, index2: uint) -> MpdResult<uint> {
+        client.exec_arg2("swap", index1, index2).and_then(|_| client.ok())
     }
 
-    /// Add song at the end of the queue
-    pub fn push<T: ToSongUri>(&mut self, song: T) -> MpdResult<uint> {
-        let uid = unsafe { mpd_run_add_id(self.conn.conn, song.song_uri().as_ptr()) };
-        if uid < 0 {
-            Err(FromClient::from_client(self.conn).unwrap())
-        } else {
-            Ok(uid as uint)
-        }
+    pub fn shift<S: Stream, I: MpdQueuePos>(client: &mut MpdClient<S>, index: I, target: uint) -> MpdResult<()> {
+        client.exec_arg2("move", index.to_pos(), target).and_then(|_| client.ok())
     }
 
-    /// Move song to some position in queue
-    pub fn move_pos(&mut self, to: uint, from: uint) -> MpdResult<()> {
-        if unsafe { mpd_run_move(self.conn.conn, from as c_uint, to as c_uint) } {
-            Ok(())
-        } else {
-            Err(FromClient::from_client(self.conn).unwrap())
-        }
+    pub fn get<S: Stream, I: MpdQueuePos>(client: &mut MpdClient<S>, index: I) -> MpdResult<MpdSong> {
+        client.exec_arg("playlistinfo", index.to_pos()).and_then(|_| client.iter().collect())
     }
 
-    /// Move songs in given range
-    pub fn move_range(&mut self, pos: uint, start: uint, end: uint) -> MpdResult<()> {
-        if unsafe { mpd_run_move_range(self.conn.conn, start as c_uint, end as c_uint, pos as c_uint) } {
-            Ok(())
-        } else {
-            Err(FromClient::from_client(self.conn).unwrap())
-        }
+    pub fn remove<S: Stream, I: MpdQueuePos>(client: &mut MpdClient<S>, index: I) -> MpdResult<()> {
+        client.exec_arg("delete", index.to_pos()).and_then(|_| client.ok())
     }
 
-    /// Move song to some position in queue by id
-    pub fn move_to(&mut self, pos: uint, song: &MpdSong) -> MpdResult<()> {
-        self.move_id(pos, song.id())
+    pub fn songs<S: Stream>(client: &mut MpdClient<S>) -> MpdResult<Vec<MpdSong>> {
+        client.exec("playlistinfo").and_then(|_| client.iter().collect())
     }
 
-    pub fn move_id(&mut self, pos: uint, id: uint) -> MpdResult<()> {
-        if unsafe { mpd_run_move_id(self.conn.conn, id as c_uint, pos as c_uint) } {
-            Ok(())
-        } else {
-            Err(FromClient::from_client(self.conn).unwrap())
-        }
+    pub fn shuffle_slice<S: Stream>(client: &mut MpdClient<S>, slice: (uint, uint)) -> MpdResult<()> {
+        client.exec_arg("shuffle", format!("{}:{}", slice.0, slice.1)).and_then(|_| client.ok())
     }
 
-    /// Swap two songs in given positions
-    pub fn swap_pos(&mut self, song1: uint, song2: uint) -> MpdResult<()> {
-        if unsafe { mpd_run_swap(self.conn.conn, song1 as c_uint, song2 as c_uint) } {
-            Ok(())
-        } else {
-            Err(FromClient::from_client(self.conn).unwrap())
-        }
+    pub fn shuffle<S: Stream>(client: &mut MpdClient<S>) -> MpdResult<()> {
+        client.exec("shuffle").and_then(|_| client.ok())
     }
 
-    /// Swap two songs in given positions by id
-    pub fn swap(&mut self, song1: &MpdSong, song2: &MpdSong) -> MpdResult<()> {
-        self.swap_id(song1.id(), song2.id())
+    pub fn load<S: Stream>(client: &mut MpdClient<S>, name: &str) -> MpdResult<()> {
+        client.exec_arg("load", name).and_then(|_| client.ok())
     }
 
-    pub fn swap_id(&mut self, song1: uint, song2: uint) -> MpdResult<()> {
-        if unsafe { mpd_run_swap_id(self.conn.conn, song1 as c_uint, song2 as c_uint) } {
-            Ok(())
-        } else {
-            Err(FromClient::from_client(self.conn).unwrap())
-        }
+    pub fn load_slice<S: Stream>(client: &mut MpdClient<S>, name: &str, slice: (uint, uint)) -> MpdResult<()> {
+        client.exec_arg2("load", name, format!("{}:{}", slice.0, slice.1)).and_then(|_| client.ok())
     }
 
-    pub fn shuffle(&mut self) -> MpdResult<()> {
-        if unsafe { mpd_run_shuffle(self.conn.conn) } {
-            Ok(())
-        } else {
-            Err(FromClient::from_client(self.conn).unwrap())
-        }
-    }
-
-    pub fn shuffle_range(&mut self, start: uint, end: uint) -> MpdResult<()> {
-        if unsafe { mpd_run_shuffle_range(self.conn.conn, start as c_uint, end as c_uint) } {
-            Ok(())
-        } else {
-            Err(FromClient::from_client(self.conn).unwrap())
-        }
-    }
-
-    /// Remove a song
-    pub fn remove(&mut self, song: &MpdSong) -> MpdResult<()> {
-        self.remove_id(song.id())
-    }
-
-    pub fn remove_id(&mut self, id: uint) -> MpdResult<()> {
-        if unsafe { mpd_run_delete_id(self.conn.conn, id as c_uint) } {
-            Ok(())
-        } else {
-            Err(FromClient::from_client(self.conn).unwrap())
-        }
-    }
-
-    /// Remove songs at given position
-    pub fn remove_pos(&mut self, pos: uint) -> MpdResult<()> {
-        if unsafe { mpd_run_delete(self.conn.conn, pos as c_uint) } {
-            Ok(())
-        } else {
-            Err(FromClient::from_client(self.conn).unwrap())
-        }
-    }
-
-    /// Remove songs in given range
-    pub fn remove_range(&mut self, start: uint, end: uint) -> MpdResult<()> {
-        if unsafe { mpd_run_delete_range(self.conn.conn, start as c_uint, end as c_uint) } {
-            Ok(())
-        } else {
-            Err(FromClient::from_client(self.conn).unwrap())
-        }
-    }
-
-    /// Iterate over songs in the queue
-    pub fn iter(&self) -> MpdResult<MpdSongs> {
-        if unsafe { mpd_send_list_queue_meta(self.conn.conn) } {
-            Ok(MpdSongs { conn: self.conn })
-        } else {
-            Err(FromClient::from_client(self.conn).unwrap())
-        }
-    }
-
-    /// Iterate over songs in given range
-    pub fn iter_range(&self, start: uint, end: uint) -> MpdResult<MpdSongs> {
-        if unsafe { mpd_send_list_queue_range_meta(self.conn.conn, start as c_uint, end as c_uint) } {
-            Ok(MpdSongs { conn: self.conn })
-        } else {
-            Err(FromClient::from_client(self.conn).unwrap())
-        }
-    }
-
-    /// Length of the queue
-    pub fn len(&self) -> MpdResult<uint> {
-        self.conn.status().map(|s| s.queue_len())
-    }
-
-    /// Returns true if queue is empty
-    pub fn is_empty(&self) -> MpdResult<bool> {
-        self.len().map(|v| v == 0)
-    }
-
-    /// Clear queue
-    pub fn clear(&mut self) -> MpdResult<()> {
-        if unsafe { mpd_run_clear(self.conn.conn) } {
-            Ok(())
-        } else {
-            Err(FromClient::from_client(self.conn).unwrap())
-        }
-    }
-
-    /// Save queue into new playlist
-    pub fn save(&mut self, name: &str) -> MpdResult<()> {
-        if unsafe { mpd_run_save(self.conn.conn, name.to_c_str().as_ptr()) } {
-            Ok(())
-        } else {
-            Err(FromClient::from_client(self.conn).unwrap())
-        }
-    }
-
-    /// Load queue from playlist
-    pub fn load(&mut self, name: &str) -> MpdResult<()> {
-        if unsafe { mpd_run_load(self.conn.conn, name.to_c_str().as_ptr()) } {
-            Ok(())
-        } else {
-            Err(FromClient::from_client(self.conn).unwrap())
-        }
-    }
-
-    /// Load queue from playlist object
-    #[inline] pub fn load_playlist(&mut self, pl: &MpdPlaylist) -> MpdResult<()> {
-        self.load(pl.path()[])
+    pub fn save<S: Stream>(client: &mut MpdClient<S>, name: &str) -> MpdResult<()> {
+        client.exec_arg("save", name).and_then(|_| client.ok())
     }
 }

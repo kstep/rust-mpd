@@ -1,7 +1,7 @@
 use std::io::{standard_error, IoErrorKind, Stream};
 use std::iter::FromIterator;
 use std::error::FromError;
-use time::{Timespec, strptime};
+use time::{Timespec, strptime, get_time};
 
 use error::MpdResult;
 use client::{MpdPair, MpdClient};
@@ -16,8 +16,51 @@ pub struct MpdPlaylist {
 }
 
 impl MpdPlaylist {
+    pub fn new(name: &str) -> MpdPlaylist {
+        MpdPlaylist {
+            name: name.to_string(),
+            last_mod: get_time()
+        }
+    }
+
     pub fn songs<S: Stream>(&self, client: &mut MpdClient<S>) -> MpdResult<Vec<MpdSong>> {
         client.exec_str("listplaylistinfo", self.name[]).and_then(|_| client.iter().collect())
+    }
+
+    pub fn remove<S: Stream>(&self, client: &mut MpdClient<S>, index: uint) -> MpdResult<()> {
+        client.exec_arg2("playlistdelete", self.name[], index).and_then(|_| client.ok())
+    }
+
+    pub fn push<S: Stream>(&self, client: &mut MpdClient<S>, file: &str) -> MpdResult<()> {
+        client.exec_arg2("playlistadd", self.name[], file).and_then(|_| client.ok())
+    }
+
+    pub fn rename<S: Stream>(&mut self, client: &mut MpdClient<S>, newname: &str) -> MpdResult<()> {
+        client.exec_arg2("rename", self.name[], newname).and_then(|_| client.ok()).map(|_| self.name = newname.to_string())
+    }
+
+    pub fn shift<S: Stream>(&self, client: &mut MpdClient<S>, index: uint, target: uint) -> MpdResult<()> {
+        client.exec_arg3("playlistmove", self.name[], index, target).and_then(|_| client.ok())
+    }
+
+    pub fn load<S: Stream>(&self, client: &mut MpdClient<S>) -> MpdResult<()> {
+        client.exec_arg("load", self.name[]).and_then(|_| client.ok())
+    }
+
+    pub fn load_slice<S: Stream>(&self, client: &mut MpdClient<S>, slice: (uint, uint)) -> MpdResult<()> {
+        client.exec_arg2("load", self.name[], format!("{}:{}", slice.0, slice.1)).and_then(|_| client.ok())
+    }
+
+    pub fn clear<S: Stream>(&self, client: &mut MpdClient<S>) -> MpdResult<()> {
+        client.exec_arg("playlistclear", self.name[]).and_then(|_| client.ok())
+    }
+
+    pub fn save<S: Stream>(&self, client: &mut MpdClient<S>) -> MpdResult<()> {
+        client.exec_arg("save", self.name[]).and_then(|_| client.ok())
+    }
+
+    pub fn delete<S: Stream>(self, client: &mut MpdClient<S>) -> MpdResult<()> {
+        client.exec_arg("rm", self.name[]).and_then(|_| client.ok())
     }
 }
 

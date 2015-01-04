@@ -204,5 +204,6 @@ impl<S: Stream> MpdClient<S> {
     #[inline] pub fn exec_str(&mut self, command: &str, val: &str) -> MpdResult<()> { self.exec_args(command, &[val]) }
     #[inline] pub fn exec_arg<T: ToString>(&mut self, command: &str, val: T) -> MpdResult<()> { self.exec_args(command, &[val.to_string()[]]) }
     #[inline] pub fn exec_arg2<T1: ToString, T2: ToString>(&mut self, command: &str, val1: T1, val2: T2) -> MpdResult<()> { self.exec_args(command, &[val1.to_string()[], val2.to_string()[]]) }
+    #[inline] pub fn exec_arg3<T1: ToString, T2: ToString, T3: ToString>(&mut self, command: &str, val1: T1, val2: T2, val3: T3) -> MpdResult<()> { self.exec_args(command, &[val1.to_string()[], val2.to_string()[], val3.to_string()[]]) }
 }
 
