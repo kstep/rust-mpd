@@ -3,31 +3,8 @@ use error::MpdResult;
 use client::{FromClient, MpdClient, mpd_connection};
 use songs::{MpdSong, MpdSongs, ToSongUri, mpd_song};
 use playlists::MpdPlaylist;
-use libc::{c_uint, c_int, c_char};
 
-extern {
-    fn mpd_run_get_queue_song_pos(connection: *mut mpd_connection, pos: c_uint) -> *mut mpd_song;
-    fn mpd_run_get_queue_song_id(connection: *mut mpd_connection, id: c_uint) -> *mut mpd_song;
-    fn mpd_run_move_id(connection: *mut mpd_connection, from: c_uint, to: c_uint) -> bool;
-    fn mpd_run_move(connection: *mut mpd_connection, from: c_uint, to: c_uint) -> bool;
-    fn mpd_run_move_range(connection: *mut mpd_connection, start: c_uint, end: c_uint, to: c_uint) -> bool;
-    fn mpd_run_shuffle(connection: *mut mpd_connection) -> bool;
-    fn mpd_run_shuffle_range(connection: *mut mpd_connection, start: c_uint, end: c_uint) -> bool;
-    fn mpd_run_swap_id(connection: *mut mpd_connection, id1: c_uint, id2: c_uint) -> bool;
-    fn mpd_run_swap(connection: *mut mpd_connection, pos1: c_uint, pos2: c_uint) -> bool;
-    fn mpd_run_add_id(connection: *mut mpd_connection, file: *const c_char) -> c_int;
-    fn mpd_run_add_id_to(connection: *mut mpd_connection, uri: *const c_char, to: c_uint) -> c_int;
-    fn mpd_send_list_queue_meta(connection: *mut mpd_connection) -> bool;
-    fn mpd_send_list_queue_range_meta(connection: *mut mpd_connection, start: c_uint, end: c_uint) -> bool;
-    fn mpd_run_delete(connection: *mut mpd_connection, pos: c_uint) -> bool;
-    fn mpd_run_delete_range(connection: *mut mpd_connection, start: c_uint, end: c_uint) -> bool;
-    fn mpd_run_delete_id(connection: *mut mpd_connection, id: c_uint) -> bool;
-    fn mpd_run_clear(connection: *mut mpd_connection) -> bool;
-    fn mpd_run_save(connection: *mut mpd_connection, name: *const c_char) -> bool;
-    fn mpd_run_load(connection: *mut mpd_connection, name: *const c_char) -> bool;
-}
-
-pub struct MpdQueue<'a> {
+pub struct MpdQueue {
     pub conn: &'a MpdClient
 }
 
