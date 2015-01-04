@@ -44,12 +44,28 @@ impl MpdQueue {
         client.exec_arg2("move", index.to_pos(), target).and_then(|_| client.ok())
     }
 
-    pub fn get<S: Stream, I: MpdQueuePos>(client: &mut MpdClient<S>, index: I) -> MpdResult<MpdSong> {
-        client.exec_arg("playlistinfo", index.to_pos()).and_then(|_| client.iter().collect())
+    pub fn get<S: Stream>(client: &mut MpdClient<S>, index: uint) -> MpdResult<MpdSong> {
+        client.exec_arg("playlistinfo", index).and_then(|_| client.iter().collect())
+    }
+
+    pub fn slice<S: Stream>(client: &mut MpdClient<S>, slice: (uint, uint)) -> MpdResult<Vec<MpdSong>> {
+        client.exec_arg("playlistinfo", format!("{}:{}", slice.0, slice.1)).and_then(|_| client.iter().collect())
     }
 
     pub fn remove<S: Stream, I: MpdQueuePos>(client: &mut MpdClient<S>, index: I) -> MpdResult<()> {
         client.exec_arg("delete", index.to_pos()).and_then(|_| client.ok())
+    }
+
+    pub fn removeid<S: Stream>(client: &mut MpdClient<S>, id: uint) -> MpdResult<()> {
+        client.exec_arg("deleteid", id).and_then(|_| client.ok())
+    }
+
+    pub fn shiftid<S: Stream>(client: &mut MpdClient<S>, id: uint, target: uint) -> MpdResult<()> {
+        client.exec_arg2("moveid", id, target).and_then(|_| client.ok())
+    }
+
+    pub fn getid<S: Stream>(client: &mut MpdClient<S>, id: uint) -> MpdResult<MpdSong> {
+        client.exec_arg("playlistid", id).and_then(|_| client.iter().collect())
     }
 
     pub fn songs<S: Stream>(client: &mut MpdClient<S>) -> MpdResult<Vec<MpdSong>> {
