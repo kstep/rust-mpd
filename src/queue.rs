@@ -1,9 +1,13 @@
 
-use error::MpdResult;
-use client::MpdClient;
-use songs::MpdSong;
-use playlists::MpdPlaylist;
+use std::error::FromError;
+use std::io::{standard_error, IoErrorKind, Stream};
+use std::time::duration::Duration;
 
+use error::MpdResult;
+use client::{MpdClient, MpdPair};
+use songs::MpdSong;
+
+#[derive(Copy, Show, RustcEncodable)]
 pub struct MpdQueue;
 
 pub trait MpdQueuePos {
@@ -28,15 +32,18 @@ impl MpdQueue {
     }
 
     pub fn insert<S: Stream>(client: &mut MpdClient<S>, index: uint, file: &str) -> MpdResult<uint> {
-        let result = client.exec_arg2("addid", file, uint)
+        let result = client.exec_arg2("addid", file, index)
             .and_then(|_| client.iter().next().unwrap_or(Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))))
-            .and_then(|Ok(MpdPair(ref name, ref value))| if name[] == "Id" { Ok(value.parse()) } else {
-                Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput))) });
+            .and_then(|MpdPair(ref name, ref value)| if name[] == "Id" {
+                value.parse::<uint>().map(|v| Ok(v)).unwrap_or(Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput))))
+            } else {
+                Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))
+            });
         try!(client.ok());
         result
     }
 
-    pub fn swap<S: Stream>(client: &mut MpdClient<S>, index1: uint, index2: uint) -> MpdResult<uint> {
+    pub fn swap<S: Stream>(client: &mut MpdClient<S>, index1: uint, index2: uint) -> MpdResult<()> {
         client.exec_arg2("swap", index1, index2).and_then(|_| client.ok())
     }
 
@@ -53,7 +60,7 @@ impl MpdQueue {
     }
 
     pub fn rangeid<S: Stream>(client: &mut MpdClient<S>, id: uint, range: Option<(Duration, Duration)>) -> MpdResult<()> {
-        client.exec_arg2("rangeid", id, range.map(format!("{}:{}", range.0.num_seconds(), range.1.num_seconds())).unwrap_or(":".to_string())).and_then(|_| client.ok())
+        client.exec_arg2("rangeid", id, range.map(|r| format!("{}:{}", r.0.num_seconds(), r.1.num_seconds())).unwrap_or(":".to_string())).and_then(|_| client.ok())
     }
 
     pub fn get<S: Stream>(client: &mut MpdClient<S>, index: uint) -> MpdResult<MpdSong> {
