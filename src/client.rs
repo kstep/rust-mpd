@@ -164,6 +164,10 @@ impl<S: Stream> MpdClient<S> {
         self.exec("playlistinfo").and_then(|_| self.iter().collect())
     }
 
+    pub fn load(&mut self, playlist_name: &str) -> MpdResult<()> {
+        self.exec_arg("load", playlist_name).and_then(|_| self.ok())
+    }
+
     //pub fn wait(&self, mask: Option<MpdEvent>) -> MpdIdle {
         //MpdIdle::from_client(self, mask)
     //}
