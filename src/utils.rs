@@ -37,13 +37,13 @@ impl<S: Encoder<E>, E, T: ForceEncodable<S, E>> ForceEncodable<S, E> for Option<
     }
 }
 
-pub struct FieldCutIter<'a, I: 'a + Iterator<MpdResult<MpdPair>>> {
+pub struct FieldCutIter<'a, I> where I: 'a + Iterator<Item=MpdResult<MpdPair>> {
     iter: &'a mut Peekable<MpdResult<MpdPair>, I>,
     field: &'a str,
     finished: bool
 }
 
-impl<'a, I: 'a + Iterator<MpdResult<MpdPair>>> FieldCutIter<'a, I> {
+impl<'a, I> FieldCutIter<'a, I> where I: 'a + Iterator<Item=MpdResult<MpdPair>> {
     pub fn new(iter: &'a mut Peekable<MpdResult<MpdPair>, I>, field: &'a str) -> FieldCutIter<'a, I> {
         FieldCutIter {
             iter: iter,
@@ -53,7 +53,8 @@ impl<'a, I: 'a + Iterator<MpdResult<MpdPair>>> FieldCutIter<'a, I> {
     }
 }
 
-impl<'a, I: 'a + Iterator<MpdResult<MpdPair>>> Iterator<MpdResult<MpdPair>> for FieldCutIter<'a, I> {
+impl<'a, I> Iterator for FieldCutIter<'a, I> where I: 'a + Iterator<Item=MpdResult<MpdPair>> {
+    type Item = MpdResult<MpdPair>;
     fn next(&mut self) -> Option<MpdResult<MpdPair>> {
         if self.finished {
             return None;
@@ -81,7 +82,7 @@ impl<S: Encoder<E>, E, T1: ForceEncodable<S, E>, T2: ForceEncodable<S, E>> Force
 macro_rules! mpd_collectable {
     ($typ:ty, $first_field:expr) => {
         impl FromIterator<MpdResult<MpdPair>> for MpdResult<Vec<$typ>> {
-            fn from_iter<I: Iterator<MpdResult<MpdPair>>>(iterator: I) -> MpdResult<Vec<$typ>> {
+            fn from_iter<I: Iterator<Item=MpdResult<MpdPair>>>(iterator: I) -> MpdResult<Vec<$typ>> {
                 let mut iter = iterator.fuse().peekable();
                 let mut result = Vec::new();
 

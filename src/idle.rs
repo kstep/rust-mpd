@@ -61,7 +61,8 @@ pub struct MpdIdle<'a> {
     mask: Option<MpdEvent>
 }
 
-impl<'a> Iterator<MpdResult<MpdEvent>> for MpdIdle<'a> {
+impl<'a> Iterator for MpdIdle<'a> {
+    type Item = MpdResult<MpdEvent>;
     fn next(&mut self) -> Option<MpdResult<MpdEvent>> {
         let idle = unsafe {
             match self.mask {

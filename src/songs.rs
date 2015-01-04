@@ -34,7 +34,7 @@ impl MpdSong {
 }
 
 impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdSong> {
-    fn from_iter<T: Iterator<MpdResult<MpdPair>>>(iterator: T) -> MpdResult<MpdSong> {
+    fn from_iter<T: Iterator<Item=MpdResult<MpdPair>>>(iterator: T) -> MpdResult<MpdSong> {
         let mut song = MpdSong {
             file: "".to_string(),
             last_mod: Timespec::new(0, 0),

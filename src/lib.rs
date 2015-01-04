@@ -1,4 +1,4 @@
-#![feature(macro_rules, slicing_syntax, unsafe_destructor)]
+#![feature(macro_rules, slicing_syntax, unsafe_destructor, associated_types)]
 #![feature(old_orphan_check)]
 
 extern crate libc;

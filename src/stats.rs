@@ -21,7 +21,7 @@ pub struct MpdStats {
 }
 
 impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdStats> {
-    fn from_iter<T: Iterator<MpdResult<MpdPair>>>(iterator: T) -> MpdResult<MpdStats> {
+    fn from_iter<T: Iterator<Item=MpdResult<MpdPair>>>(iterator: T) -> MpdResult<MpdStats> {
         let mut stats = MpdStats {
             uptime: Duration::zero(),
             playtime: Duration::zero(),

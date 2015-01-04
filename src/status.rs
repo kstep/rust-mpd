@@ -79,7 +79,7 @@ pub struct MpdStatus {
 }
 
 impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdStatus> {
-    fn from_iter<T: Iterator<MpdResult<MpdPair>>>(iterator: T) -> MpdResult<MpdStatus> {
+    fn from_iter<T: Iterator<Item=MpdResult<MpdPair>>>(iterator: T) -> MpdResult<MpdStatus> {
         let mut status = MpdStatus {
             volume: 0,
             repeat: false,

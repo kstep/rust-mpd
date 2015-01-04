@@ -28,7 +28,7 @@ impl MpdOutput {
 }
 
 impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdOutput> {
-    fn from_iter<T: Iterator<MpdResult<MpdPair>>>(iterator: T) -> MpdResult<MpdOutput> {
+    fn from_iter<T: Iterator<Item=MpdResult<MpdPair>>>(iterator: T) -> MpdResult<MpdOutput> {
         let mut output = MpdOutput {
             id: 0,
             name: "".to_string(),

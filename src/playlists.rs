@@ -65,7 +65,7 @@ impl MpdPlaylist {
 }
 
 impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdPlaylist> {
-    fn from_iter<T: Iterator<MpdResult<MpdPair>>>(iterator: T) -> MpdResult<MpdPlaylist> {
+    fn from_iter<T: Iterator<Item=MpdResult<MpdPair>>>(iterator: T) -> MpdResult<MpdPlaylist> {
         let mut playlist = MpdPlaylist {
             name: "".to_string(),
             last_mod: Timespec::new(0, 0)

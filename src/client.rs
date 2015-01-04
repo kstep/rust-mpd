@@ -15,17 +15,18 @@ use outputs::MpdOutput;
 //use idle::{MpdIdle, MpdEvent};
 
 
-pub struct MpdResultIterator<I: Iterator<IoResult<String>>> {
+pub struct MpdResultIterator<I: Iterator> {
   inner: I
 }
 
-impl<I: Iterator<IoResult<String>>> MpdResultIterator<I> {
+impl<I: Iterator> MpdResultIterator<I> {
     pub fn new(iter: I) -> MpdResultIterator<I> {
         MpdResultIterator { inner: iter }
     }
 }
 
-impl<I: Iterator<IoResult<String>>> Iterator<MpdResult<MpdPair>> for MpdResultIterator<I> {
+impl<I> Iterator for MpdResultIterator<I> where I: Iterator<Item=IoResult<String>> {
+    type Item = MpdResult<MpdPair>;
     fn next(&mut self) -> Option<MpdResult<MpdPair>> {
         match self.inner.next() {
             Some(Ok(s)) => s.parse(),
