@@ -48,26 +48,6 @@ impl FromStr for MpdPair {
     }
 }
 
-trait PairLike<E> for Sized? {
-    fn map_pair<A, B>(&mut self, f1: |&E| -> A, f2: |&E| -> B) -> Option<(A, B)>;
-    fn to_pair(&mut self) -> Option<(E, E)>;
-}
-
-impl<E, Iter: Iterator<E>> PairLike<E> for Iter {
-    fn map_pair<A, B>(&mut self, f1: |&E| -> A, f2: |&E| -> B) -> Option<(A, B)> {
-        match (self.next(), self.next()) {
-            (Some(ref a), Some(ref b)) => Some((f1(a), f2(b))),
-            _ => None
-        }
-    }
-    fn to_pair(&mut self) -> Option<(E, E)> {
-        match (self.next(), self.next()) {
-            (Some(a), Some(b)) => Some((a, b)),
-            _ => None
-        }
-    }
-}
-
 impl FromStr for MpdResult<MpdPair> {
     fn from_str(s: &str) -> Option<MpdResult<MpdPair>> {
         if s == "OK\n" || s == "list_OK\n" {
@@ -124,26 +104,26 @@ impl<S: Stream> MpdClient<S> {
         self.exec_str("password", password)
     }
 
-    pub fn play(&mut self) -> MpdResult<()> { self.exec("play") }
-    pub fn stop(&mut self) -> MpdResult<()> { self.exec("stop") }
-    pub fn pause(&mut self, mode: bool) -> MpdResult<()> { self.exec_bool("pause", mode) }
+    pub fn play(&mut self) -> MpdResult<()> { self.exec("play").and_then(|_| self.ok()) }
+    pub fn stop(&mut self) -> MpdResult<()> { self.exec("stop").and_then(|_| self.ok()) }
+    pub fn pause(&mut self, mode: bool) -> MpdResult<()> { self.exec_bool("pause", mode).and_then(|_| self.ok()) }
 
-    pub fn volume(&mut self, vol: uint) -> MpdResult<()> { self.exec_arg("setvol", vol) }
-    pub fn change_volume(&mut self, vol: int) -> MpdResult<()> { self.exec_arg("volume", vol) }
+    pub fn volume(&mut self, vol: uint) -> MpdResult<()> { self.exec_arg("setvol", vol).and_then(|_| self.ok()) }
+    pub fn change_volume(&mut self, vol: int) -> MpdResult<()> { self.exec_arg("volume", vol).and_then(|_| self.ok()) }
 
-    pub fn repeat(&mut self, value: bool) -> MpdResult<()> { self.exec_bool("repeat", value) }
-    pub fn single(&mut self, value: bool) -> MpdResult<()> { self.exec_bool("single", value) }
-    pub fn consume(&mut self, value: bool) -> MpdResult<()> { self.exec_bool("consume", value) }
-    pub fn random(&mut self, value: bool) -> MpdResult<()> { self.exec_bool("random", value) }
-    pub fn crossfade(&mut self, value: Duration) -> MpdResult<()> { self.exec_arg("crossfade", value.num_seconds()) }
-    pub fn mixrampdb(&mut self, value: f32) -> MpdResult<()> { self.exec_arg("mixrampdb", value) }
-    pub fn mixrampdelay(&mut self, value: Duration) -> MpdResult<()> { self.exec_arg("mixrampdelay", value.num_seconds()) }
+    pub fn repeat(&mut self, value: bool) -> MpdResult<()> { self.exec_bool("repeat", value).and_then(|_| self.ok()) }
+    pub fn single(&mut self, value: bool) -> MpdResult<()> { self.exec_bool("single", value).and_then(|_| self.ok()) }
+    pub fn consume(&mut self, value: bool) -> MpdResult<()> { self.exec_bool("consume", value).and_then(|_| self.ok()) }
+    pub fn random(&mut self, value: bool) -> MpdResult<()> { self.exec_bool("random", value).and_then(|_| self.ok()) }
+    pub fn crossfade(&mut self, value: Duration) -> MpdResult<()> { self.exec_arg("crossfade", value.num_seconds()).and_then(|_| self.ok()) }
+    pub fn mixrampdb(&mut self, value: f32) -> MpdResult<()> { self.exec_arg("mixrampdb", value).and_then(|_| self.ok()) }
+    pub fn mixrampdelay(&mut self, value: Duration) -> MpdResult<()> { self.exec_arg("mixrampdelay", value.num_seconds()).and_then(|_| self.ok()) }
 
-    pub fn next(&mut self) -> MpdResult<()> { self.exec("next") }
-    pub fn prev(&mut self) -> MpdResult<()> { self.exec("previous") }
+    pub fn next(&mut self) -> MpdResult<()> { self.exec("next").and_then(|_| self.ok()) }
+    pub fn prev(&mut self) -> MpdResult<()> { self.exec("previous").and_then(|_| self.ok()) }
 
-    pub fn play_pos(&mut self, pos: uint) -> MpdResult<()> { self.exec_arg("play", pos) }
-    pub fn play_id(&mut self, id: uint) -> MpdResult<()> { self.exec_arg("playid", id) }
+    pub fn play_pos(&mut self, pos: uint) -> MpdResult<()> { self.exec_arg("play", pos).and_then(|_| self.ok()) }
+    pub fn play_id(&mut self, id: uint) -> MpdResult<()> { self.exec_arg("playid", id).and_then(|_| self.ok()) }
 
     pub fn status(&mut self) -> MpdResult<MpdStatus> {
         self.exec("status").and_then(|_| self.iter().collect())
@@ -190,6 +170,13 @@ impl<S: Stream> MpdClient<S> {
 
     #[inline] pub fn iter(&mut self) -> MpdResultIterator<Lines<BufferedStream<S>>> {
         MpdResultIterator::new(self.socket.lines())
+    }
+
+    #[inline] pub fn ok(&mut self) -> MpdResult<()> {
+        self.socket.read_line().map_err(FromError::from_error).and_then(|line|
+        line.parse::<MpdResult<MpdPair>>()
+            .map(|r| Err(r.err().unwrap_or(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))))
+            .unwrap_or(Ok(())))
     }
 
     fn exec_args(&mut self, command: &str, args: &[&str]) -> MpdResult<()> {
