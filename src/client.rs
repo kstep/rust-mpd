@@ -168,6 +168,10 @@ impl<S: Stream> MpdClient<S> {
         self.exec_arg("load", playlist_name).and_then(|_| self.ok())
     }
 
+    pub fn clear(&mut self) -> MpdResult<()> {
+        self.exec("clear").and_then(|_| self.ok())
+    }
+
     //pub fn wait(&self, mask: Option<MpdEvent>) -> MpdIdle {
         //MpdIdle::from_client(self, mask)
     //}
