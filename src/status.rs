@@ -65,7 +65,8 @@ pub struct MpdStatus {
     state: MpdState,
     song: Option<MpdQueuePlace>,
     nextsong: Option<MpdQueuePlace>,
-    time: Option<Duration>,
+    play_time: Option<Duration>,
+    total_time: Option<Duration>,
     elapsed: Option<Duration>,
     duration: Option<Duration>,
     bitrate: Option<uint>,
@@ -90,7 +91,8 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdStatus> {
             state: MpdState::Stop,
             song: None,
             nextsong: None,
-            time: None,
+            play_time: None,
+            total_time: None,
             elapsed: None,
             duration: None,
             bitrate: None,
@@ -121,8 +123,12 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdStatus> {
                 "songid"         => song_place.id = value.parse().unwrap_or(0),
                 "nextsong"       => next_song_place.pos = value.parse().unwrap_or(0),
                 "nextsongid"     => next_song_place.id = value.parse().unwrap_or(0),
-                "time"           => status.time = value.parse().map(Duration::seconds),
-                "elapsed"        => status.elapsed = value.parse().map(Duration::seconds),
+                "time"           => {
+                    let mut splits = value.splitn(2, ':').flat_map(|v| v.parse::<i64>().into_iter()).map(Duration::seconds);
+                    status.play_time = splits.next();
+                    status.total_time = splits.next();
+                },
+                "elapsed"        => status.elapsed = value.parse::<f32>().map(|v| Duration::milliseconds((v * 1000f32) as i64)),
                 "duration"       => status.duration = value.parse().map(Duration::seconds),
                 "bitrate"        => status.bitrate = value.parse(),
                 "xfade"          => status.crossfade = value.parse(),
