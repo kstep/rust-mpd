@@ -44,6 +44,18 @@ impl MpdQueue {
         client.exec_arg2("move", index.to_pos(), target).and_then(|_| client.ok())
     }
 
+    pub fn priority<S: Stream, I: MpdQueuePos>(client: &mut MpdClient<S>, index: I, prio: u8) -> MpdResult<()> {
+        client.exec_arg2("prio", prio, index.to_pos()).and_then(|_| client.ok())
+    }
+
+    pub fn priorityid<S: Stream>(client: &mut MpdClient<S>, id: uint, prio: u8) -> MpdResult<()> {
+        client.exec_arg2("prioid", prio, id).and_then(|_| client.ok())
+    }
+
+    pub fn rangeid<S: Stream>(client: &mut MpdClient<S>, id: uint, range: Option<(Duration, Duration)>) -> MpdResult<()> {
+        client.exec_arg2("rangeid", id, range.map(format!("{}:{}", range.0.num_seconds(), range.1.num_seconds())).unwrap_or(":".to_string())).and_then(|_| client.ok())
+    }
+
     pub fn get<S: Stream>(client: &mut MpdClient<S>, index: uint) -> MpdResult<MpdSong> {
         client.exec_arg("playlistinfo", index).and_then(|_| client.iter().collect())
     }
