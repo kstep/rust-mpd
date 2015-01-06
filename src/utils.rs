@@ -8,28 +8,28 @@ use rustc_serialize::{Encoder, Encodable};
 use error::MpdResult;
 use client::MpdPair;
 
-pub trait ForceEncodable<S: Encoder<E>, E> {
-    fn encode(&self, s: &mut S) -> Result<(), E>;
+pub trait ForceEncodable {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error>;
 }
 
-impl<'a, S: Encoder<E>, E> Encodable<S, E> for ForceEncodable<S, E> + 'a {
-    #[inline] fn encode(&self, s: &mut S) -> Result<(), E> {
+impl<'a> Encodable for ForceEncodable + 'a {
+    #[inline] fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         self.encode(s)
     }
 }
 
-impl<S: Encoder<E>, E> ForceEncodable<S, E> for Duration {
-    #[inline] fn encode(&self, s: &mut S) -> Result<(), E> {
+impl ForceEncodable for Duration {
+    #[inline] fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         s.emit_i64(self.num_milliseconds())
     }
 }
-impl<S: Encoder<E>, E> ForceEncodable<S, E> for Timespec {
-    #[inline] fn encode(&self, s: &mut S) -> Result<(), E> {
+impl ForceEncodable for Timespec {
+    #[inline] fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         s.emit_i64(self.sec)
     }
 }
-impl<S: Encoder<E>, E, T: ForceEncodable<S, E>> ForceEncodable<S, E> for Option<T> {
-    #[inline] fn encode(&self, s: &mut S) -> Result<(), E> {
+impl<T: ForceEncodable> ForceEncodable for Option<T> {
+    #[inline] fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         s.emit_option(|s| match *self {
             Some(ref v) => s.emit_option_some(|s| v.encode(s)),
             None => s.emit_option_none()
@@ -70,8 +70,8 @@ impl<'a, I> Iterator for FieldCutIter<'a, I> where I: 'a + Iterator<Item=MpdResu
     }
 }
 
-impl<S: Encoder<E>, E, T1: ForceEncodable<S, E>, T2: ForceEncodable<S, E>> ForceEncodable<S, E> for (T1, T2) {
-    #[inline] fn encode(&self, s: &mut S) -> Result<(), E> {
+impl<T1: ForceEncodable, T2: ForceEncodable> ForceEncodable for (T1, T2) {
+    #[inline] fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         s.emit_tuple(2, |s| {
             s.emit_tuple_arg(0, |s| self.0.encode(s)).and_then(|_|
             s.emit_tuple_arg(1, |s| self.1.encode(s)))

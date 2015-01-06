@@ -56,8 +56,8 @@ pub enum MpdError {
     Io(IoError),
 }
 
-impl<S, E> Encodable<S, E> for MpdError where S: Encoder<E> {
-    fn encode(&self, s: &mut S) -> Result<(), E> {
+impl Encodable for MpdError {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         match *self {
             MpdError::Mpd(ref err) => err.encode(s),
             MpdError::Io(ref err) => {
@@ -153,10 +153,8 @@ impl FromStr for MpdServerError {
 
 pub type MpdResult<T> = Result<T, MpdError>;
 
-impl<S, E, T> Encodable<S, E> for MpdResult<T>
-    where S: Encoder<E>, T: Encodable<S, E> {
-
-    fn encode(&self, s: &mut S) -> Result<(), E> {
+impl<T: Encodable> Encodable for MpdResult<T> {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         match *self {
             Ok(ref v) => v.encode(s),
             Err(ref e) => e.encode(s)
