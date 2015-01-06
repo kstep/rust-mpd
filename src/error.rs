@@ -1,7 +1,6 @@
 use std::str::FromStr;
 use std::io::IoError;
 use std::error::{Error, FromError};
-use std::collections::enum_set::CLike;
 use rustc_serialize::{Encoder, Encodable};
 
 #[derive(Show, Copy, RustcEncodable)]
@@ -39,44 +38,6 @@ impl FromStr for MpdErrorCode {
             "56" => Some(MpdErrorCode::Exist),
 
             _ => s.parse().map(|v| MpdErrorCode::Other(v))
-        }
-    }
-}
-
-impl CLike for MpdErrorCode {
-    fn to_uint(&self) -> uint {
-        match *self {
-            MpdErrorCode::NotList => 1,
-            MpdErrorCode::Argument => 2,
-            MpdErrorCode::Password => 3,
-            MpdErrorCode::Permission => 4,
-            MpdErrorCode::UnknownCmd => 5,
-            MpdErrorCode::NoExist => 50,
-            MpdErrorCode::PlaylistMax => 51,
-            MpdErrorCode::System => 52,
-            MpdErrorCode::PlaylistLoad => 53,
-            MpdErrorCode::UpdateAlready => 54,
-            MpdErrorCode::PlayerSync => 55,
-            MpdErrorCode::Exist => 56,
-            MpdErrorCode::Other(num) => num
-        }
-    }
-
-    fn from_uint(v: uint) -> MpdErrorCode {
-        match v {
-            1 => MpdErrorCode::NotList,
-            2 => MpdErrorCode::Argument,
-            3 => MpdErrorCode::Password,
-            4 => MpdErrorCode::Permission,
-            5 => MpdErrorCode::UnknownCmd,
-            50 => MpdErrorCode::NoExist,
-            51 => MpdErrorCode::PlaylistMax,
-            52 => MpdErrorCode::System,
-            53 => MpdErrorCode::PlaylistLoad,
-            54 => MpdErrorCode::UpdateAlready,
-            55 => MpdErrorCode::PlayerSync,
-            56 => MpdErrorCode::Exist,
-            _ => MpdErrorCode::Other(v)
         }
     }
 }
