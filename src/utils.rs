@@ -1,4 +1,4 @@
-#![macro_escape]
+#![macro_use]
 
 use std::iter::Peekable;
 use std::time::duration::Duration;
@@ -8,6 +8,9 @@ use rustc_serialize::{Encoder, Encodable};
 use error::MpdResult;
 use client::MpdPair;
 
+// Work around new orphan check: as I can't implement a foreign trait for foreign struct,
+// I create local trait I can do anything I want with, blanket-implement foreign trait
+// for it, and implement it for all foreign structs I need.
 pub trait ForceEncodable {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error>;
 }

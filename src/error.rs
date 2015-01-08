@@ -2,6 +2,7 @@ use std::str::FromStr;
 use std::io::IoError;
 use std::error::{Error, FromError};
 use rustc_serialize::{Encoder, Encodable};
+use utils::ForceEncodable;
 
 #[derive(Show, Copy, RustcEncodable)]
 pub enum MpdErrorCode {
@@ -153,7 +154,7 @@ impl FromStr for MpdServerError {
 
 pub type MpdResult<T> = Result<T, MpdError>;
 
-impl<T: Encodable> Encodable for MpdResult<T> {
+impl<T: Encodable> ForceEncodable for MpdResult<T> {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         match *self {
             Ok(ref v) => v.encode(s),
