@@ -63,7 +63,7 @@ impl Encodable for MpdError {
             MpdError::Mpd(ref err) => err.encode(s),
             MpdError::Io(ref err) => {
                 s.emit_struct("IoError", 3, |s| {
-                    s.emit_struct_field("kind", 0, |s| err.kind.to_string().encode(s)).and_then(|_|
+                    s.emit_struct_field("kind", 0, |s| format!("{:?}", err.kind).encode(s)).and_then(|_|
                     s.emit_struct_field("desc", 1, |s| err.desc.encode(s))).and_then(|_|
                     s.emit_struct_field("detail", 2, |s| err.detail.encode(s)))
                 })
@@ -131,10 +131,10 @@ impl FromStr for MpdServerError {
     fn from_str(s: &str) -> Option<MpdServerError> {
         // ACK [<code>@<index>] {<command>} <description>
         if s.starts_with("ACK [") {
-            let s = s[5..];
+            let s = &s[5..];
             if let (Some(atsign), Some(right_bracket)) = (s.find('@'), s.find(']')) {
                 if let (Some(code), Some(pos)) = (s[..atsign].parse(), s[atsign + 1..right_bracket].parse()) {
-                    let s = s[right_bracket + 1..];
+                    let s = &s[right_bracket + 1..];
                     if let (Some(left_brace), Some(right_brace)) = (s.find('{'), s.find('}')) {
                         let command = s[left_brace + 1..right_brace].to_string();
                         let detail = s[right_brace + 1..].trim().to_string();

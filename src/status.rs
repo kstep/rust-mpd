@@ -110,12 +110,12 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdStatus> {
 
         for field in iter {
             let MpdPair(key, value) = try!(field);
-            match key[] {
+            match key.as_slice() {
                 "volume"         => status.volume = value.parse().unwrap_or(0),
-                "repeat"         => status.repeat = value[] == "1",
-                "random"         => status.random = value[] == "1",
-                "single"         => status.single = value[] == "1",
-                "consume"        => status.consume = value[] == "1",
+                "repeat"         => status.repeat = value.as_slice() == "1",
+                "random"         => status.random = value.as_slice() == "1",
+                "single"         => status.single = value.as_slice() == "1",
+                "consume"        => status.consume = value.as_slice() == "1",
                 "playlist"       => status.queue_version = value.parse().unwrap_or(0),
                 "playlistlength" => status.queue_len = value.parse().unwrap_or(0),
                 "state"          => status.state = value.parse().unwrap_or(MpdState::Stop),

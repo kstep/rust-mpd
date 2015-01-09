@@ -39,7 +39,7 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdOutput> {
 
         for field in iter {
             let MpdPair(key, value) = try!(field);
-            match key[] {
+            match key.as_slice() {
                 "outputid" => output.id = value.parse().unwrap_or(0),
                 "outputname" => output.name = value,
                 "outputenabled" => output.enabled = value == "1",

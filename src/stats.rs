@@ -36,7 +36,7 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdStats> {
 
         for field in iter {
             let MpdPair(key, value) = try!(field);
-            match key[] {
+            match key.as_slice() {
                 "uptime" => stats.uptime = Duration::seconds(value.parse().unwrap_or(0)),
                 "playtime" => stats.playtime = Duration::seconds(value.parse().unwrap_or(0)),
                 "artists" => stats.artists = value.parse().unwrap_or(0),
