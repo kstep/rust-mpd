@@ -12,8 +12,8 @@ use utils::{FieldCutIter, ForceEncodable};
 
 #[derive(Show, Copy, RustcEncodable)]
 pub struct MpdQueuePlace {
-    pub id: uint,
-    pub pos: uint,
+    pub id: usize,
+    pub pos: usize,
     pub prio: u8
 }
 

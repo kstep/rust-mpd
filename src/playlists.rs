@@ -27,7 +27,7 @@ impl MpdPlaylist {
         client.exec_str("listplaylistinfo", self.name[]).and_then(|_| client.iter().collect())
     }
 
-    pub fn remove<S: Stream>(&self, client: &mut MpdClient<S>, index: uint) -> MpdResult<()> {
+    pub fn remove<S: Stream>(&self, client: &mut MpdClient<S>, index: usize) -> MpdResult<()> {
         client.exec_arg2("playlistdelete", self.name[], index).and_then(|_| client.ok())
     }
 
@@ -39,7 +39,7 @@ impl MpdPlaylist {
         client.exec_arg2("rename", self.name[], newname).and_then(|_| client.ok()).map(|_| self.name = newname.to_string())
     }
 
-    pub fn shift<S: Stream>(&self, client: &mut MpdClient<S>, index: uint, target: uint) -> MpdResult<()> {
+    pub fn shift<S: Stream>(&self, client: &mut MpdClient<S>, index: usize, target: usize) -> MpdResult<()> {
         client.exec_arg3("playlistmove", self.name[], index, target).and_then(|_| client.ok())
     }
 
@@ -47,7 +47,7 @@ impl MpdPlaylist {
         client.exec_arg("load", self.name[]).and_then(|_| client.ok())
     }
 
-    pub fn load_slice<S: Stream>(&self, client: &mut MpdClient<S>, slice: (uint, uint)) -> MpdResult<()> {
+    pub fn load_slice<S: Stream>(&self, client: &mut MpdClient<S>, slice: (usize, usize)) -> MpdResult<()> {
         client.exec_arg2("load", self.name[], format!("{}:{}", slice.0, slice.1)).and_then(|_| client.ok())
     }
 

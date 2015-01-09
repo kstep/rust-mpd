@@ -13,9 +13,9 @@ use utils::ForceEncodable;
 pub struct MpdStats {
     uptime: Duration,
     playtime: Duration,
-    artists: uint,
-    albums: uint,
-    songs: uint,
+    artists: usize,
+    albums: usize,
+    songs: usize,
     db_playtime: Duration,
     db_update: Timespec
 }

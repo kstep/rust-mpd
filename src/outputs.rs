@@ -10,7 +10,7 @@ use rustc_serialize::{Encoder, Encodable};
 
 #[derive(RustcEncodable, Show)]
 pub struct MpdOutput {
-    pub id: uint,
+    pub id: usize,
     pub name: String,
     pub enabled: bool
 }

@@ -68,11 +68,11 @@ impl FromStr for MpdResult<MpdPair> {
 }
 
 #[derive(Show, Copy)]
-pub struct MpdVersion(pub uint, pub uint, pub uint);
+pub struct MpdVersion(pub usize, pub usize, pub usize);
 
 impl FromStr for MpdVersion {
     fn from_str(s: &str) -> Option<MpdVersion> {
-        let mut parts = s.splitn(2, '.').filter_map(|v| v.parse::<uint>());
+        let mut parts = s.splitn(2, '.').filter_map(|v| v.parse::<usize>());
         match (parts.next(), parts.next(), parts.next()) {
             (Some(a), Some(b), Some(c)) => Some(MpdVersion(a, b, c)),
             _ => None
@@ -109,8 +109,8 @@ impl<S: Stream> MpdClient<S> {
     pub fn stop(&mut self) -> MpdResult<()> { self.exec("stop").and_then(|_| self.ok()) }
     pub fn pause(&mut self, mode: bool) -> MpdResult<()> { self.exec_bool("pause", mode).and_then(|_| self.ok()) }
 
-    pub fn volume(&mut self, vol: uint) -> MpdResult<()> { self.exec_arg("setvol", vol).and_then(|_| self.ok()) }
-    pub fn change_volume(&mut self, vol: int) -> MpdResult<()> { self.exec_arg("volume", vol).and_then(|_| self.ok()) }
+    pub fn volume(&mut self, vol: usize) -> MpdResult<()> { self.exec_arg("setvol", vol).and_then(|_| self.ok()) }
+    pub fn change_volume(&mut self, vol: isize) -> MpdResult<()> { self.exec_arg("volume", vol).and_then(|_| self.ok()) }
 
     pub fn repeat(&mut self, value: bool) -> MpdResult<()> { self.exec_bool("repeat", value).and_then(|_| self.ok()) }
     pub fn single(&mut self, value: bool) -> MpdResult<()> { self.exec_bool("single", value).and_then(|_| self.ok()) }
@@ -123,8 +123,8 @@ impl<S: Stream> MpdClient<S> {
     pub fn next(&mut self) -> MpdResult<()> { self.exec("next").and_then(|_| self.ok()) }
     pub fn prev(&mut self) -> MpdResult<()> { self.exec("previous").and_then(|_| self.ok()) }
 
-    pub fn play_pos(&mut self, pos: uint) -> MpdResult<()> { self.exec_arg("play", pos).and_then(|_| self.ok()) }
-    pub fn play_id(&mut self, id: uint) -> MpdResult<()> { self.exec_arg("playid", id).and_then(|_| self.ok()) }
+    pub fn play_pos(&mut self, pos: usize) -> MpdResult<()> { self.exec_arg("play", pos).and_then(|_| self.ok()) }
+    pub fn play_id(&mut self, id: usize) -> MpdResult<()> { self.exec_arg("playid", id).and_then(|_| self.ok()) }
 
     pub fn status(&mut self) -> MpdResult<MpdStatus> {
         self.exec("status").and_then(|_| self.iter().collect())
@@ -144,7 +144,7 @@ impl<S: Stream> MpdClient<S> {
         self.exec("outputs").and_then(|_| self.iter().collect())
     }
 
-    pub fn update(&mut self, rescan: bool, path: Option<&str>) -> MpdResult<uint> {
+    pub fn update(&mut self, rescan: bool, path: Option<&str>) -> MpdResult<usize> {
         try!(self.exec_args(if rescan { "rescan" } else { "update" }, &[path.unwrap_or("")]));
         let mut iter = self.iter();
         let result = match iter.next() {

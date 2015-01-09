@@ -55,13 +55,13 @@ impl FromStr for MpdState {
 
 #[derive(Show, RustcEncodable)]
 pub struct MpdStatus {
-    volume: uint,
+    volume: usize,
     repeat: bool,
     random: bool,
     single: bool,
     consume: bool,
-    queue_version: uint,
-    queue_len: uint,
+    queue_version: usize,
+    queue_len: usize,
     state: MpdState,
     song: Option<MpdQueuePlace>,
     nextsong: Option<MpdQueuePlace>,
@@ -69,12 +69,12 @@ pub struct MpdStatus {
     total_time: Option<Duration>,
     elapsed: Option<Duration>,
     duration: Option<Duration>,
-    bitrate: Option<uint>,
+    bitrate: Option<usize>,
     crossfade: Option<u64>,
     mixrampdb: f32,
     mixrampdelay: Option<u64>,
     audio: Option<AudioFormat>,
-    updating_db: Option<uint>,
+    updating_db: Option<usize>,
     error: Option<String>
 }
 

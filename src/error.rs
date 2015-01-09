@@ -18,7 +18,7 @@ pub enum MpdErrorCode {
     UpdateAlready,
     PlayerSync,
     Exist,
-    Other(uint)
+    Other(usize)
 }
 
 impl FromStr for MpdErrorCode {
@@ -46,7 +46,7 @@ impl FromStr for MpdErrorCode {
 #[derive(Show, RustcEncodable)]
 pub struct MpdServerError {
     pub code: MpdErrorCode,
-    pub pos: uint,
+    pub pos: usize,
     pub command: String,
     pub detail: String
 }
