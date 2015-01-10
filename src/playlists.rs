@@ -24,43 +24,43 @@ impl MpdPlaylist {
     }
 
     pub fn songs<S: Stream>(&self, client: &mut MpdClient<S>) -> MpdResult<Vec<MpdSong>> {
-        client.exec_str("listplaylistinfo", self.name.as_slice()).and_then(|_| client.iter().collect())
+        client.exec_str("listplaylistinfo", &*self.name).and_then(|_| client.iter().collect())
     }
 
     pub fn remove<S: Stream>(&self, client: &mut MpdClient<S>, index: usize) -> MpdResult<()> {
-        client.exec_arg2("playlistdelete", self.name.as_slice(), index).and_then(|_| client.ok())
+        client.exec_arg2("playlistdelete", &*self.name, index).and_then(|_| client.ok())
     }
 
     pub fn push<S: Stream>(&self, client: &mut MpdClient<S>, file: &str) -> MpdResult<()> {
-        client.exec_arg2("playlistadd", self.name.as_slice(), file).and_then(|_| client.ok())
+        client.exec_arg2("playlistadd", &*self.name, file).and_then(|_| client.ok())
     }
 
     pub fn rename<S: Stream>(&mut self, client: &mut MpdClient<S>, newname: &str) -> MpdResult<()> {
-        client.exec_arg2("rename", self.name.as_slice(), newname).and_then(|_| client.ok()).map(|_| self.name = newname.to_string())
+        client.exec_arg2("rename", &*self.name, newname).and_then(|_| client.ok()).map(|_| self.name = newname.to_string())
     }
 
     pub fn shift<S: Stream>(&self, client: &mut MpdClient<S>, index: usize, target: usize) -> MpdResult<()> {
-        client.exec_arg3("playlistmove", self.name.as_slice(), index, target).and_then(|_| client.ok())
+        client.exec_arg3("playlistmove", &*self.name, index, target).and_then(|_| client.ok())
     }
 
     pub fn load<S: Stream>(&self, client: &mut MpdClient<S>) -> MpdResult<()> {
-        client.exec_arg("load", self.name.as_slice()).and_then(|_| client.ok())
+        client.exec_arg("load", &*self.name).and_then(|_| client.ok())
     }
 
     pub fn load_slice<S: Stream>(&self, client: &mut MpdClient<S>, slice: (usize, usize)) -> MpdResult<()> {
-        client.exec_arg2("load", self.name.as_slice(), format!("{}:{}", slice.0, slice.1)).and_then(|_| client.ok())
+        client.exec_arg2("load", &*self.name, format!("{}:{}", slice.0, slice.1)).and_then(|_| client.ok())
     }
 
     pub fn clear<S: Stream>(&self, client: &mut MpdClient<S>) -> MpdResult<()> {
-        client.exec_arg("playlistclear", self.name.as_slice()).and_then(|_| client.ok())
+        client.exec_arg("playlistclear", &*self.name).and_then(|_| client.ok())
     }
 
     pub fn save<S: Stream>(&self, client: &mut MpdClient<S>) -> MpdResult<()> {
-        client.exec_arg("save", self.name.as_slice()).and_then(|_| client.ok())
+        client.exec_arg("save", &*self.name).and_then(|_| client.ok())
     }
 
     pub fn delete<S: Stream>(self, client: &mut MpdClient<S>) -> MpdResult<()> {
-        client.exec_arg("rm", self.name.as_slice()).and_then(|_| client.ok())
+        client.exec_arg("rm", &*self.name).and_then(|_| client.ok())
     }
 }
 
@@ -75,9 +75,9 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdPlaylist> {
 
         for field in iter {
             let MpdPair(key, value) = try!(field);
-            match key.as_slice() {
+            match &*key {
                 "playlist" => playlist.name = value,
-                "Last-Modified" => playlist.last_mod = try!(strptime(value.as_slice(), "%Y-%m-%dT%H:%M:%S%Z").map_err(|_| standard_error(IoErrorKind::InvalidInput))).to_timespec(),
+                "Last-Modified" => playlist.last_mod = try!(strptime(&*value, "%Y-%m-%dT%H:%M:%S%Z").map_err(|_| standard_error(IoErrorKind::InvalidInput))).to_timespec(),
                 _ => return Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))
             }
         }

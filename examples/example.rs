@@ -1,4 +1,4 @@
-#![allow(unused_imports)]
+#![allow(unused_imports, unstable)]
 
 extern crate mpd;
 extern crate "rustc-serialize" as rustc_serialize;
@@ -13,18 +13,18 @@ use mpd::client::MpdClient;
 
 fn main() {
     //let c = MpdConnection::new(Some("192.168.1.10"), 6600);
-    let mut c = MpdClient::new(TcpStream::connect("192.168.1.10:6600").unwrap()).unwrap();
-    println!("version: {}", c.version);
-    println!("status: {}", c.status());
-    println!("stats: {}", c.stats());
-    //println!("song: {}", c.current_song());
-    println!("queue: {}", c.queue());
-    println!("outputs: {}", c.outputs());
+    let mut c = MpdClient::new(TcpStream::connect("127.0.0.1:6600").unwrap()).unwrap();
+    println!("version: {:?}", c.version);
+    println!("status: {:?}", c.status());
+    println!("stats: {:?}", c.stats());
+    //println!("song: {:?}", c.current_song());
+    println!("queue: {:?}", c.queue());
+    println!("outputs: {:?}", c.outputs());
 
     println!("playlists:");
     for pl in c.playlists().unwrap().iter() {
-        println!("{}", pl);
-        println!("{}", pl.songs(&mut c));
+        println!("{:?}", pl);
+        println!("{:?}", pl.songs(&mut c));
     }
 
     //let conn = match c {

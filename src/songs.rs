@@ -53,12 +53,12 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdSong> {
 
         for field in iter {
             let MpdPair(key, value) = try!(field);
-            match key.as_slice() {
+            match &*key {
                 "file" => song.file = value,
-                "Last-Modified" => song.last_mod = try!(strptime(value.as_slice(), "%Y-%m-%dT%H:%M:%S%Z").map_err(|_| standard_error(IoErrorKind::InvalidInput))).to_timespec(),
+                "Last-Modified" => song.last_mod = try!(strptime(&*value, "%Y-%m-%dT%H:%M:%S%Z").map_err(|_| standard_error(IoErrorKind::InvalidInput))).to_timespec(),
                 "Time" => song.duration = Duration::seconds(value.parse().unwrap_or(0)),
                 "Range" => {
-                    let mut splits = value.as_slice().split('-').flat_map(|v| v.parse::<i64>().into_iter());
+                    let mut splits = value.split('-').flat_map(|v| v.parse::<i64>().into_iter());
                     match (splits.next(), splits.next()) {
                         (Some(s), Some(e)) => song.range = (Duration::seconds(s), Some(Duration::seconds(e))),
                         (None, Some(e)) => song.range = (Duration::zero(), Some(Duration::seconds(e))),

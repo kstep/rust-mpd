@@ -65,7 +65,7 @@ impl<'a, I> Iterator for FieldCutIter<'a, I> where I: 'a + Iterator<Item=MpdResu
 
         let item = self.iter.next();
         self.finished = match self.iter.peek() {
-            Some(&Ok(MpdPair(ref name, _))) if name.as_slice() == self.field => true,
+            Some(&Ok(MpdPair(ref name, _))) if *name == self.field => true,
             None => true,
             _ => false
         };

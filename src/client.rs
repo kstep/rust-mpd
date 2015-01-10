@@ -148,7 +148,7 @@ impl<S: Stream> MpdClient<S> {
         try!(self.exec_args(if rescan { "rescan" } else { "update" }, &[path.unwrap_or("")]));
         let mut iter = self.iter();
         let result = match iter.next() {
-            Some(Ok(MpdPair(ref key, ref value))) if key.as_slice() == "updating_db" => match value.parse() {
+            Some(Ok(MpdPair(ref key, ref value))) if *key == "updating_db" => match value.parse() {
                 Some(v) => Ok(v),
                 None => Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))
             },
@@ -203,8 +203,8 @@ impl<S: Stream> MpdClient<S> {
     #[inline] pub fn exec(&mut self, command: &str) -> MpdResult<()> { self.exec_args(command, &[]) }
     #[inline] pub fn exec_bool(&mut self, command: &str, val: bool) -> MpdResult<()> { self.exec_args(command, &[if val { "1" } else { "0" }]) }
     #[inline] pub fn exec_str(&mut self, command: &str, val: &str) -> MpdResult<()> { self.exec_args(command, &[val]) }
-    #[inline] pub fn exec_arg<T: ToString>(&mut self, command: &str, val: T) -> MpdResult<()> { self.exec_args(command, &[val.to_string().as_slice()]) }
-    #[inline] pub fn exec_arg2<T1: ToString, T2: ToString>(&mut self, command: &str, val1: T1, val2: T2) -> MpdResult<()> { self.exec_args(command, &[val1.to_string().as_slice(), val2.to_string().as_slice()]) }
-    #[inline] pub fn exec_arg3<T1: ToString, T2: ToString, T3: ToString>(&mut self, command: &str, val1: T1, val2: T2, val3: T3) -> MpdResult<()> { self.exec_args(command, &[val1.to_string().as_slice(), val2.to_string().as_slice(), val3.to_string().as_slice()]) }
+    #[inline] pub fn exec_arg<T: ToString>(&mut self, command: &str, val: T) -> MpdResult<()> { self.exec_args(command, &[&*val.to_string()]) }
+    #[inline] pub fn exec_arg2<T1: ToString, T2: ToString>(&mut self, command: &str, val1: T1, val2: T2) -> MpdResult<()> { self.exec_args(command, &[&*val1.to_string(), &*val2.to_string()]) }
+    #[inline] pub fn exec_arg3<T1: ToString, T2: ToString, T3: ToString>(&mut self, command: &str, val1: T1, val2: T2, val3: T3) -> MpdResult<()> { self.exec_args(command, &[&*val1.to_string(), &*val2.to_string(), &*val3.to_string()]) }
 }
 
