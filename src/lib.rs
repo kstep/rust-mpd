@@ -1,5 +1,4 @@
 #![feature(slicing_syntax, unsafe_destructor)]
-#![feature(old_orphan_check)]
 #![allow(unstable)]
 
 extern crate libc;

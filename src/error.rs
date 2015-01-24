@@ -1,6 +1,7 @@
 use std::str::FromStr;
 use std::io::IoError;
 use std::error::{Error, FromError};
+use std::fmt;
 use rustc_serialize::{Encoder, Encodable};
 use utils::ForceEncodable;
 
@@ -92,6 +93,12 @@ impl Error for MpdServerError {
     }
 }
 
+impl fmt::Display for MpdServerError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        self.description().fmt(fmt)
+    }
+}
+
 impl Error for MpdError {
     fn description(&self) -> &str {
         match *self {
@@ -100,17 +107,19 @@ impl Error for MpdError {
         }
     }
 
-    fn detail(&self) -> Option<String> {
-        match *self {
-            MpdError::Mpd(ref err) => err.detail(),
-            MpdError::Io(ref err) => err.detail(),
-        }
-    }
-
     fn cause(&self) -> Option<&Error> {
         match *self {
             MpdError::Io(ref err) => Some(err as &Error),
             MpdError::Mpd(ref err) => Some(err as &Error),
+        }
+    }
+}
+
+impl fmt::Display for MpdError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        match *self {
+            MpdError::Mpd(ref err) => err.fmt(fmt),
+            MpdError::Io(ref err) => err.fmt(fmt),
         }
     }
 }
