@@ -1,7 +1,7 @@
 use std::time::duration::Duration;
 use std::string::ToString;
 use std::str::FromStr;
-use std::io::{Stream, BufferedStream, Lines, IoResult, IoErrorKind, standard_error};
+use std::old_io::{Stream, BufferedStream, Lines, IoResult, IoErrorKind, standard_error};
 use std::error::FromError;
 
 use status::MpdStatus;
@@ -36,7 +36,7 @@ impl<I> Iterator for MpdResultIterator<I> where I: Iterator<Item=IoResult<String
     }
 }
 
-#[derive(Show)]
+#[derive(Debug)]
 pub struct MpdPair(pub String, pub String);
 
 impl FromStr for MpdPair {
@@ -67,7 +67,7 @@ impl FromStr for MpdResult<MpdPair> {
     }
 }
 
-#[derive(Show, Copy)]
+#[derive(Debug, Copy)]
 pub struct MpdVersion(pub usize, pub usize, pub usize);
 
 impl FromStr for MpdVersion {
@@ -189,13 +189,13 @@ impl<S: Stream> MpdClient<S> {
     }
 
     fn exec_args(&mut self, command: &str, args: &[&str]) -> MpdResult<()> {
-        try!(self.socket.write(command.as_bytes()));
+        try!(self.socket.write_all(command.as_bytes()));
         for arg in args.iter() {
-            try!(self.socket.write(b" "));
-            try!(self.socket.write(arg.as_bytes()));
+            try!(self.socket.write_all(b" "));
+            try!(self.socket.write_all(arg.as_bytes()));
         }
 
-        try!(self.socket.write(b"\n"));
+        try!(self.socket.write_all(b"\n"));
         try!(self.socket.flush());
         Ok(())
     }

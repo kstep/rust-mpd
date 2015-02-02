@@ -1,11 +1,11 @@
 use std::str::FromStr;
-use std::io::IoError;
+use std::old_io::IoError;
 use std::error::{Error, FromError};
 use std::fmt;
 use rustc_serialize::{Encoder, Encodable};
 use utils::ForceEncodable;
 
-#[derive(Show, Copy, RustcEncodable)]
+#[derive(Debug, Copy, RustcEncodable)]
 pub enum MpdErrorCode {
     NotList,
     Argument,
@@ -44,7 +44,7 @@ impl FromStr for MpdErrorCode {
     }
 }
 
-#[derive(Show, RustcEncodable)]
+#[derive(Debug, RustcEncodable)]
 pub struct MpdServerError {
     pub code: MpdErrorCode,
     pub pos: usize,
@@ -52,7 +52,7 @@ pub struct MpdServerError {
     pub detail: String
 }
 
-#[derive(Show)]
+#[derive(Debug)]
 pub enum MpdError {
     Mpd(MpdServerError),
     Io(IoError),

@@ -1,5 +1,5 @@
 use std::time::duration::Duration;
-use std::io::{standard_error, IoErrorKind};
+use std::old_io::{standard_error, IoErrorKind};
 use std::iter::FromIterator;
 use std::error::FromError;
 use time::Timespec;
@@ -9,7 +9,7 @@ use error::MpdResult;
 use client::MpdPair;
 use utils::ForceEncodable;
 
-#[derive(Show, Copy, RustcEncodable)]
+#[derive(Debug, Copy, RustcEncodable)]
 pub struct MpdStats {
     uptime: Duration,
     playtime: Duration,

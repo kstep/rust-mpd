@@ -1,4 +1,4 @@
-use std::io::{standard_error, IoErrorKind, Stream};
+use std::old_io::{standard_error, IoErrorKind, Stream};
 use std::iter::FromIterator;
 use std::error::FromError;
 use time::{Timespec, strptime, get_time};
@@ -9,7 +9,7 @@ use rustc_serialize::{Encoder, Encodable};
 use songs::MpdSong;
 use utils::{ForceEncodable, FieldCutIter};
 
-#[derive(Show, RustcEncodable)]
+#[derive(Debug, RustcEncodable)]
 pub struct MpdPlaylist {
     name: String,
     last_mod: Timespec

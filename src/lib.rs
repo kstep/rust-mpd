@@ -1,5 +1,5 @@
 #![feature(slicing_syntax, unsafe_destructor)]
-#![allow(unstable)]
+#![feature(core, io, collections, std_misc, libc)]
 
 extern crate libc;
 extern crate time;

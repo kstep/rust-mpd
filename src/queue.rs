@@ -1,13 +1,13 @@
 
 use std::error::FromError;
-use std::io::{standard_error, IoErrorKind, Stream};
+use std::old_io::{standard_error, IoErrorKind, Stream};
 use std::time::duration::Duration;
 
 use error::MpdResult;
 use client::{MpdClient, MpdPair};
 use songs::MpdSong;
 
-#[derive(Copy, Show, RustcEncodable)]
+#[derive(Copy, Debug, RustcEncodable)]
 pub struct MpdQueue;
 
 pub trait MpdQueuePos {

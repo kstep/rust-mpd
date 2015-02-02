@@ -1,5 +1,5 @@
 use libc::{c_uint, c_char, c_uchar};
-use std::fmt::{Show, Error, Formatter};
+use std::fmt::{Debug, Error, Formatter};
 use client::{mpd_connection, MpdClient, FromClient};
 use error::MpdResult;
 use std::str::FromStr;
@@ -22,7 +22,7 @@ bitflags! {
     }
 }
 
-impl Show for MpdEvent {
+impl Debug for MpdEvent {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         try!(f.write(b"MpdEvent("));
         let name = unsafe { mpd_idle_name(*self) };

@@ -1,9 +1,10 @@
-#![allow(unused_imports, unstable)]
+#![feature(io)]
+#![allow(unused_imports)]
 
 extern crate mpd;
 extern crate "rustc-serialize" as rustc_serialize;
 
-use std::io::net::tcp::TcpStream;
+use std::old_io::net::tcp::TcpStream;
 use mpd::client::MpdClient;
 //use mpd::playlists::MpdPlaylist;
 //use mpd::outputs::MpdOutput;

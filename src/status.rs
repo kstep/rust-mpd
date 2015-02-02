@@ -1,6 +1,6 @@
 use std::time::duration::Duration;
 use std::str::FromStr;
-use std::io::{standard_error, IoErrorKind};
+use std::old_io::{standard_error, IoErrorKind};
 use std::error::FromError;
 use std::iter::FromIterator;
 use rustc_serialize::{Encoder, Encodable};
@@ -10,7 +10,7 @@ use songs::MpdQueuePlace;
 use client::MpdPair;
 use utils::ForceEncodable;
 
-#[derive(Show, Copy, RustcEncodable)]
+#[derive(Debug, Copy, RustcEncodable)]
 pub struct AudioFormat {
     pub rate: u32,
     pub bits: u8,
@@ -35,7 +35,7 @@ impl FromStr for AudioFormat {
     }
 }
 
-#[derive(Show, Copy, RustcEncodable)]
+#[derive(Debug, Copy, RustcEncodable)]
 pub enum MpdState {
     Stop,
     Play,
@@ -53,7 +53,7 @@ impl FromStr for MpdState {
     }
 }
 
-#[derive(Show, RustcEncodable)]
+#[derive(Debug, RustcEncodable)]
 pub struct MpdStatus {
     volume: usize,
     repeat: bool,
