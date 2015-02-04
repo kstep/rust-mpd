@@ -6,7 +6,7 @@ use std::error::FromError;
 
 use status::MpdStatus;
 use stats::MpdStats;
-use error::{MpdResult, MpdServerError};
+use error::{MpdResult, MpdServerError, MpdServerResponseParseError, MpdServerResponseParseErrorKind};
 use songs::MpdSong;
 //use settings::MpdSettings;
 //use queue::MpdQueue;
@@ -29,7 +29,7 @@ impl<I> Iterator for MpdResultIterator<I> where I: Iterator<Item=IoResult<String
     type Item = MpdResult<MpdPair>;
     fn next(&mut self) -> Option<MpdResult<MpdPair>> {
         match self.inner.next() {
-            Some(Ok(s)) => s.parse(),
+            Some(Ok(s)) => s.parse().unwrap(), // TODO: should pass through parse error
             Some(Err(e)) => Some(Err(FromError::from_error(e))),
             None => None,
         }
@@ -40,27 +40,30 @@ impl<I> Iterator for MpdResultIterator<I> where I: Iterator<Item=IoResult<String
 pub struct MpdPair(pub String, pub String);
 
 impl FromStr for MpdPair {
-    fn from_str(s: &str) -> Option<MpdPair> {
+    type Err = MpdServerResponseParseError;
+    fn from_str(s: &str) -> Result<MpdPair, MpdServerResponseParseError> {
         let mut it = s.splitn(1, ':');
         match (it.next(), it.next()) {
-            (Some(a), Some(b)) => Some(MpdPair(a.to_string(), b.trim().to_string())),
-            _ => None
+            (Some(a), Some(b)) => Ok(MpdPair(a.to_string(), b.trim().to_string())),
+            _ => Err(MpdServerResponseParseError {
+                kind: MpdServerResponseParseErrorKind::InvalidPair
+            })
         }
     }
 }
 
-impl FromStr for MpdResult<MpdPair> {
-    fn from_str(s: &str) -> Option<MpdResult<MpdPair>> {
+impl FromStr for MpdResult<Option<MpdPair>> {
+    type Err = MpdServerResponseParseError;
+    fn from_str(s: &str) -> Result<MpdResult<Option<MpdPair>>, MpdServerResponseParseError> {
         if s == "OK\n" || s == "list_OK\n" {
-            None
+            Ok(Ok(None))
         } else {
-            if let Some(error) = s.parse::<MpdServerError>() {
-                Some(Err(FromError::from_error(error)))
+            if let Ok(error) = s.parse::<MpdServerError>() {
+                Ok(Err(FromError::from_error(error)))
             } else {
-                if let Some(pair) = s.parse::<MpdPair>() {
-                    Some(Ok(pair))
-                } else {
-                    Some(Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput))))
+                match s.parse::<MpdPair>() {
+                    Ok(pair) => Ok(Ok(Some(pair))),
+                    Err(error) => Err(error)
                 }
             }
         }

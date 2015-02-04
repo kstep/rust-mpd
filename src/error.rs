@@ -1,3 +1,5 @@
+extern crate core;
+
 use std::str::FromStr;
 use std::old_io::IoError;
 use std::error::{Error, FromError};
@@ -23,21 +25,22 @@ pub enum MpdErrorCode {
 }
 
 impl FromStr for MpdErrorCode {
-    fn from_str(s: &str) -> Option<MpdErrorCode> {
+    type Err = core::num::ParseIntError;
+    fn from_str(s: &str) -> Result<MpdErrorCode, core::num::ParseIntError> {
         match s {
-            "1" => Some(MpdErrorCode::NotList),
-            "2" => Some(MpdErrorCode::Argument),
-            "3" => Some(MpdErrorCode::Password),
-            "4" => Some(MpdErrorCode::Permission),
-            "5" => Some(MpdErrorCode::UnknownCmd),
+            "1" => Ok(MpdErrorCode::NotList),
+            "2" => Ok(MpdErrorCode::Argument),
+            "3" => Ok(MpdErrorCode::Password),
+            "4" => Ok(MpdErrorCode::Permission),
+            "5" => Ok(MpdErrorCode::UnknownCmd),
 
-            "50" => Some(MpdErrorCode::NoExist),
-            "51" => Some(MpdErrorCode::PlaylistMax),
-            "52" => Some(MpdErrorCode::System),
-            "53" => Some(MpdErrorCode::PlaylistLoad),
-            "54" => Some(MpdErrorCode::UpdateAlready),
-            "55" => Some(MpdErrorCode::PlayerSync),
-            "56" => Some(MpdErrorCode::Exist),
+            "50" => Ok(MpdErrorCode::NoExist),
+            "51" => Ok(MpdErrorCode::PlaylistMax),
+            "52" => Ok(MpdErrorCode::System),
+            "53" => Ok(MpdErrorCode::PlaylistLoad),
+            "54" => Ok(MpdErrorCode::UpdateAlready),
+            "55" => Ok(MpdErrorCode::PlayerSync),
+            "56" => Ok(MpdErrorCode::Exist),
 
             _ => s.parse().map(|v| MpdErrorCode::Other(v))
         }
@@ -136,18 +139,30 @@ impl FromError<MpdServerError> for MpdError {
     }
 }
 
+#[derive(Copy, Debug)]
+pub struct MpdServerResponseParseError {
+    kind: MpdServerResponseParseErrorKind
+}
+
+#[derive(Copy, Debug)]
+enum MpdServerResponseParseErrorKind {
+    InvalidAck,
+    InvalidPair,
+}
+
 impl FromStr for MpdServerError {
-    fn from_str(s: &str) -> Option<MpdServerError> {
+    type Err = MpdServerResponseParseError;
+    fn from_str(s: &str) -> Result<MpdServerError, MpdServerResponseParseError> {
         // ACK [<code>@<index>] {<command>} <description>
         if s.starts_with("ACK [") {
             let s = &s[5..];
             if let (Some(atsign), Some(right_bracket)) = (s.find('@'), s.find(']')) {
-                if let (Some(code), Some(pos)) = (s[..atsign].parse(), s[atsign + 1..right_bracket].parse()) {
+                if let (Ok(code), Ok(pos)) = (s[..atsign].parse(), s[atsign + 1..right_bracket].parse()) {
                     let s = &s[right_bracket + 1..];
                     if let (Some(left_brace), Some(right_brace)) = (s.find('{'), s.find('}')) {
                         let command = s[left_brace + 1..right_brace].to_string();
                         let detail = s[right_brace + 1..].trim().to_string();
-                        return Some(MpdServerError {
+                        return Ok(MpdServerError {
                             code: code,
                             pos: pos,
                             command: command,
@@ -157,7 +172,9 @@ impl FromStr for MpdServerError {
                 }
             }
         }
-        None
+        Err(MpdServerResponseParseError {
+            kind: MpdServerResponseParseErrorKind::InvalidAck
+        })
     }
 }
 

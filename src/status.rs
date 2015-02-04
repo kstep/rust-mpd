@@ -1,8 +1,9 @@
 use std::time::duration::Duration;
 use std::str::FromStr;
 use std::old_io::{standard_error, IoErrorKind};
-use std::error::FromError;
+use std::error::{FromError, Error};
 use std::iter::FromIterator;
+use std::fmt;
 use rustc_serialize::{Encoder, Encodable};
 
 use error::MpdResult;
@@ -21,9 +22,9 @@ impl FromStr for AudioFormat {
     fn from_str(s: &str) -> Option<AudioFormat> {
         let mut it = s.split(':');
         if let (Some(rate), Some(bits), Some(chans)) = (
-            it.next().and_then(|v| v.parse()),
-            it.next().and_then(|v| v.parse()),
-            it.next().and_then(|v| v.parse())) {
+            it.next().and_then(|v| v.parse().ok()),
+            it.next().and_then(|v| v.parse().ok()),
+            it.next().and_then(|v| v.parse().ok())) {
             Some(AudioFormat {
                 rate: rate,
                 bits: bits,
@@ -42,13 +43,29 @@ pub enum MpdState {
     Pause,
 }
 
+#[derive(Debug, Copy)]
+struct MpdStateParseError;
+
+impl Error for MpdStateParseError {
+    fn description(&self) -> &str {
+        "state must be `play`, `stop` or `pause`"
+    }
+}
+
+impl fmt::String for MpdStateParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(self.description())
+    }
+}
+
 impl FromStr for MpdState {
-    fn from_str(s: &str) -> Option<MpdState> {
+    type Err = MpdStateParseError;
+    fn from_str(s: &str) -> Result<MpdState, MpdStateParseError> {
         match s {
-            "stop" => Some(MpdState::Stop),
-            "play" => Some(MpdState::Play),
-            "pause" => Some(MpdState::Pause),
-            _ => None
+            "stop" => Ok(MpdState::Stop),
+            "play" => Ok(MpdState::Play),
+            "pause" => Ok(MpdState::Pause),
+            _ => Err(MpdStateParseError)
         }
     }
 }
@@ -128,14 +145,14 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdStatus> {
                     status.play_time = splits.next();
                     status.total_time = splits.next();
                 },
-                "elapsed"        => status.elapsed = value.parse::<f32>().map(|v| Duration::milliseconds((v * 1000f32) as i64)),
-                "duration"       => status.duration = value.parse().map(Duration::seconds),
-                "bitrate"        => status.bitrate = value.parse(),
-                "xfade"          => status.crossfade = value.parse(),
+                "elapsed"        => status.elapsed = value.parse::<f32>().map(|v| Duration::milliseconds((v * 1000f32) as i64)).ok(),
+                "duration"       => status.duration = value.parse().map(Duration::seconds).ok(),
+                "bitrate"        => status.bitrate = value.parse().ok(),
+                "xfade"          => status.crossfade = value.parse().ok(),
                 "mixrampdb"      => status.mixrampdb = value.parse().unwrap_or(0f32),
-                "mixrampdelay"   => status.mixrampdelay = value.parse(),
-                "audio"          => status.audio = value.parse(),
-                "updating_db"    => status.updating_db = value.parse(),
+                "mixrampdelay"   => status.mixrampdelay = value.parse().ok(),
+                "audio"          => status.audio = value.parse().ok(),
+                "updating_db"    => status.updating_db = value.parse().ok(),
                 "error"          => status.error = Some(value),
                 _ => return Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))
             }
