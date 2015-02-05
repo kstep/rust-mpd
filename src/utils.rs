@@ -41,13 +41,13 @@ impl<T: ForceEncodable> ForceEncodable for Option<T> {
 }
 
 pub struct FieldCutIter<'a, I> where I: 'a + Iterator<Item=MpdResult<MpdPair>> {
-    iter: &'a mut Peekable<MpdResult<MpdPair>, I>,
+    iter: &'a mut Peekable<I>,
     field: &'a str,
     finished: bool
 }
 
 impl<'a, I> FieldCutIter<'a, I> where I: 'a + Iterator<Item=MpdResult<MpdPair>> {
-    pub fn new(iter: &'a mut Peekable<MpdResult<MpdPair>, I>, field: &'a str) -> FieldCutIter<'a, I> {
+    pub fn new(iter: &'a mut Peekable<I>, field: &'a str) -> FieldCutIter<'a, I> {
         FieldCutIter {
             iter: iter,
             field: field,
