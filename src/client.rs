@@ -6,7 +6,7 @@ use std::error::FromError;
 
 use status::MpdStatus;
 use stats::MpdStats;
-use error::{MpdResult, MpdServerError, ParseMpdServerError, ParseMpdServerErrorKind};
+use error::{MpdResult, MpdServerError, ParseMpdServerError, ParseMpdServerErrorKind, ParseMpdResponseError, ParseMpdPairError};
 use songs::MpdSong;
 //use settings::MpdSettings;
 //use queue::MpdQueue;
@@ -25,21 +25,26 @@ impl<I: Iterator> MpdResultIterator<I> {
     }
 }
 
+/*
 impl<I> Iterator for MpdResultIterator<I> where I: Iterator<Item=IoResult<String>> {
     type Item = MpdResult<MpdPair>;
     fn next(&mut self) -> Option<MpdResult<MpdPair>> {
         match self.inner.next() {
-            Some(Ok(s)) => s.parse(), // TODO: should pass through parse error
+            Some(Ok(s)) => match s.parse::<Result<Option<MpdPair>>>().map_err(FromError::from_error)
+                .and_then(|res| res.map_err(FromError::from_error)) {
+                    Ok(Some(p)) => Some(Ok(p)),
+                    Ok(None) => None,
+                    Err(e) => Some(Err(e))
+                },
             Some(Err(e)) => Some(Err(FromError::from_error(e))),
             None => None,
         }
     }
 }
+*/
 
 #[derive(Debug)]
 pub struct MpdPair(pub String, pub String);
-
-struct ParseMpdPairError;
 
 impl FromStr for MpdPair {
     type Err = ParseMpdPairError;
@@ -52,35 +57,18 @@ impl FromStr for MpdPair {
     }
 }
 
-enum ParseMpdResponseError {
-    Ack(ParseMpdServerError),
-    Pair(ParseMpdPairError),
-}
-
-impl FromError<ParseMpdServerError> for ParseMpdResponseError {
-    fn from_error(e: ParseMpdServerError) -> ParseMpdResponseError {
-        ParseMpdResponseError::Ack(e)
-    }
-}
-
-impl FromError<ParseMpdPairError> for ParseMpdResponseError {
-    fn from_error(e: ParseMpdPairError) -> ParseMpdResponseError {
-        ParseMpdResponseError::Pair(e)
-    }
-}
-
-impl FromStr for Result<Option<MpdPair>, MpdServerError> {
+impl FromStr for Option<Result<MpdPair, MpdServerError>> {
     type Err = ParseMpdResponseError;
-    fn from_str(s: &str) -> Result<Result<Option<MpdPair>, MpdServerError>, ParseMpdResponseError> {
+    fn from_str(s: &str) -> Result<Option<Result<MpdPair, MpdServerError>>, ParseMpdResponseError> {
         if s == "OK\n" || s == "list_OK\n" {
-            Ok(Ok(None))
+            Ok(None)
         } else {
             s.parse::<Option<MpdServerError>>()
                 .map_err(FromError::from_error)
                 .and_then(|err| err.map(|e| Ok(Err(e)))
                           .unwrap_or_else(|| s.parse::<MpdPair>()
                                 .map_err(FromError::from_error)
-                                .map(|p| Ok(Some(p)))))
+                                .map(|p| Some(Ok(p)))))
         }
     }
 }

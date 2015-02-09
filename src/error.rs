@@ -59,6 +59,7 @@ pub struct MpdServerError {
 pub enum MpdError {
     Mpd(MpdServerError),
     Io(IoError),
+    Parse(ParseMpdResponseError)
 }
 
 impl Encodable for MpdError {
@@ -70,6 +71,11 @@ impl Encodable for MpdError {
                     s.emit_struct_field("kind", 0, |s| format!("{:?}", err.kind).encode(s)).and_then(|_|
                     s.emit_struct_field("desc", 1, |s| err.desc.encode(s))).and_then(|_|
                     s.emit_struct_field("detail", 2, |s| err.detail.encode(s)))
+                })
+            },
+            MpdError::Parse(ref err) => {
+                s.emit_struct("ParseMpdResponseError", 1, |s| {
+                    s.emit_struct_field("desc", 0, |s| format!("{:?}", err).encode(s))
                 })
             }
         }
@@ -139,6 +145,12 @@ impl FromError<MpdServerError> for MpdError {
     }
 }
 
+impl FromError<ParseMpdResponseError> for MpdError {
+    fn from_error(err: ParseMpdResponseError) -> MpdError {
+        MpdError::Parse(err)
+    }
+}
+
 #[derive(Copy, Debug)]
 pub struct ParseMpdServerError {
     kind: ParseMpdServerErrorKind
@@ -197,3 +209,22 @@ impl<T: Encodable> ForceEncodable for MpdResult<T> {
         }
     }
 }
+
+pub enum ParseMpdResponseError {
+    Ack(ParseMpdServerError),
+    Pair(ParseMpdPairError),
+}
+
+impl FromError<ParseMpdServerError> for ParseMpdResponseError {
+    fn from_error(e: ParseMpdServerError) -> ParseMpdResponseError {
+        ParseMpdResponseError::Ack(e)
+    }
+}
+
+impl FromError<ParseMpdPairError> for ParseMpdResponseError {
+    fn from_error(e: ParseMpdPairError) -> ParseMpdResponseError {
+        ParseMpdResponseError::Pair(e)
+    }
+}
+
+struct ParseMpdPairError;
