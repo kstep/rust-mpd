@@ -140,41 +140,50 @@ impl FromError<MpdServerError> for MpdError {
 }
 
 #[derive(Copy, Debug)]
-pub struct MpdServerResponseParseError {
+pub struct ParseMpdServerError {
     kind: MpdServerResponseParseErrorKind
 }
 
 #[derive(Copy, Debug)]
-enum MpdServerResponseParseErrorKind {
-    InvalidAck,
-    InvalidPair,
+enum ParseMpdServerErrorKind {
+    NoCodePos
+    InvalidCode,
+    InvalidPos,
+    NoMessage
 }
 
-impl FromStr for MpdServerError {
-    type Err = MpdServerResponseParseError;
-    fn from_str(s: &str) -> Result<MpdServerError, MpdServerResponseParseError> {
+impl FromStr for Option<MpdServerError> {
+    type Err = ParseMpdServerError;
+    fn from_str(s: &str) -> Result<Option<MpdServerError>, ParseMpdServerError> {
         // ACK [<code>@<index>] {<command>} <description>
         if s.starts_with("ACK [") {
             let s = &s[5..];
             if let (Some(atsign), Some(right_bracket)) = (s.find('@'), s.find(']')) {
-                if let (Ok(code), Ok(pos)) = (s[..atsign].parse(), s[atsign + 1..right_bracket].parse()) {
-                    let s = &s[right_bracket + 1..];
-                    if let (Some(left_brace), Some(right_brace)) = (s.find('{'), s.find('}')) {
-                        let command = s[left_brace + 1..right_brace].to_string();
-                        let detail = s[right_brace + 1..].trim().to_string();
-                        return Ok(MpdServerError {
-                            code: code,
-                            pos: pos,
-                            command: command,
-                            detail: detail
-                        });
+                match (s[..atsign].parse(), s[atsign + 1..right_bracket].parse()) {
+                    (Ok(code), Ok(pos)) => {
+                        let s = &s[right_bracket + 1..];
+                        if let (Some(left_brace), Some(right_brace)) = (s.find('{'), s.find('}')) {
+                            let command = s[left_brace + 1..right_brace].to_string();
+                            let detail = s[right_brace + 1..].trim().to_string();
+                            Ok(Some(MpdServerError {
+                                code: code,
+                                pos: pos,
+                                command: command,
+                                detail: detail
+                            }))
+                        } else {
+                            Err(ParseMpdServerError { kind: ParseMpdServerErrorKind::NoMessage })
+                        }
                     }
+                    (Err(_), _) => Err(ParseMpdServerError { kind: ParseMpdServerErrorKind::InvalidCode }),
+                    (_, Err(_)) => Err(ParseMpdServerError { kind: ParseMpdServerErrorKind::InvalidPos }),
                 }
+            } else {
+                Err(ParseMpdServerError { kind: ParseMpdServerErrorKind::NoCodePos })
             }
+        } else {
+            Ok(None)
         }
-        Err(MpdServerResponseParseError {
-            kind: MpdServerResponseParseErrorKind::InvalidAck
-        })
     }
 }
 
