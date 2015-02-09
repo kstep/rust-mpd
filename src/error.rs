@@ -141,12 +141,12 @@ impl FromError<MpdServerError> for MpdError {
 
 #[derive(Copy, Debug)]
 pub struct ParseMpdServerError {
-    kind: MpdServerResponseParseErrorKind
+    kind: ParseMpdServerErrorKind
 }
 
 #[derive(Copy, Debug)]
 enum ParseMpdServerErrorKind {
-    NoCodePos
+    NoCodePos,
     InvalidCode,
     InvalidPos,
     NoMessage

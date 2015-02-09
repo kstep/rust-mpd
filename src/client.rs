@@ -6,7 +6,7 @@ use std::error::FromError;
 
 use status::MpdStatus;
 use stats::MpdStats;
-use error::{MpdResult, MpdServerError, MpdServerResponseParseError, MpdServerResponseParseErrorKind};
+use error::{MpdResult, MpdServerError, ParseMpdServerError, ParseMpdServerErrorKind};
 use songs::MpdSong;
 //use settings::MpdSettings;
 //use queue::MpdQueue;
@@ -29,7 +29,7 @@ impl<I> Iterator for MpdResultIterator<I> where I: Iterator<Item=IoResult<String
     type Item = MpdResult<MpdPair>;
     fn next(&mut self) -> Option<MpdResult<MpdPair>> {
         match self.inner.next() {
-            Some(Ok(s)) => s.parse().unwrap(), // TODO: should pass through parse error
+            Some(Ok(s)) => s.parse(), // TODO: should pass through parse error
             Some(Err(e)) => Some(Err(FromError::from_error(e))),
             None => None,
         }
@@ -39,33 +39,48 @@ impl<I> Iterator for MpdResultIterator<I> where I: Iterator<Item=IoResult<String
 #[derive(Debug)]
 pub struct MpdPair(pub String, pub String);
 
+struct ParseMpdPairError;
+
 impl FromStr for MpdPair {
-    type Err = MpdServerResponseParseError;
-    fn from_str(s: &str) -> Result<MpdPair, MpdServerResponseParseError> {
+    type Err = ParseMpdPairError;
+    fn from_str(s: &str) -> Result<MpdPair, ParseMpdPairError> {
         let mut it = s.splitn(1, ':');
         match (it.next(), it.next()) {
             (Some(a), Some(b)) => Ok(MpdPair(a.to_string(), b.trim().to_string())),
-            _ => Err(MpdServerResponseParseError {
-                kind: MpdServerResponseParseErrorKind::InvalidPair
-            })
+            _ => Err(ParseMpdPairError)
         }
     }
 }
 
-impl FromStr for MpdResult<Option<MpdPair>> {
-    type Err = MpdServerResponseParseError;
-    fn from_str(s: &str) -> Result<MpdResult<Option<MpdPair>>, MpdServerResponseParseError> {
+enum ParseMpdResponseError {
+    Ack(ParseMpdServerError),
+    Pair(ParseMpdPairError),
+}
+
+impl FromError<ParseMpdServerError> for ParseMpdResponseError {
+    fn from_error(e: ParseMpdServerError) -> ParseMpdResponseError {
+        ParseMpdResponseError::Ack(e)
+    }
+}
+
+impl FromError<ParseMpdPairError> for ParseMpdResponseError {
+    fn from_error(e: ParseMpdPairError) -> ParseMpdResponseError {
+        ParseMpdResponseError::Pair(e)
+    }
+}
+
+impl FromStr for Result<Option<MpdPair>, MpdServerError> {
+    type Err = ParseMpdResponseError;
+    fn from_str(s: &str) -> Result<Result<Option<MpdPair>, MpdServerError>, ParseMpdResponseError> {
         if s == "OK\n" || s == "list_OK\n" {
             Ok(Ok(None))
         } else {
-            if let Ok(error) = s.parse::<MpdServerError>() {
-                Ok(Err(FromError::from_error(error)))
-            } else {
-                match s.parse::<MpdPair>() {
-                    Ok(pair) => Ok(Ok(Some(pair))),
-                    Err(error) => Err(error)
-                }
-            }
+            s.parse::<Option<MpdServerError>>()
+                .map_err(FromError::from_error)
+                .and_then(|err| err.map(|e| Ok(Err(e)))
+                          .unwrap_or_else(|| s.parse::<MpdPair>()
+                                .map_err(FromError::from_error)
+                                .map(|p| Ok(Some(p)))))
         }
     }
 }
@@ -73,12 +88,23 @@ impl FromStr for MpdResult<Option<MpdPair>> {
 #[derive(Debug, Copy)]
 pub struct MpdVersion(pub usize, pub usize, pub usize);
 
+pub struct ParseMpdVersionError {
+    kind: ParseMpdVersionErrorKind
+}
+
+enum ParseMpdVersionErrorKind {
+    InvalidFormat,
+    InvalidNumber
+}
+
 impl FromStr for MpdVersion {
-    fn from_str(s: &str) -> Option<MpdVersion> {
-        let mut parts = s.splitn(2, '.').filter_map(|v| v.parse::<usize>());
+    type Err = ParseMpdVersionError;
+    fn from_str(s: &str) -> Result<MpdVersion, ParseMpdVersionError> {
+        let mut parts = s.splitn(2, '.').map(|v| v.parse::<usize>());
         match (parts.next(), parts.next(), parts.next()) {
-            (Some(a), Some(b), Some(c)) => Some(MpdVersion(a, b, c)),
-            _ => None
+            (Some(Ok(a)), Some(Ok(b)), Some(Ok(c))) => Ok(MpdVersion(a, b, c)),
+            (Some(Err(_)), _, _) | (_, Some(Err(_)), _) | (_, _, Some(Err(_))) => Err(ParseMpdVersionError { kind: ParseMpdVersionErrorKind::InvalidNumber }),
+            _ => Err(ParseMpdVersionError { kind: ParseMpdVersionErrorKind::InvalidFormat })
         }
     }
 }
