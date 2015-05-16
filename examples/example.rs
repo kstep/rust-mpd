@@ -2,7 +2,7 @@
 #![allow(unused_imports)]
 
 extern crate mpd;
-extern crate "rustc-serialize" as rustc_serialize;
+extern crate rustc_serialize;
 
 use std::old_io::net::tcp::TcpStream;
 use mpd::client::MpdClient;

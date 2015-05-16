@@ -3,7 +3,7 @@
 
 extern crate libc;
 extern crate time;
-extern crate "rustc-serialize" as rustc_serialize;
+extern crate rustc_serialize;
 
 pub mod client;
 mod utils;
