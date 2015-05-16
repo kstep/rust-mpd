@@ -1,7 +1,8 @@
 use std::time::duration::Duration;
 use std::old_io::{standard_error, IoErrorKind};
 use std::iter::FromIterator;
-use std::error::FromError;
+use std::convert::From;
+use std::error::Error;
 use time::Timespec;
 use rustc_serialize::{Encoder, Encodable};
 
@@ -44,7 +45,7 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdStats> {
                 "songs" => stats.songs = value.parse().unwrap_or(0),
                 "db_playtime" => stats.db_playtime = Duration::seconds(value.parse().unwrap_or(0)),
                 "db_update" => stats.db_update = Timespec::new(value.parse().unwrap_or(0), 0),
-                _ => return Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))
+                _ => return Err(From::from(standard_error(IoErrorKind::InvalidInput)))
             }
         }
 

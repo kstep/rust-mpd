@@ -1,7 +1,8 @@
 
 use std::old_io::{standard_error, IoErrorKind, Stream};
 use std::iter::FromIterator;
-use std::error::FromError;
+use std::error::Error;
+use std::convert::From;
 
 use error::MpdResult;
 use client::{MpdPair, MpdClient};
@@ -43,7 +44,7 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdOutput> {
                 "outputid" => output.id = value.parse().unwrap_or(0),
                 "outputname" => output.name = value,
                 "outputenabled" => output.enabled = value == "1",
-                _ => return Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))
+                _ => return Err(From::from(standard_error(IoErrorKind::InvalidInput)))
             }
         }
 

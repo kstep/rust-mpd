@@ -1,6 +1,6 @@
 use std::old_io::{standard_error, IoErrorKind, Stream};
 use std::iter::FromIterator;
-use std::error::FromError;
+use std::convert::From;
 use time::{Timespec, strptime, get_time};
 
 use error::MpdResult;
@@ -78,7 +78,7 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdPlaylist> {
             match &*key {
                 "playlist" => playlist.name = value,
                 "Last-Modified" => playlist.last_mod = try!(strptime(&*value, "%Y-%m-%dT%H:%M:%S%Z").map_err(|_| standard_error(IoErrorKind::InvalidInput))).to_timespec(),
-                _ => return Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))
+                _ => return Err(From::from(standard_error(IoErrorKind::InvalidInput)))
             }
         }
 

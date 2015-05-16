@@ -1,5 +1,6 @@
 
-use std::error::FromError;
+use std::error::Error;
+use std::convert::From;
 use std::old_io::{standard_error, IoErrorKind, Stream};
 use std::time::duration::Duration;
 
@@ -33,11 +34,11 @@ impl MpdQueue {
 
     pub fn insert<S: Stream>(client: &mut MpdClient<S>, index: usize, file: &str) -> MpdResult<usize> {
         let result = client.exec_arg2("addid", file, index)
-            .and_then(|_| client.iter().next().unwrap_or(Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))))
+            .and_then(|_| client.iter().next().unwrap_or(Err(From::from(standard_error(IoErrorKind::InvalidInput)))))
             .and_then(|MpdPair(ref name, ref value)| if *name == "Id" {
-                value.parse::<usize>().map(|v| Ok(v)).unwrap_or(Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput))))
+                value.parse::<usize>().map(|v| Ok(v)).unwrap_or(Err(From::from(standard_error(IoErrorKind::InvalidInput))))
             } else {
-                Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))
+                Err(From::from(standard_error(IoErrorKind::InvalidInput)))
             });
         try!(client.ok());
         result

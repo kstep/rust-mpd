@@ -1,7 +1,8 @@
 use std::time::duration::Duration;
 use std::str::FromStr;
 use std::old_io::{standard_error, IoErrorKind};
-use std::error::{FromError, Error};
+use std::error::Error;
+use std::convert::From;
 use std::iter::FromIterator;
 use std::fmt;
 use rustc_serialize::{Encoder, Encodable};
@@ -154,7 +155,7 @@ impl FromIterator<MpdResult<MpdPair>> for MpdResult<MpdStatus> {
                 "audio"          => status.audio = value.parse().ok(),
                 "updating_db"    => status.updating_db = value.parse().ok(),
                 "error"          => status.error = Some(value),
-                _ => return Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))
+                _ => return Err(From::from(standard_error(IoErrorKind::InvalidInput)))
             }
         }
 

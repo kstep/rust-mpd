@@ -2,7 +2,8 @@ extern crate core;
 
 use std::str::FromStr;
 use std::old_io::IoError;
-use std::error::{Error, FromError};
+use std::error::Error;
+use std::convert::From;
 use std::fmt;
 use rustc_serialize::{Encoder, Encodable};
 use utils::ForceEncodable;

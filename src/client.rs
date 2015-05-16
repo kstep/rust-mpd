@@ -2,7 +2,7 @@ use std::time::duration::Duration;
 use std::string::ToString;
 use std::str::FromStr;
 use std::old_io::{Stream, BufferedStream, Lines, IoResult, IoErrorKind, standard_error};
-use std::error::FromError;
+use std::convert::From;
 
 use status::MpdStatus;
 use stats::MpdStats;
@@ -30,13 +30,8 @@ impl<I> Iterator for MpdResultIterator<I> where I: Iterator<Item=IoResult<String
     type Item = MpdResult<MpdPair>;
     fn next(&mut self) -> Option<MpdResult<MpdPair>> {
         match self.inner.next() {
-            Some(Ok(s)) => match s.parse::<Result<Option<MpdPair>>>().map_err(FromError::from_error)
-                .and_then(|res| res.map_err(FromError::from_error)) {
-                    Ok(Some(p)) => Some(Ok(p)),
-                    Ok(None) => None,
-                    Err(e) => Some(Err(e))
-                },
-            Some(Err(e)) => Some(Err(FromError::from_error(e))),
+            Some(Ok(s)) => s.parse().unwrap(), // TODO: should pass through parse error
+            Some(Err(e)) => Some(Err(From::from(e))),
             None => None,
         }
     }
@@ -63,12 +58,14 @@ impl FromStr for Option<Result<MpdPair, MpdServerError>> {
         if s == "OK\n" || s == "list_OK\n" {
             Ok(None)
         } else {
-            s.parse::<Option<MpdServerError>>()
-                .map_err(FromError::from_error)
-                .and_then(|err| err.map(|e| Ok(Err(e)))
-                          .unwrap_or_else(|| s.parse::<MpdPair>()
-                                .map_err(FromError::from_error)
-                                .map(|p| Some(Ok(p)))))
+            if let Ok(error) = s.parse::<MpdServerError>() {
+                Ok(Err(From::from(error)))
+            } else {
+                match s.parse::<MpdPair>() {
+                    Ok(pair) => Ok(Ok(Some(pair))),
+                    Err(error) => Err(error)
+                }
+            }
         }
     }
 }
@@ -109,10 +106,10 @@ impl<S: Stream> MpdClient<S> {
         let version: MpdVersion = if banner.starts_with("OK MPD ") {
             match banner[7..].trim().parse() {
                 Some(v) => v,
-                None => return Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))
+                None => return Err(From::from(standard_error(IoErrorKind::InvalidInput)))
             }
         } else {
-            return Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)));
+            return Err(From::from(standard_error(IoErrorKind::InvalidInput)));
         };
 
         Ok(MpdClient { socket: socket, version: version })
@@ -167,10 +164,10 @@ impl<S: Stream> MpdClient<S> {
         let result = match iter.next() {
             Some(Ok(MpdPair(ref key, ref value))) if *key == "updating_db" => match value.parse() {
                 Some(v) => Ok(v),
-                None => Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))
+                None => Err(From::from(standard_error(IoErrorKind::InvalidInput)))
             },
-            Some(Err(e)) => return Err(FromError::from_error(e)),
-            _ => return Err(FromError::from_error(standard_error(IoErrorKind::InvalidInput))),
+            Some(Err(e)) => return Err(From::from(e)),
+            _ => return Err(From::from(standard_error(IoErrorKind::InvalidInput))),
         };
         for s in iter {
             try!(s);
@@ -199,9 +196,9 @@ impl<S: Stream> MpdClient<S> {
     }
 
     #[inline] pub fn ok(&mut self) -> MpdResult<()> {
-        self.socket.read_line().map_err(FromError::from_error).and_then(|line|
+        self.socket.read_line().map_err(From::from).and_then(|line|
         line.parse::<MpdResult<MpdPair>>()
-            .map(|r| Err(r.err().unwrap_or(FromError::from_error(standard_error(IoErrorKind::InvalidInput)))))
+            .map(|r| Err(r.err().unwrap_or(From::from(standard_error(IoErrorKind::InvalidInput)))))
             .unwrap_or(Ok(())))
     }
 
