@@ -43,8 +43,8 @@ test_option!(single, true, false);
 test_option!(random, true, false);
 test_option!(repeat, true, false);
 test_option!(crossfade, 1000 => Some(1000), 0 => None);
-test_option!(mixrampdb, 1.0f32, 0.0f32);
-test_option!(mixrampdelay, 1 => Some(Duration::seconds(1)), 0 => None);
+//test_option!(mixrampdb, 1.0f32, 0.0f32);
+//test_option!(mixrampdelay, 1 => Some(Duration::seconds(1)), 0 => None);
 
 #[test]
 fn replaygain() {

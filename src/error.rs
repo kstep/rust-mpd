@@ -1,3 +1,4 @@
+use std::convert::From;
 use std::io::Error as IoError;
 use std::error::Error as StdError;
 use std::str::FromStr;
@@ -250,6 +251,7 @@ impl From<ParseIntError> for ParseError {
         ParseError::BadInteger(e)
     }
 }
+
 impl From<ParseFloatError> for ParseError {
     fn from(e: ParseFloatError) -> ParseError {
         ParseError::BadFloat(e)
