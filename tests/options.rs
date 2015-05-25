@@ -37,7 +37,6 @@ macro_rules! test_option {
     };
 }
 
-test_option!(volume, 100, 0);
 test_option!(consume, true, false);
 test_option!(single, true, false);
 test_option!(random, true, false);
@@ -54,5 +53,16 @@ fn replaygain() {
         assert_eq!(mpd.get_replaygain().unwrap(), mpd::ReplayGain::Track);
         mpd.replaygain(mpd::ReplayGain::Off).unwrap();
         assert_eq!(mpd.get_replaygain().unwrap(), mpd::ReplayGain::Off);
+    }
+}
+
+#[test]
+fn volume() {
+    let mut mpd = connect();
+    if mpd.status().unwrap().volume >= 0 {
+        mpd.volume(100).unwrap();
+        assert_eq!(mpd.status().unwrap().volume, 100);
+        mpd.volume(0).unwrap();
+        assert_eq!(mpd.status().unwrap().volume, 0);
     }
 }
