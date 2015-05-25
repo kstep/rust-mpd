@@ -83,7 +83,7 @@ impl<S: Read+Write> Client<S> {
 
         match line.parse::<Reply>() {
             Ok(Reply::Ok) => Ok(()),
-            Ok(Reply::Ack(e)) => Err(From::from(e)),
+            Ok(Reply::Ack(e)) => Err(Error::Server(e)),
             Ok(_) => Err(Error::Proto(ProtoError::NotOk)),
             Err(e) => Err(From::from(e)),
         }
@@ -93,6 +93,11 @@ impl<S: Read+Write> Client<S> {
         self.write_command("status")
             .and_then(|_| self.read_map())
             .and_then(Status::from_map)
+    }
+
+    pub fn clearerror(&mut self) -> Result<()> {
+        self.write_command("clearerror")
+            .and_then(|_| self.expect_ok())
     }
 
     pub fn volume(&mut self, volume: usize) -> Result<()> {
