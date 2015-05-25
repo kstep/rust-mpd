@@ -100,7 +100,7 @@ impl<S: Read+Write> Client<S> {
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn volume(&mut self, volume: usize) -> Result<()> {
+    pub fn volume(&mut self, volume: i8) -> Result<()> {
         self.write_command_args(format_args!("setvol {}", volume))
             .and_then(|_| self.expect_ok())
     }

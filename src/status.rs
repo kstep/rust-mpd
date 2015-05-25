@@ -7,7 +7,7 @@ use error::{Error, ProtoError, ParseError};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Status {
-    pub volume: usize,
+    pub volume: i8,
     pub repeat: bool,
     pub random: bool,
     pub single: bool,
