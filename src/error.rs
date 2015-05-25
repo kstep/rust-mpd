@@ -4,6 +4,7 @@ use std::error::Error as StdError;
 use std::str::FromStr;
 use std::fmt;
 use std::num::{ParseIntError, ParseFloatError};
+use std::result;
 
 // Server errors {{{
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -24,7 +25,7 @@ pub enum ErrorCode {
 
 impl FromStr for ErrorCode {
     type Err = ParseError;
-    fn from_str(s: &str) -> Result<ErrorCode, ParseError> {
+    fn from_str(s: &str) -> result::Result<ErrorCode, ParseError> {
         use self::ErrorCode::*;
         match try!(s.parse()) {
             1 => Ok(NotList),
@@ -95,7 +96,7 @@ impl StdError for ServerError {
 
 impl FromStr for ServerError {
     type Err = ParseError;
-    fn from_str(s: &str) -> Result<ServerError, ParseError> {
+    fn from_str(s: &str) -> result::Result<ServerError, ParseError> {
         // ACK [<code>@<index>] {<command>} <description>
         if s.starts_with("ACK [") {
             let s = &s[5..];
@@ -137,6 +138,8 @@ pub enum Error {
     Proto(ProtoError),
     Server(ServerError)
 }
+
+pub type Result<T> = result::Result<T, Error>;
 
 impl StdError for Error {
     fn cause(&self) -> Option<&StdError> {

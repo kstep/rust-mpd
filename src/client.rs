@@ -6,7 +6,7 @@ use std::fmt::Arguments;
 use time::Duration;
 use bufstream::BufStream;
 use version::Version;
-use error::{ProtoError, Error};
+use error::{ProtoError, Error, Result};
 use reply::Reply;
 use status::Status;
 use replaygain::ReplayGain;
@@ -19,7 +19,7 @@ pub struct Client<S: Read+Write> {
 }
 
 impl<S: Read+Write> Client<S> {
-    pub fn new(socket: S) -> Result<Client<S>, Error> {
+    pub fn new(socket: S) -> Result<Client<S>> {
         let mut socket = BufStream::new(socket);
 
         let mut banner = String::new();
@@ -37,7 +37,7 @@ impl<S: Read+Write> Client<S> {
         })
     }
 
-    fn read_line(&mut self) -> Result<String, Error> {
+    fn read_line(&mut self) -> Result<String> {
         let mut buf = String::new();
         try!(self.socket.read_line(&mut buf));
         if buf.ends_with("\n") {
@@ -46,7 +46,7 @@ impl<S: Read+Write> Client<S> {
         Ok(buf)
     }
 
-    fn read_map(&mut self) -> Result<BTreeMap<String, String>, Error> {
+    fn read_map(&mut self) -> Result<BTreeMap<String, String>> {
         (&mut self.socket).lines().map(|v| v.map_err(From::from).and_then(|s| s.parse().map_err(From::from)))
             .take_while(|v| {
                 match *v {
@@ -64,21 +64,21 @@ impl<S: Read+Write> Client<S> {
         .collect()
     }
 
-    fn write_command(&mut self, command: &str) -> Result<(), Error> {
+    fn write_command(&mut self, command: &str) -> Result<()> {
         self.socket.write_all(command.as_bytes())
             .and_then(|_| self.socket.write(&[0x0a]))
             .and_then(|_| self.socket.flush())
             .map_err(From::from)
     }
 
-    fn write_command_args(&mut self, command: Arguments) -> Result<(), Error> {
+    fn write_command_args(&mut self, command: Arguments) -> Result<()> {
         self.socket.write_fmt(command)
             .and_then(|_| self.socket.write(&[0x0a]))
             .and_then(|_| self.socket.flush())
             .map_err(From::from)
     }
 
-    fn expect_ok(&mut self) -> Result<(), Error> {
+    fn expect_ok(&mut self) -> Result<()> {
         let line = try!(self.read_line());
 
         match line.parse::<Reply>() {
@@ -89,58 +89,58 @@ impl<S: Read+Write> Client<S> {
         }
     }
 
-    pub fn status(&mut self) -> Result<Status, Error> {
+    pub fn status(&mut self) -> Result<Status> {
         self.write_command("status")
             .and_then(|_| self.read_map())
             .and_then(Status::from_map)
     }
 
-    pub fn volume(&mut self, volume: usize) -> Result<(), Error> {
+    pub fn volume(&mut self, volume: usize) -> Result<()> {
         self.write_command_args(format_args!("setvol {}", volume))
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn repeat(&mut self, value: bool) -> Result<(), Error> {
+    pub fn repeat(&mut self, value: bool) -> Result<()> {
         self.write_command_args(format_args!("repeat {}", value as u8))
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn random(&mut self, value: bool) -> Result<(), Error> {
+    pub fn random(&mut self, value: bool) -> Result<()> {
         self.write_command_args(format_args!("random {}", value as u8))
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn single(&mut self, value: bool) -> Result<(), Error> {
+    pub fn single(&mut self, value: bool) -> Result<()> {
         self.write_command_args(format_args!("single {}", value as u8))
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn consume(&mut self, value: bool) -> Result<(), Error> {
+    pub fn consume(&mut self, value: bool) -> Result<()> {
         self.write_command_args(format_args!("consume {}", value as u8))
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn crossfade(&mut self, value: u64) -> Result<(), Error> {
+    pub fn crossfade(&mut self, value: u64) -> Result<()> {
         self.write_command_args(format_args!("crossfade {}", value))
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn mixrampdb(&mut self, value: f32) -> Result<(), Error> {
+    pub fn mixrampdb(&mut self, value: f32) -> Result<()> {
         self.write_command_args(format_args!("mixrampdb {}", value))
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn mixrampdelay<T: IntoSeconds>(&mut self, value: T) -> Result<(), Error> {
+    pub fn mixrampdelay<T: IntoSeconds>(&mut self, value: T) -> Result<()> {
         self.write_command_args(format_args!("mixrampdelay {}", value.into_seconds()))
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn replaygain(&mut self, gain: ReplayGain) -> Result<(), Error> {
+    pub fn replaygain(&mut self, gain: ReplayGain) -> Result<()> {
         self.write_command_args(format_args!("replay_gain_mode {}", gain))
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn get_replaygain(&mut self) -> Result<ReplayGain, Error> {
+    pub fn get_replaygain(&mut self) -> Result<ReplayGain> {
         try!(self.write_command("replay_gain_status"));
 
         let buf = try!(self.read_line());
@@ -155,32 +155,32 @@ impl<S: Read+Write> Client<S> {
         }
     }
 
-    pub fn play(&mut self) -> Result<(), Error> {
+    pub fn play(&mut self) -> Result<()> {
         self.write_command("play")
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn next(&mut self) -> Result<(), Error> {
+    pub fn next(&mut self) -> Result<()> {
         self.write_command("next")
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn prev(&mut self) -> Result<(), Error> {
+    pub fn prev(&mut self) -> Result<()> {
         self.write_command("previous")
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn stop(&mut self) -> Result<(), Error> {
+    pub fn stop(&mut self) -> Result<()> {
         self.write_command("stop")
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn pause(&mut self, value: bool) -> Result<(), Error> {
+    pub fn pause(&mut self, value: bool) -> Result<()> {
         self.write_command_args(format_args!("pause {}", value as u8))
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn seek<T: IntoSeconds>(&mut self, pos: T) -> Result<(), Error> {
+    pub fn seek<T: IntoSeconds>(&mut self, pos: T) -> Result<()> {
         self.write_command_args(format_args!("seekcur {}", pos.into_seconds()))
             .and_then(|_| self.expect_ok())
     }
