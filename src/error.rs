@@ -1,3 +1,4 @@
+use time::ParseError as TimeParseError;
 use std::convert::From;
 use std::io::Error as IoError;
 use std::error::Error as StdError;
@@ -186,7 +187,9 @@ impl From<ParseIntError> for Error {
 impl From<ParseFloatError> for Error {
     fn from(e: ParseFloatError) -> Error { Error::Parse(ParseError::BadFloat(e)) }
 }
-
+impl From<TimeParseError> for Error {
+    fn from(e: TimeParseError) -> Error { Error::Parse(ParseError::BadTime(e)) }
+}
 
 impl From<ServerError> for Error {
     fn from(e: ServerError) -> Error { Error::Server(e) }
@@ -199,6 +202,7 @@ pub enum ParseError {
     BadInteger(ParseIntError),
     BadFloat(ParseFloatError),
     BadValue(String),
+    BadTime(TimeParseError),
     BadVersion,
     NotAck,
     BadPair,
@@ -230,6 +234,7 @@ impl StdError for ParseError {
             BadInteger(_) => "invalid integer",
             BadFloat(_) => "invalid float",
             BadValue(_) => "invalid value",
+            BadTime(_) => "invalid date/time",
             BadVersion => "invalid version",
             NotAck => "not an ACK",
             BadPair => "invalid pair",
@@ -246,6 +251,12 @@ impl StdError for ParseError {
             BadState(_) => "invalid playing state",
             BadErrorCode(_) => "unknown error code",
         }
+    }
+}
+
+impl From<TimeParseError> for ParseError {
+    fn from(e: TimeParseError) -> ParseError {
+        ParseError::BadTime(e)
     }
 }
 
