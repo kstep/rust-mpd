@@ -10,6 +10,7 @@ use error::{ProtoError, Error, Result};
 use reply::Reply;
 use status::Status;
 use replaygain::ReplayGain;
+use song::Song;
 
 // Client {{{
 #[derive(Debug)]
@@ -188,6 +189,16 @@ impl<S: Read+Write> Client<S> {
     pub fn seek<T: IntoSeconds>(&mut self, pos: T) -> Result<()> {
         self.write_command_args(format_args!("seekcur {}", pos.into_seconds()))
             .and_then(|_| self.expect_ok())
+    }
+
+    pub fn currentsong(&mut self) -> Result<Option<Song>> {
+        self.write_command("currentsong")
+            .and_then(|_| self.read_map())
+            .and_then(|m| if m.is_empty() {
+                Ok(None)
+            } else {
+                Song::from_map(m).map(Some)
+            })
     }
 }
 
