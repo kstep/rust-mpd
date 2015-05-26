@@ -2,6 +2,7 @@ extern crate rustc_serialize;
 extern crate time;
 extern crate bufstream;
 
+mod macros;
 pub mod error;
 pub mod version;
 pub mod reply;
