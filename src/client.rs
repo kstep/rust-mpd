@@ -163,6 +163,26 @@ impl<S: Read+Write> Client<S> {
         }
     }
 
+    fn read_pair(&mut self) -> Result<(String, String)> {
+        let line = try!(self.read_line());
+
+        match line.parse::<Reply>() {
+            Ok(Reply::Pair(a, b)) => Ok((a, b)),
+            Ok(Reply::Ok) => Err(Error::Proto(ProtoError::NotPair)),
+            Ok(Reply::Ack(e)) => Err(Error::Server(e)),
+            Err(e) => Err(Error::Parse(e)),
+        }
+    }
+
+    fn read_field(&mut self, field: &'static str) -> Result<String> {
+        let (a, b) = try!(self.read_pair());
+        if &*a == field {
+            Ok(b)
+        } else {
+            Err(Error::Proto(ProtoError::NoField(field)))
+        }
+    }
+
     pub fn status(&mut self) -> Result<Status> {
         self.write_command("status")
             .and_then(|_| self.read_map())
@@ -222,16 +242,10 @@ impl<S: Read+Write> Client<S> {
     pub fn get_replaygain(&mut self) -> Result<ReplayGain> {
         try!(self.write_command("replay_gain_status"));
 
-        let buf = try!(self.read_line());
-
-        let reply = try!(buf.parse::<Reply>());
+        let reply = try!(self.read_field("replay_gain_mode"));
         try!(self.expect_ok());
 
-        match reply {
-            Reply::Ack(e) => Err(Error::Server(e)),
-            Reply::Pair(ref a, ref b) if &*a == "replay_gain_mode" => b.parse().map_err(From::from),
-            _ => Err(Error::Proto(ProtoError::NoField("replay_gain_mode")))
-        }
+        reply.parse().map_err(From::from)
     }
 
     pub fn play(&mut self) -> Result<()> {
@@ -277,6 +291,20 @@ impl<S: Read+Write> Client<S> {
     pub fn queue(&mut self) -> Result<Vec<Song>> {
         self.write_command("playlistinfo")
             .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+    }
+
+    pub fn append(&mut self, path: &str) -> Result<usize> {
+        try!(self.write_command_args(format_args!("addid \"{}\"", path)));
+        let reply = try!(self.read_field("Id"));
+        try!(self.expect_ok());
+        reply.parse().map_err(From::from)
+    }
+
+    pub fn insert(&mut self, path: &str, pos: usize) -> Result<usize> {
+        try!(self.write_command_args(format_args!("addid \"{}\" {}", path, pos)));
+        let reply = try!(self.read_field("Id"));
+        try!(self.expect_ok());
+        reply.parse().map_err(From::from)
     }
 }
 
