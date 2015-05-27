@@ -1,12 +1,8 @@
 extern crate mpd;
 extern crate time;
 
-use std::net::TcpStream;
-use time::Duration;
-
-fn connect() -> mpd::Client<TcpStream> {
-    mpd::Client::new(TcpStream::connect(option_env!("MPD_SOCK").unwrap_or("127.0.0.1:6600")).unwrap()).unwrap()
-}
+mod helpers;
+use helpers::connect;
 
 #[test]
 fn status() {
