@@ -14,7 +14,7 @@ use replaygain::ReplayGain;
 use song::Song;
 
 // Iterator {{{
-struct Pairs<I: Iterator<Item=io::Result<String>>>(I);
+struct Pairs<I>(I);
 
 impl<I> Iterator for Pairs<I> where I: Iterator<Item=io::Result<String>> {
     type Item = Result<(String, String)>;
@@ -26,6 +26,61 @@ impl<I> Iterator for Pairs<I> where I: Iterator<Item=io::Result<String>> {
             Some(Ok(Reply::Ack(e))) => Some(Err(Error::Server(e))),
             Some(Err(e)) => Some(Err(e)),
         }
+    }
+}
+
+struct Maps<'a, I: 'a> {
+    pairs: &'a mut Pairs<I>,
+    sep: &'a str,
+    value: Option<String>,
+    done: bool
+}
+
+impl<'a, I> Iterator for Maps<'a, I> where I: Iterator<Item=io::Result<String>> {
+    type Item = Result<BTreeMap<String, String>>;
+    fn next(&mut self) -> Option<Result<BTreeMap<String, String>>> {
+        if self.done {
+            return None;
+        }
+
+        let mut map = BTreeMap::new();
+
+        if let Some(b) = self.value.take() {
+            map.insert(self.sep.to_owned(), b);
+        }
+
+        loop {
+            match self.pairs.next() {
+                Some(Ok((a, b))) => {
+                    if &*a == self.sep {
+                        self.value = Some(b);
+                        break;
+                    } else {
+                        map.insert(a, b);
+                    }
+                },
+                Some(Err(e)) => return Some(Err(e)),
+                None => {
+                    self.done = true;
+                    break;
+                }
+            }
+        }
+
+        Some(Ok(map))
+    }
+}
+
+impl<I> Pairs<I> where I: Iterator<Item=io::Result<String>> {
+    fn split<'a, 'b: 'a>(&'a mut self, f: &'b str) -> Maps<'a, I> {
+        let mut maps = Maps {
+            pairs: self,
+            sep: f,
+            value: None,
+            done: false,
+        };
+        maps.next(); // swallow first separator
+        maps
     }
 }
 // }}}
@@ -217,6 +272,11 @@ impl<S: Read+Write> Client<S> {
             } else {
                 Song::from_map(m).map(Some)
             })
+    }
+
+    pub fn queue(&mut self) -> Result<Vec<Song>> {
+        self.write_command("playlistinfo")
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
     }
 }
 
