@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use std::io::{self, Read, Write, BufRead, Lines};
 use std::convert::From;
 use std::fmt::Arguments;
+use std::net::{TcpStream, ToSocketAddrs};
 
 use time::Duration;
 use bufstream::BufStream;
@@ -31,12 +32,22 @@ impl<I> Iterator for Pairs<I> where I: Iterator<Item=io::Result<String>> {
 
 // Client {{{
 #[derive(Debug)]
-pub struct Client<S: Read+Write> {
+pub struct Client<S=TcpStream> where S: Read+Write {
     socket: BufStream<S>,
     pub version: Version
 }
 
+impl Default for Client<TcpStream> {
+    fn default() -> Client<TcpStream> {
+        Client::<TcpStream>::connect("127.0.0.1:6600").unwrap()
+    }
+}
+
 impl<S: Read+Write> Client<S> {
+    pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<Client<TcpStream>> {
+        TcpStream::connect(addr).map_err(Error::Io).and_then(Client::new)
+    }
+
     pub fn new(socket: S) -> Result<Client<S>> {
         let mut socket = BufStream::new(socket);
 
