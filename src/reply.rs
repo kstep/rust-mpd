@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use error::{ParseError, ServerError};
 
-// Reply {{{
 #[derive(Debug, Clone, PartialEq)]
 pub enum Reply {
     Ok,
@@ -28,4 +27,3 @@ impl FromStr for Reply {
         }
     }
 }
-// }}}

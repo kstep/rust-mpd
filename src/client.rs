@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::io::{Read, Write, BufRead};
+use std::io::{self, Read, Write, BufRead, Lines};
 use std::convert::From;
 use std::fmt::Arguments;
 
@@ -11,6 +11,23 @@ use reply::Reply;
 use status::Status;
 use replaygain::ReplayGain;
 use song::Song;
+
+// Iterator {{{
+struct Pairs<I: Iterator<Item=io::Result<String>>>(I);
+
+impl<I> Iterator for Pairs<I> where I: Iterator<Item=io::Result<String>> {
+    type Item = Result<(String, String)>;
+    fn next(&mut self) -> Option<Result<(String, String)>> {
+        let reply: Option<Result<Reply>> = self.0.next().map(|v| v.map_err(Error::Io).and_then(|s| s.parse::<Reply>().map_err(Error::Parse)));
+        match reply {
+            Some(Ok(Reply::Pair(a, b))) => Some(Ok((a, b))),
+            None | Some(Ok(Reply::Ok)) => None,
+            Some(Ok(Reply::Ack(e))) => Some(Err(Error::Server(e))),
+            Some(Err(e)) => Some(Err(e)),
+        }
+    }
+}
+// }}}
 
 // Client {{{
 #[derive(Debug)]
@@ -47,22 +64,12 @@ impl<S: Read+Write> Client<S> {
         Ok(buf)
     }
 
+    fn read_pairs(&mut self) -> Pairs<Lines<&mut BufStream<S>>> {
+        Pairs((&mut self.socket).lines())
+    }
+
     fn read_map(&mut self) -> Result<BTreeMap<String, String>> {
-        (&mut self.socket).lines().map(|v| v.map_err(From::from).and_then(|s| s.parse().map_err(From::from)))
-            .take_while(|v| {
-                match *v {
-                    Ok(Reply::Ok) => false,
-                    Err(_) => false,
-                    _ => true
-                }
-            })
-        .map(|v| match v {
-            Ok(Reply::Pair(a, b)) => Ok((a, b)),
-            Ok(Reply::Ack(e)) => Err(Error::Server(e)),
-            Err(e) => Err(e),
-            _ => Err(Error::Proto(ProtoError::NotPair))
-        })
-        .collect()
+        self.read_pairs().collect()
     }
 
     fn write_command(&mut self, command: &str) -> Result<()> {
