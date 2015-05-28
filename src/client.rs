@@ -249,9 +249,11 @@ impl<S: Read+Write> Client<S> {
         reply.parse().map_err(From::from)
     }
 
-    pub fn play(&mut self) -> Result<()> {
-        self.write_command("play")
-            .and_then(|_| self.expect_ok())
+    pub fn play<T: ToQueuePlace>(&mut self, place: Option<T>) -> Result<()> {
+        match place {
+            Some(p) => self.write_command_args(format_args!("play{} {}", if T::is_id() { "id" } else { "" }, p.to_place())),
+            None => self.write_command("play")
+        }.and_then(|_| self.expect_ok())
     }
 
     pub fn next(&mut self) -> Result<()> {
@@ -274,9 +276,11 @@ impl<S: Read+Write> Client<S> {
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn seek<T: ToSeconds>(&mut self, pos: T) -> Result<()> {
-        self.write_command_args(format_args!("seekcur {}", pos.to_seconds()))
-            .and_then(|_| self.expect_ok())
+    pub fn seek<T: ToSeconds, P: ToQueuePlace>(&mut self, place: Option<P>, pos: T) -> Result<()> {
+        match place {
+            Some(p) => self.write_command_args(format_args!("seek{} {} {}", if P::is_id() { "id" } else { "" }, p.to_place(), pos.to_seconds())),
+            None => self.write_command_args(format_args!("seekcur {}", pos.to_seconds())),
+        }.and_then(|_| self.expect_ok())
     }
 
     pub fn currentsong(&mut self) -> Result<Option<Song>> {
