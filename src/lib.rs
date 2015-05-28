@@ -11,6 +11,7 @@ pub mod replaygain;
 pub mod song;
 pub mod output;
 pub mod playlist;
+pub mod search;
 pub mod client;
 
 pub use client::Client;
@@ -20,3 +21,4 @@ pub use version::Version;
 pub use song::Song;
 pub use playlist::Playlist;
 pub use output::Output;
+pub use search::{Term, Query, Clause};

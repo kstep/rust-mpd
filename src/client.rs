@@ -15,6 +15,7 @@ use replaygain::ReplayGain;
 use song::{Song, Id};
 use output::Output;
 use playlist::Playlist;
+use search::Query;
 
 // Iterator {{{
 struct Pairs<I>(I);
@@ -305,6 +306,11 @@ impl<S: Read+Write> Client<S> {
             .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
     }
 
+    pub fn changes(&mut self, version: u32) -> Result<Vec<Song>> {
+        self.write_command_args(format_args!("plchanges {}", version))
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+    }
+
     pub fn append(&mut self, path: &str) -> Result<Id> {
         self.write_command_args(format_args!("addid \"{}\"", path))
             .and_then(|_| self.read_field("Id"))
@@ -398,20 +404,26 @@ impl<S: Read+Write> Client<S> {
     }
     pub fn pl_append(&mut self, name: &str, path: &str) -> Result<()> {
         self.write_command_args(format_args!("playlistadd \"{}\" \"{}\"", name, path))
-            .and_then(|v| self.expect_ok())
+            .and_then(|_| self.expect_ok())
     }
     pub fn pl_delete(&mut self, name: &str, pos: u32) -> Result<()> {
         self.write_command_args(format_args!("playlistdelete \"{}\" {}", name, pos))
-            .and_then(|v| self.expect_ok())
+            .and_then(|_| self.expect_ok())
     }
     pub fn pl_shift(&mut self, name: &str, from: u32, to: u32) -> Result<()> {
         self.write_command_args(format_args!("playlistmove \"{}\" {} {}", name, from, to))
-            .and_then(|v| self.expect_ok())
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn search(&mut self, query: Query) -> Result<Vec<Song>> {
+        Ok(Vec::new())
     }
 }
 
 // }}}
 
+
+// Helper traits {{{
 pub trait ToSeconds {
     fn to_seconds(self) -> f64;
 }
@@ -526,3 +538,4 @@ impl IsId for Id {
         true
     }
 }
+// }}}
