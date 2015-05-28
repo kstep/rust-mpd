@@ -6,10 +6,13 @@ use std::convert::From;
 
 use error::{Error, ParseError, ProtoError};
 
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord)]
+pub struct Id(pub u32);
+
 #[derive(Debug, Copy, Clone)]
 pub struct QueuePlace {
-    pub id: usize,
-    pub pos: usize,
+    pub id: Id,
+    pub pos: u32,
     pub prio: u8
 }
 
@@ -51,7 +54,7 @@ impl Song {
             place: {
                 if let (Some(id), Some(pos)) = (map.remove("Id"), map.remove("Pos")) {
                     Some(QueuePlace {
-                        id: try!(id.parse()),
+                        id: Id(try!(id.parse())),
                         pos: try!(pos.parse()),
                         prio: try!(map.remove("Prio").map(|v| v.parse()).unwrap_or(Ok(0)))
                     })

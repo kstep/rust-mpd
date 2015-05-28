@@ -3,6 +3,7 @@ use std::io::{self, Read, Write, BufRead, Lines};
 use std::convert::From;
 use std::fmt::Arguments;
 use std::net::{TcpStream, ToSocketAddrs};
+use std::ops;
 
 use time::Duration;
 use bufstream::BufStream;
@@ -11,7 +12,7 @@ use error::{ProtoError, Error, Result};
 use reply::Reply;
 use status::Status;
 use replaygain::ReplayGain;
-use song::Song;
+use song::{Song, Id};
 
 // Iterator {{{
 struct Pairs<I>(I);
@@ -229,8 +230,8 @@ impl<S: Read+Write> Client<S> {
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn mixrampdelay<T: IntoSeconds>(&mut self, value: T) -> Result<()> {
-        self.write_command_args(format_args!("mixrampdelay {}", value.into_seconds()))
+    pub fn mixrampdelay<T: ToSeconds>(&mut self, value: T) -> Result<()> {
+        self.write_command_args(format_args!("mixrampdelay {}", value.to_seconds()))
             .and_then(|_| self.expect_ok())
     }
 
@@ -273,8 +274,8 @@ impl<S: Read+Write> Client<S> {
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn seek<T: IntoSeconds>(&mut self, pos: T) -> Result<()> {
-        self.write_command_args(format_args!("seekcur {}", pos.into_seconds()))
+    pub fn seek<T: ToSeconds>(&mut self, pos: T) -> Result<()> {
+        self.write_command_args(format_args!("seekcur {}", pos.to_seconds()))
             .and_then(|_| self.expect_ok())
     }
 
@@ -293,41 +294,157 @@ impl<S: Read+Write> Client<S> {
             .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
     }
 
-    pub fn append(&mut self, path: &str) -> Result<usize> {
-        try!(self.write_command_args(format_args!("addid \"{}\"", path)));
-        let reply = try!(self.read_field("Id"));
-        try!(self.expect_ok());
-        reply.parse().map_err(From::from)
+    pub fn clear(&mut self) -> Result<()> {
+        self.write_command("clear")
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn playlist<T: ToQueueRangeOrPlace>(&mut self, pos: T) -> Result<Vec<Song>> {
+        self.write_command_args(format_args!("playlist{} {}", if T::is_id() { "id" } else { "info" }, pos.to_range()))
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+    }
+
+    pub fn append(&mut self, path: &str) -> Result<Id> {
+        self.write_command_args(format_args!("addid \"{}\"", path))
+            .and_then(|_| self.read_field("Id"))
+            .and_then(|v| self.expect_ok()
+                      .and_then(|_| v.parse().map_err(From::from).map(Id)))
     }
 
     pub fn insert(&mut self, path: &str, pos: usize) -> Result<usize> {
-        try!(self.write_command_args(format_args!("addid \"{}\" {}", path, pos)));
-        let reply = try!(self.read_field("Id"));
-        try!(self.expect_ok());
-        reply.parse().map_err(From::from)
+        self.write_command_args(format_args!("addid \"{}\" {}", path, pos))
+            .and_then(|_| self.read_field("Id"))
+            .and_then(|v| self.expect_ok()
+                      .and_then(|_| v.parse().map_err(From::from)))
     }
+
+    pub fn delete<T: ToQueueRangeOrPlace>(&mut self, pos: T) -> Result<()> {
+            self.write_command_args(format_args!("delete{} {}", if T::is_id() { "id" } else { "" }, pos.to_range()))
+                .and_then(|_| self.expect_ok())
+    }
+
+    pub fn shift<T: ToQueueRangeOrPlace>(&mut self, from: T, to: usize) -> Result<()> {
+        self.write_command_args(format_args!("move{} {} {}", if T::is_id() { "id" } else { "" }, from.to_range(), to))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn swap<T: ToQueuePlace>(&mut self, one: T, two: T) -> Result<()> {
+        self.write_command_args(format_args!("swap{} {} {}", if T::is_id() { "id" } else { "" }, one.to_place(), two.to_place()))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn shuffle<T: ToQueueRange>(&mut self, range: T) -> Result<()> {
+        self.write_command_args(format_args!("shuffle {}", range.to_range()))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn priority<T: ToQueueRangeOrPlace>(&mut self, pos: T, prio: u8) -> Result<()> {
+        self.write_command_args(format_args!("prio{} {} {}", if T::is_id() { "id" } else { "" }, prio, pos.to_range()))
+            .and_then(|_| self.expect_ok())
+    }
+
 }
 
 // }}}
 
-pub trait IntoSeconds {
-    fn into_seconds(self) -> f64;
+pub trait ToSeconds {
+    fn to_seconds(self) -> f64;
 }
 
-impl IntoSeconds for i64 {
-    fn into_seconds(self) -> f64 {
+impl ToSeconds for i64 {
+    fn to_seconds(self) -> f64 {
         self as f64
     }
 }
 
-impl IntoSeconds for f64 {
-    fn into_seconds(self) -> f64 {
+impl ToSeconds for f64 {
+    fn to_seconds(self) -> f64 {
         self
     }
 }
 
-impl IntoSeconds for Duration {
-    fn into_seconds(self) -> f64 {
+impl ToSeconds for Duration {
+    fn to_seconds(self) -> f64 {
         self.num_milliseconds() as f64 / 1000.0
+    }
+}
+
+pub trait IsId {
+    fn is_id() -> bool { false }
+}
+
+pub trait ToQueueRangeOrPlace : IsId {
+    fn to_range(self) -> String;
+}
+
+pub trait ToQueueRange {
+    fn to_range(self) -> String;
+}
+
+impl<T: ToQueuePlace> ToQueueRangeOrPlace for T {
+    fn to_range(self) -> String {
+        format!("{}", self.to_place())
+    }
+}
+
+impl ToQueueRange for ops::Range<u32> {
+    fn to_range(self) -> String {
+        format!("{}:{}", self.start, self.end)
+    }
+}
+
+impl ToQueueRangeOrPlace for ops::Range<u32> {
+    fn to_range(self) -> String {
+        ToQueueRange::to_range(self)
+    }
+}
+
+impl ToQueueRange for ops::RangeTo<u32> {
+    fn to_range(self) -> String {
+        format!(":{}", self.end)
+    }
+}
+
+impl ToQueueRangeOrPlace for ops::RangeTo<u32> {
+    fn to_range(self) -> String {
+        ToQueueRange::to_range(self)
+    }
+}
+
+impl ToQueueRange for ops::RangeFrom<u32> {
+    fn to_range(self) -> String {
+        format!("{}:", self.start)
+    }
+}
+
+impl ToQueueRangeOrPlace for ops::RangeFrom<u32> {
+    fn to_range(self) -> String {
+        ToQueueRange::to_range(self)
+    }
+}
+
+pub trait ToQueuePlace : IsId {
+    fn to_place(self) -> u32;
+}
+
+impl ToQueuePlace for Id {
+    fn to_place(self) -> u32 {
+        self.0
+    }
+}
+
+impl ToQueuePlace for u32 {
+    fn to_place(self) -> u32 {
+        self
+    }
+}
+
+impl IsId for u32 {}
+impl IsId for ops::Range<u32> {}
+impl IsId for ops::RangeTo<u32> {}
+impl IsId for ops::RangeFrom<u32> {}
+impl IsId for Id {
+    fn is_id() -> bool {
+        true
     }
 }
