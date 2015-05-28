@@ -13,6 +13,7 @@ use reply::Reply;
 use status::Status;
 use replaygain::ReplayGain;
 use song::{Song, Id};
+use output::Output;
 
 // Iterator {{{
 struct Pairs<I>(I);
@@ -359,6 +360,11 @@ impl<S: Read+Write> Client<S> {
             .and_then(|_| self.read_field("updating_db"))
             .and_then(|v| self.expect_ok()
                       .and_then(|_| v.parse().map_err(From::from)))
+    }
+
+    pub fn outputs(&mut self) -> Result<Vec<Output>> {
+        self.write_command("outputs")
+            .and_then(|_| self.read_pairs().split("outputid").map(|v| v.and_then(Output::from_map)).collect())
     }
 
 }
