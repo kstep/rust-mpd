@@ -347,6 +347,20 @@ impl<S: Read+Write> Client<S> {
             .and_then(|_| self.expect_ok())
     }
 
+    pub fn rescan(&mut self) -> Result<u32> {
+        self.write_command("rescan")
+            .and_then(|_| self.read_field("updating_db"))
+            .and_then(|v| self.expect_ok()
+                      .and_then(|_| v.parse().map_err(From::from)))
+    }
+
+    pub fn update(&mut self) -> Result<u32> {
+        self.write_command("update")
+            .and_then(|_| self.read_field("updating_db"))
+            .and_then(|v| self.expect_ok()
+                      .and_then(|_| v.parse().map_err(From::from)))
+    }
+
 }
 
 // }}}
