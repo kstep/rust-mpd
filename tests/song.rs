@@ -13,7 +13,7 @@ fn currentsong() {
 #[test]
 fn queue() {
     let mut mpd = connect();
-    let songs = mpd.queue().unwrap();
+    let songs = mpd.queue(..).unwrap();
     println!("{:?}", songs);
 }
 

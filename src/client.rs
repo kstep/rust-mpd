@@ -14,6 +14,7 @@ use status::Status;
 use replaygain::ReplayGain;
 use song::{Song, Id};
 use output::Output;
+use playlist::Playlist;
 
 // Iterator {{{
 struct Pairs<I>(I);
@@ -294,17 +295,12 @@ impl<S: Read+Write> Client<S> {
             })
     }
 
-    pub fn queue(&mut self) -> Result<Vec<Song>> {
-        self.write_command("playlistinfo")
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
-    }
-
     pub fn clear(&mut self) -> Result<()> {
         self.write_command("clear")
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn playlist<T: ToQueueRangeOrPlace>(&mut self, pos: T) -> Result<Vec<Song>> {
+    pub fn queue<T: ToQueueRangeOrPlace>(&mut self, pos: T) -> Result<Vec<Song>> {
         self.write_command_args(format_args!("playlist{} {}", if T::is_id() { "id" } else { "info" }, pos.to_range()))
             .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
     }
@@ -367,6 +363,51 @@ impl<S: Read+Write> Client<S> {
             .and_then(|_| self.read_pairs().split("outputid").map(|v| v.and_then(Output::from_map)).collect())
     }
 
+    pub fn playlists(&mut self) -> Result<Vec<Playlist>> {
+        self.write_command("listplaylists")
+            .and_then(|_| self.read_pairs().split("playlist").map(|v| v.and_then(Playlist::from_map)).collect())
+    }
+
+    pub fn ping(&mut self) -> Result<()> {
+        self.write_command("ping").and_then(|_| self.expect_ok())
+    }
+
+    pub fn pl_load<T: ToQueueRange>(&mut self, name: &str, range: T) -> Result<()> {
+        self.write_command_args(format_args!("load \"{}\" {}", name, range.to_range()))
+            .and_then(|_| self.expect_ok())
+    }
+    pub fn pl_clear(&mut self, name: &str) -> Result<()> {
+        self.write_command_args(format_args!("playlistclear \"{}\"", name))
+            .and_then(|_| self.expect_ok())
+    }
+    pub fn pl_remove(&mut self, name: &str) -> Result<()> {
+        self.write_command_args(format_args!("rm \"{}\"", name))
+            .and_then(|_| self.expect_ok())
+    }
+    pub fn pl_save(&mut self, name: &str) -> Result<()> {
+        self.write_command_args(format_args!("save \"{}\"", name))
+            .and_then(|_| self.expect_ok())
+    }
+    pub fn pl_rename(&mut self, name: &str, newname: &str) -> Result<()> {
+        self.write_command_args(format_args!("rename \"{}\" \"{}\"", name, newname))
+            .and_then(|_| self.expect_ok())
+    }
+    pub fn pl_songs(&mut self, name: &str) -> Result<Vec<Song>> {
+        self.write_command_args(format_args!("listplaylistinfo \"{}\"", name))
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+    }
+    pub fn pl_append(&mut self, name: &str, path: &str) -> Result<()> {
+        self.write_command_args(format_args!("playlistadd \"{}\" \"{}\"", name, path))
+            .and_then(|v| self.expect_ok())
+    }
+    pub fn pl_delete(&mut self, name: &str, pos: u32) -> Result<()> {
+        self.write_command_args(format_args!("playlistdelete \"{}\" {}", name, pos))
+            .and_then(|v| self.expect_ok())
+    }
+    pub fn pl_shift(&mut self, name: &str, from: u32, to: u32) -> Result<()> {
+        self.write_command_args(format_args!("playlistmove \"{}\" {} {}", name, from, to))
+            .and_then(|v| self.expect_ok())
+    }
 }
 
 // }}}
@@ -447,6 +488,18 @@ impl ToQueueRangeOrPlace for ops::RangeFrom<u32> {
     }
 }
 
+impl ToQueueRange for ops::RangeFull {
+    fn to_range(self) -> String {
+        String::new()
+    }
+}
+
+impl ToQueueRangeOrPlace for ops::RangeFull {
+    fn to_range(self) -> String {
+        ToQueueRange::to_range(self)
+    }
+}
+
 pub trait ToQueuePlace : IsId {
     fn to_place(self) -> u32;
 }
@@ -467,6 +520,7 @@ impl IsId for u32 {}
 impl IsId for ops::Range<u32> {}
 impl IsId for ops::RangeTo<u32> {}
 impl IsId for ops::RangeFrom<u32> {}
+impl IsId for ops::RangeFull {}
 impl IsId for Id {
     fn is_id() -> bool {
         true

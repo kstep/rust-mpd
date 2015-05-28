@@ -13,7 +13,7 @@ pub struct Playlist {
 impl Playlist {
     pub fn from_map(map: BTreeMap<String, String>) -> Result<Playlist, Error> {
         Ok(Playlist {
-            name: try!(map.get("name").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("name")))),
+            name: try!(map.get("playlist").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("playlist")))),
             last_mod: try!(map.get("Last-Modified").ok_or(Error::Proto(ProtoError::NoField("Last-Modified")))
                            .and_then(|v| strptime(&*v, "%Y-%m-%dT%H:%M:%S%Z").map_err(From::from))),
         })
