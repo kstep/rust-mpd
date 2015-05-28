@@ -12,8 +12,8 @@ pub struct Status {
     pub random: bool,
     pub single: bool,
     pub consume: bool,
-    pub queue_version: usize,
-    pub queue_len: usize,
+    pub queue_version: u32,
+    pub queue_len: u32,
     pub state: State,
     //song: Option<MpdQueuePlace>,
     //nextsong: Option<MpdQueuePlace>,
@@ -21,12 +21,12 @@ pub struct Status {
     //total_time: Option<Duration>,
     //elapsed: Option<Duration>,
     //duration: Option<Duration>,
-    pub bitrate: Option<usize>,
+    pub bitrate: Option<u32>,
     pub crossfade: Option<u64>,
     pub mixrampdb: f32,
     pub mixrampdelay: Option<Duration>,
     pub audio: Option<AudioFormat>,
-    pub updating_db: Option<usize>,
+    pub updating_db: Option<u32>,
     pub error: Option<String>
 }
 
@@ -62,7 +62,7 @@ impl Status {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct AudioFormat {
-    pub rate: u16,
+    pub rate: u32,
     pub bits: u8,
     pub chans: u8
 }
