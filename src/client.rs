@@ -416,7 +416,8 @@ impl<S: Read+Write> Client<S> {
     }
 
     pub fn search(&mut self, query: Query) -> Result<Vec<Song>> {
-        Ok(Vec::new())
+        self.write_command_args(format_args!("search {}", query))
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
     }
 }
 
