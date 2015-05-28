@@ -421,6 +421,21 @@ impl<S: Read+Write> Client<S> {
         self.write_command_args(format_args!("search {}", query))
             .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
     }
+
+    pub fn out_disable<T: ToOutputId>(&mut self, id: T) -> Result<()> {
+        self.write_command_args(format_args!("disableoutput {}", id.to_output_id()))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn out_enable<T: ToOutputId>(&mut self, id: T) -> Result<()> {
+        self.write_command_args(format_args!("enableoutput {}", id.to_output_id()))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn out_toggle<T: ToOutputId>(&mut self, id: T) -> Result<()> {
+        self.write_command_args(format_args!("toggleoutput {}", id.to_output_id()))
+            .and_then(|_| self.expect_ok())
+    }
 }
 
 // }}}
@@ -539,6 +554,21 @@ impl IsId for ops::RangeFull {}
 impl IsId for Id {
     fn is_id() -> bool {
         true
+    }
+}
+
+pub trait ToOutputId {
+    fn to_output_id(self) -> u32;
+}
+
+impl ToOutputId for u32 {
+    fn to_output_id(self) -> u32 {
+        self
+    }
+}
+impl ToOutputId for Output {
+    fn to_output_id(self) -> u32 {
+        self.id
     }
 }
 // }}}
