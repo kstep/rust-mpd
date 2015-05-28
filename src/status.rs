@@ -73,7 +73,7 @@ impl FromStr for AudioFormat {
         let mut it = s.split(':');
         Ok(AudioFormat {
             rate: try!(it.next().ok_or(ParseError::NoRate).and_then(|v| v.parse().map_err(ParseError::BadRate))),
-            bits: try!(it.next().ok_or(ParseError::NoBits).and_then(|v| v.parse().map_err(ParseError::BadBits))),
+            bits: try!(it.next().ok_or(ParseError::NoBits).and_then(|v| if &*v == "f" { Ok(0) } else { v.parse().map_err(ParseError::BadBits) })),
             chans: try!(it.next().ok_or(ParseError::NoChans).and_then(|v| v.parse().map_err(ParseError::BadChans))),
         })
     }
