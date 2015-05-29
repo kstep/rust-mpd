@@ -12,6 +12,8 @@ pub mod song;
 pub mod output;
 pub mod playlist;
 pub mod search;
+
+mod traits;
 pub mod client;
 
 pub use client::Client;
