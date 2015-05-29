@@ -3,6 +3,7 @@ use std::io::{self, Read, Write, BufRead, Lines};
 use std::convert::From;
 use std::fmt::Arguments;
 use std::net::{TcpStream, ToSocketAddrs};
+use std::mem::forget;
 
 use bufstream::BufStream;
 use version::Version;
@@ -16,6 +17,7 @@ use output::Output;
 use playlist::Playlist;
 use plugin::Plugin;
 use message::{Channel, Message};
+use idle::Subsystem;
 use search::Query;
 
 use traits::*;
@@ -516,6 +518,18 @@ impl<S: Read+Write> Client<S> {
     }
     // }}}
 
+    // Event handling {{{
+    pub fn wait(&mut self, subsystems: &[Subsystem]) -> Result<Vec<Subsystem>> {
+        self.idle(subsystems).and_then(IdleGuard::get)
+    }
+
+    pub fn idle<'a>(&'a mut self, subsystems: &[Subsystem]) -> Result<IdleGuard<'a, S>> {
+        let subsystems = subsystems.iter().map(|v| v.to_string()).collect::<Vec<String>>().connect(" ");
+        try!(self.run_command_fmt(format_args!("idle {}", subsystems)));
+        Ok(IdleGuard(self))
+    }
+    // }}}
+
     // Helper methods {{{
     fn read_line(&mut self) -> Result<String> {
         let mut buf = String::new();
@@ -532,6 +546,17 @@ impl<S: Read+Write> Client<S> {
 
     fn read_map(&mut self) -> Result<BTreeMap<String, String>> {
         self.read_pairs().collect()
+    }
+
+    fn drain(&mut self) -> Result<()> {
+        loop {
+            let reply = try!(self.read_line());
+            match &*reply {
+                "OK" | "list_OK" => break,
+                _ => ()
+            }
+        }
+        Ok(())
     }
 
     fn run_command(&mut self, command: &str) -> Result<()> {
@@ -582,4 +607,25 @@ impl<S: Read+Write> Client<S> {
 }
 
 // }}}
+
+pub struct IdleGuard<'a, S: 'a+Read+Write>(&'a mut Client<S>);
+
+impl<'a, S: 'a+Read+Write> IdleGuard<'a, S> {
+    pub fn get(self) -> Result<Vec<Subsystem>> {
+        let result = self.0.read_pairs()
+            .filter(|r| r.as_ref()
+                    .map(|&(ref a, _)| *a == "changed").unwrap_or(true))
+            .map(|r| r.and_then(|(_, b)| b.parse().map_err(From::from)))
+            .inspect(|v| println!("{:?}", v))
+            .collect();
+        forget(self);
+        result
+    }
+}
+
+impl<'a, S: 'a+Read+Write> Drop for IdleGuard<'a, S> {
+    fn drop(&mut self) {
+        let _ = self.0.run_command("noidle").map(|_| self.0.drain());
+    }
+}
 

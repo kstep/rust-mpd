@@ -15,6 +15,7 @@ pub mod plugin;
 pub mod stats;
 pub mod search;
 pub mod message;
+pub mod idle;
 
 mod traits;
 pub mod client;
@@ -30,3 +31,4 @@ pub use plugin::Plugin;
 pub use stats::Stats;
 pub use search::{Term, Query, Clause};
 pub use message::{Message, Channel};
+pub use idle::Subsystem;
