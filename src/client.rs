@@ -334,40 +334,40 @@ impl<S: Read+Write> Client<S> {
             .and_then(|_| self.read_pairs().split("playlist").map(|v| v.and_then(Playlist::from_map)).collect())
     }
 
-    pub fn pl_load<T: ToQueueRange>(&mut self, name: &str, range: T) -> Result<()> {
-        self.run_command_fmt(format_args!("load \"{}\" {}", name, range.to_range()))
+    pub fn pl_load<T: ToQueueRange, N: ToPlaylistName>(&mut self, name: N, range: T) -> Result<()> {
+        self.run_command_fmt(format_args!("load \"{}\" {}", name.to_name(), range.to_range()))
             .and_then(|_| self.expect_ok())
     }
-    pub fn pl_clear(&mut self, name: &str) -> Result<()> {
-        self.run_command_fmt(format_args!("playlistclear \"{}\"", name))
+    pub fn pl_clear<N: ToPlaylistName>(&mut self, name: N) -> Result<()> {
+        self.run_command_fmt(format_args!("playlistclear \"{}\"", name.to_name()))
             .and_then(|_| self.expect_ok())
     }
-    pub fn pl_remove(&mut self, name: &str) -> Result<()> {
-        self.run_command_fmt(format_args!("rm \"{}\"", name))
+    pub fn pl_remove<N: ToPlaylistName>(&mut self, name: N) -> Result<()> {
+        self.run_command_fmt(format_args!("rm \"{}\"", name.to_name()))
             .and_then(|_| self.expect_ok())
     }
-    pub fn pl_save(&mut self, name: &str) -> Result<()> {
-        self.run_command_fmt(format_args!("save \"{}\"", name))
+    pub fn pl_save<N: ToPlaylistName>(&mut self, name: N) -> Result<()> {
+        self.run_command_fmt(format_args!("save \"{}\"", name.to_name()))
             .and_then(|_| self.expect_ok())
     }
-    pub fn pl_rename(&mut self, name: &str, newname: &str) -> Result<()> {
-        self.run_command_fmt(format_args!("rename \"{}\" \"{}\"", name, newname))
+    pub fn pl_rename<N: ToPlaylistName>(&mut self, name: N, newname: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("rename \"{}\" \"{}\"", name.to_name(), newname))
             .and_then(|_| self.expect_ok())
     }
-    pub fn pl_songs(&mut self, name: &str) -> Result<Vec<Song>> {
-        self.run_command_fmt(format_args!("listplaylistinfo \"{}\"", name))
+    pub fn pl_songs<N: ToPlaylistName>(&mut self, name: N) -> Result<Vec<Song>> {
+        self.run_command_fmt(format_args!("listplaylistinfo \"{}\"", name.to_name()))
             .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
     }
-    pub fn pl_append(&mut self, name: &str, path: &str) -> Result<()> {
-        self.run_command_fmt(format_args!("playlistadd \"{}\" \"{}\"", name, path))
+    pub fn pl_append<N: ToPlaylistName>(&mut self, name: N, path: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("playlistadd \"{}\" \"{}\"", name.to_name(), path))
             .and_then(|_| self.expect_ok())
     }
-    pub fn pl_delete(&mut self, name: &str, pos: u32) -> Result<()> {
-        self.run_command_fmt(format_args!("playlistdelete \"{}\" {}", name, pos))
+    pub fn pl_delete<N: ToPlaylistName>(&mut self, name: N, pos: u32) -> Result<()> {
+        self.run_command_fmt(format_args!("playlistdelete \"{}\" {}", name.to_name(), pos))
             .and_then(|_| self.expect_ok())
     }
-    pub fn pl_shift(&mut self, name: &str, from: u32, to: u32) -> Result<()> {
-        self.run_command_fmt(format_args!("playlistmove \"{}\" {} {}", name, from, to))
+    pub fn pl_shift<N: ToPlaylistName>(&mut self, name: N, from: u32, to: u32) -> Result<()> {
+        self.run_command_fmt(format_args!("playlistmove \"{}\" {} {}", name.to_name(), from, to))
             .and_then(|_| self.expect_ok())
     }
     // }}}

@@ -1,7 +1,36 @@
 use std::ops;
 use time::Duration;
 use output::Output;
+use playlist::Playlist;
 use song::Id;
+
+pub trait ToPlaylistName {
+    fn to_name(&self) -> &str;
+}
+
+impl ToPlaylistName for Playlist {
+    fn to_name(&self) -> &str {
+        &*self.name
+    }
+}
+
+impl<'a> ToPlaylistName for &'a Playlist {
+    fn to_name(&self) -> &str {
+        &*self.name
+    }
+}
+
+impl ToPlaylistName for str {
+    fn to_name(&self) -> &str {
+        self
+    }
+}
+
+impl ToPlaylistName for String {
+    fn to_name(&self) -> &str {
+        &*self
+    }
+}
 
 pub trait ToSeconds {
     fn to_seconds(self) -> f64;
