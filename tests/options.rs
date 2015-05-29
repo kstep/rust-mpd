@@ -11,6 +11,13 @@ fn status() {
     println!("{:?}", status);
 }
 
+#[test]
+fn stats() {
+    let mut mpd = connect();
+    let stats = mpd.stats().unwrap();
+    println!("{:?}", stats);
+}
+
 macro_rules! test_options_impl {
     ($name:ident, $val1:expr, $tval1:expr, $val2:expr, $tval2:expr) => {
         #[test]

@@ -11,6 +11,8 @@ pub mod replaygain;
 pub mod song;
 pub mod output;
 pub mod playlist;
+pub mod plugin;
+pub mod stats;
 pub mod search;
 
 mod traits;
@@ -23,4 +25,6 @@ pub use version::Version;
 pub use song::Song;
 pub use playlist::Playlist;
 pub use output::Output;
+pub use plugin::Plugin;
+pub use stats::Stats;
 pub use search::{Term, Query, Clause};

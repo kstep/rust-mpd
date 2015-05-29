@@ -9,10 +9,12 @@ use version::Version;
 use error::{ProtoError, Error, Result};
 use reply::Reply;
 use status::Status;
+use stats::Stats;
 use replaygain::ReplayGain;
 use song::{Song, Id};
 use output::Output;
 use playlist::Playlist;
+use plugin::Plugin;
 use search::Query;
 
 use traits::*;
@@ -132,6 +134,12 @@ impl<S: Read+Write> Client<S> {
         self.run_command("status")
             .and_then(|_| self.read_map())
             .and_then(Status::from_map)
+    }
+
+    pub fn stats(&mut self) -> Result<Stats> {
+        self.run_command("stats")
+            .and_then(|_| self.read_map())
+            .and_then(Stats::from_map)
     }
 
     pub fn clearerror(&mut self) -> Result<()> {
@@ -403,6 +411,76 @@ impl<S: Read+Write> Client<S> {
     pub fn out_toggle<T: ToOutputId>(&mut self, id: T) -> Result<()> {
         self.run_command_fmt(format_args!("toggleoutput {}", id.to_output_id()))
             .and_then(|_| self.expect_ok())
+    }
+    // }}}
+
+    // Reflection methods {{{
+    pub fn music_directory(&mut self) -> Result<String> {
+        self.run_command("config")
+            .and_then(|_| self.read_field("music_directory"))
+            .and_then(|d| self.expect_ok().map(|_| d))
+    }
+
+    pub fn commands(&mut self) -> Result<Vec<String>> {
+        self.run_command("commands")
+            .and_then(|_| self.read_pairs()
+                      .filter(|r| r.as_ref()
+                              .map(|&(ref a, _)| *a == "command").unwrap_or(true))
+                      .map(|r| r.map(|(_, b)| b))
+                      .collect())
+    }
+
+    pub fn notcommands(&mut self) -> Result<Vec<String>> {
+        self.run_command("notcommands")
+            .and_then(|_| self.read_pairs()
+                      .filter(|r| r.as_ref()
+                              .map(|&(ref a, _)| *a == "command").unwrap_or(true))
+                      .map(|r| r.map(|(_, b)| b))
+                      .collect())
+    }
+
+    pub fn urlhandlers(&mut self) -> Result<Vec<String>> {
+        self.run_command("urlhandlers")
+            .and_then(|_| self.read_pairs()
+                      .filter(|r| r.as_ref()
+                              .map(|&(ref a, _)| *a == "handler").unwrap_or(true))
+                      .map(|r| r.map(|(_, b)| b))
+                      .collect())
+    }
+
+    pub fn tagtypes(&mut self) -> Result<Vec<String>> {
+        self.run_command("tagtypes")
+            .and_then(|_| self.read_pairs()
+                      .filter(|r| r.as_ref()
+                              .map(|&(ref a, _)| *a == "tagtype").unwrap_or(true))
+                      .map(|r| r.map(|(_, b)| b))
+                      .collect())
+    }
+
+    pub fn decoders(&mut self) -> Result<Vec<Plugin>> {
+        try!(self.run_command("decoders"));
+
+        let mut result = Vec::new();
+        let mut plugin: Option<Plugin> = None;
+        for reply in self.read_pairs() {
+            let (a, b) = try!(reply);
+            match &*a {
+                "plugin" => {
+                    plugin.map(|p| result.push(p));
+
+                    plugin = Some(Plugin {
+                        name: b,
+                        suffixes: Vec::new(),
+                        mime_types: Vec::new()
+                    });
+                },
+                "mime_type" => { plugin.as_mut().map(|p| p.mime_types.push(b)); }
+                "suffix" => { plugin.as_mut().map(|p| p.suffixes.push(b)); }
+                _ => unreachable!()
+            }
+        }
+        plugin.map(|p| result.push(p));
+        Ok(result)
     }
     // }}}
 
