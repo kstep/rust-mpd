@@ -8,8 +8,9 @@ fn idle() {
     let idle = mpd.idle(&[]).unwrap();
 
     let mut mpd1 = helpers::connect();
-    mpd1.volume(0).unwrap();
+    mpd1.consume(true).unwrap();
+    mpd1.consume(false).unwrap();
 
     let sys = idle.get().unwrap();
-    assert_eq!(&*sys, &[mpd::Subsystem::Mixer]);
+    assert_eq!(&*sys, &[mpd::Subsystem::Options]);
 }
