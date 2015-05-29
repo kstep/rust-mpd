@@ -389,6 +389,11 @@ impl<S: Read+Write> Client<S> {
     // }}}
 
     // Database search {{{
+    // TODO: count tag needle [...] [group] [grouptag], find type what [...] [window start:end]
+    // TODO: search type what [...] [window start:end], searchadd type what [...]
+    // TODO: findadd type what [...], listallinfo [uri], listfiles [uri], lsinfo [uri]
+    // TODO: list type [filtertype] [filterwhat] [...] [group] [grouptype] [...]
+    // TODO: searchaddpl name type what [...], readcomments
     pub fn search(&mut self, query: Query) -> Result<Vec<Song>> {
         self.run_command_fmt(format_args!("search {}", query))
             .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
@@ -529,6 +534,10 @@ impl<S: Read+Write> Client<S> {
         Ok(IdleGuard(self))
     }
     // }}}
+
+    // TODO: rangeid songid start:end, addtagid songid tag value, cleartagid songid [tag]
+    // TODO: mount/unmount/listmounts/listneighbors
+    // TODO: sticker get/set/delete/list/find
 
     // Helper methods {{{
     fn read_line(&mut self) -> Result<String> {
