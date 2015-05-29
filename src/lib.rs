@@ -14,6 +14,7 @@ pub mod playlist;
 pub mod plugin;
 pub mod stats;
 pub mod search;
+pub mod message;
 
 mod traits;
 pub mod client;
@@ -28,3 +29,4 @@ pub use output::Output;
 pub use plugin::Plugin;
 pub use stats::Stats;
 pub use search::{Term, Query, Clause};
+pub use message::{Message, Channel};

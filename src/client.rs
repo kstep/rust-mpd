@@ -15,6 +15,7 @@ use song::{Song, Id};
 use output::Output;
 use playlist::Playlist;
 use plugin::Plugin;
+use message::{Channel, Message};
 use search::Query;
 
 use traits::*;
@@ -481,6 +482,37 @@ impl<S: Read+Write> Client<S> {
         }
         plugin.map(|p| result.push(p));
         Ok(result)
+    }
+    // }}}
+
+    // Messaging {{{
+    pub fn channels(&mut self) -> Result<Vec<Channel>> {
+        self.run_command("channels")
+            .and_then(|_| self.read_pairs()
+                      .filter(|r| r.as_ref()
+                              .map(|&(ref a, _)| *a == "channel").unwrap_or(true))
+                      .map(|r| r.map(|(_, b)| unsafe { Channel::new_unchecked(b) }))
+                      .collect())
+    }
+
+    pub fn readmessages(&mut self) -> Result<Vec<Message>> {
+        self.run_command("readmessages")
+            .and_then(|_| self.read_pairs().split("channel").map(|v| v.and_then(Message::from_map)).collect())
+    }
+
+    pub fn sendmessage(&mut self, channel: Channel, message: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("sendmessage {} \"{}\"", channel, message))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn subscribe(&mut self, channel: Channel) -> Result<()> {
+        self.run_command_fmt(format_args!("subscribe {}", channel))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn unsubscribe(&mut self, channel: Channel) -> Result<()> {
+        self.run_command_fmt(format_args!("unsubscribe {}", channel))
+            .and_then(|_| self.expect_ok())
     }
     // }}}
 
