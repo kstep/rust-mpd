@@ -103,6 +103,7 @@ impl Default for Client<TcpStream> {
 }
 
 impl<S: Read+Write> Client<S> {
+    // Constructors {{{
     pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<Client<TcpStream>> {
         TcpStream::connect(addr).map_err(Error::Io).and_then(Client::new)
     }
@@ -124,7 +125,288 @@ impl<S: Read+Write> Client<S> {
             version: version
         })
     }
+    // }}}
 
+    // Playback options & status {{{
+    pub fn status(&mut self) -> Result<Status> {
+        self.run_command("status")
+            .and_then(|_| self.read_map())
+            .and_then(Status::from_map)
+    }
+
+    pub fn clearerror(&mut self) -> Result<()> {
+        self.run_command("clearerror")
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn volume(&mut self, volume: i8) -> Result<()> {
+        self.run_command_fmt(format_args!("setvol {}", volume))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn repeat(&mut self, value: bool) -> Result<()> {
+        self.run_command_fmt(format_args!("repeat {}", value as u8))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn random(&mut self, value: bool) -> Result<()> {
+        self.run_command_fmt(format_args!("random {}", value as u8))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn single(&mut self, value: bool) -> Result<()> {
+        self.run_command_fmt(format_args!("single {}", value as u8))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn consume(&mut self, value: bool) -> Result<()> {
+        self.run_command_fmt(format_args!("consume {}", value as u8))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn crossfade(&mut self, value: u64) -> Result<()> {
+        self.run_command_fmt(format_args!("crossfade {}", value))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn mixrampdb(&mut self, value: f32) -> Result<()> {
+        self.run_command_fmt(format_args!("mixrampdb {}", value))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn mixrampdelay<T: ToSeconds>(&mut self, value: T) -> Result<()> {
+        self.run_command_fmt(format_args!("mixrampdelay {}", value.to_seconds()))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn replaygain(&mut self, gain: ReplayGain) -> Result<()> {
+        self.run_command_fmt(format_args!("replay_gain_mode {}", gain))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn get_replaygain(&mut self) -> Result<ReplayGain> {
+        self.run_command("replay_gain_status")
+            .and_then(|_| self.read_field("replay_gain_mode"))
+            .and_then(|v| self.expect_ok()
+                      .and_then(|_| v.parse().map_err(From::from)))
+    }
+    // }}}
+
+    // Playback control {{{
+    pub fn play(&mut self) -> Result<()> {
+        self.run_command("play").and_then(|_| self.expect_ok())
+    }
+
+    pub fn switch<T: ToQueuePlace>(&mut self, place: T) -> Result<()> {
+        self.run_command_fmt(format_args!("play{} {}", if T::is_id() { "id" } else { "" }, place.to_place()))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn next(&mut self) -> Result<()> {
+        self.run_command("next")
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn prev(&mut self) -> Result<()> {
+        self.run_command("previous")
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn stop(&mut self) -> Result<()> {
+        self.run_command("stop")
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn pause(&mut self, value: bool) -> Result<()> {
+        self.run_command_fmt(format_args!("pause {}", value as u8))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn seek<T: ToSeconds, P: ToQueuePlace>(&mut self, place: P, pos: T) -> Result<()> {
+        self.run_command_fmt(format_args!("seek{} {} {}", if P::is_id() { "id" } else { "" }, place.to_place(), pos.to_seconds()))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn rewind<T: ToSeconds>(&mut self, pos: T) -> Result<()> {
+        self.run_command_fmt(format_args!("seekcur {}", pos.to_seconds()))
+            .and_then(|_| self.expect_ok())
+    }
+    // }}}
+
+    // Queue control {{{
+    pub fn queue<T: ToQueueRangeOrPlace>(&mut self, pos: T) -> Result<Vec<Song>> {
+        self.run_command_fmt(format_args!("playlist{} {}", if T::is_id() { "id" } else { "info" }, pos.to_range()))
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+    }
+
+    pub fn currentsong(&mut self) -> Result<Option<Song>> {
+        self.run_command("currentsong")
+            .and_then(|_| self.read_map())
+            .and_then(|m| if m.is_empty() {
+                Ok(None)
+            } else {
+                Song::from_map(m).map(Some)
+            })
+    }
+
+    pub fn clear(&mut self) -> Result<()> {
+        self.run_command("clear")
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn changes(&mut self, version: u32) -> Result<Vec<Song>> {
+        self.run_command_fmt(format_args!("plchanges {}", version))
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+    }
+
+    pub fn append(&mut self, path: &str) -> Result<Id> {
+        self.run_command_fmt(format_args!("addid \"{}\"", path))
+            .and_then(|_| self.read_field("Id"))
+            .and_then(|v| self.expect_ok()
+                      .and_then(|_| v.parse().map_err(From::from).map(Id)))
+    }
+
+    pub fn insert(&mut self, path: &str, pos: usize) -> Result<usize> {
+        self.run_command_fmt(format_args!("addid \"{}\" {}", path, pos))
+            .and_then(|_| self.read_field("Id"))
+            .and_then(|v| self.expect_ok()
+                      .and_then(|_| v.parse().map_err(From::from)))
+    }
+
+    pub fn delete<T: ToQueueRangeOrPlace>(&mut self, pos: T) -> Result<()> {
+            self.run_command_fmt(format_args!("delete{} {}", if T::is_id() { "id" } else { "" }, pos.to_range()))
+                .and_then(|_| self.expect_ok())
+    }
+
+    pub fn shift<T: ToQueueRangeOrPlace>(&mut self, from: T, to: usize) -> Result<()> {
+        self.run_command_fmt(format_args!("move{} {} {}", if T::is_id() { "id" } else { "" }, from.to_range(), to))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn swap<T: ToQueuePlace>(&mut self, one: T, two: T) -> Result<()> {
+        self.run_command_fmt(format_args!("swap{} {} {}", if T::is_id() { "id" } else { "" }, one.to_place(), two.to_place()))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn shuffle<T: ToQueueRange>(&mut self, range: T) -> Result<()> {
+        self.run_command_fmt(format_args!("shuffle {}", range.to_range()))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn priority<T: ToQueueRangeOrPlace>(&mut self, pos: T, prio: u8) -> Result<()> {
+        self.run_command_fmt(format_args!("prio{} {} {}", if T::is_id() { "id" } else { "" }, prio, pos.to_range()))
+            .and_then(|_| self.expect_ok())
+    }
+    // }}}
+
+    // Connection settings {{{
+    pub fn ping(&mut self) -> Result<()> {
+        self.run_command("ping").and_then(|_| self.expect_ok())
+    }
+
+    pub fn close(&mut self) -> Result<()> {
+        self.run_command("close").and_then(|_| self.expect_ok())
+    }
+
+    pub fn kill(&mut self) -> Result<()> {
+        self.run_command("kill").and_then(|_| self.expect_ok())
+    }
+
+    pub fn login(&mut self, password: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("password \"{}\"", password)).and_then(|_| self.expect_ok())
+    }
+    // }}}
+
+    // Playlist methods {{{
+    pub fn playlists(&mut self) -> Result<Vec<Playlist>> {
+        self.run_command("listplaylists")
+            .and_then(|_| self.read_pairs().split("playlist").map(|v| v.and_then(Playlist::from_map)).collect())
+    }
+
+    pub fn pl_load<T: ToQueueRange>(&mut self, name: &str, range: T) -> Result<()> {
+        self.run_command_fmt(format_args!("load \"{}\" {}", name, range.to_range()))
+            .and_then(|_| self.expect_ok())
+    }
+    pub fn pl_clear(&mut self, name: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("playlistclear \"{}\"", name))
+            .and_then(|_| self.expect_ok())
+    }
+    pub fn pl_remove(&mut self, name: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("rm \"{}\"", name))
+            .and_then(|_| self.expect_ok())
+    }
+    pub fn pl_save(&mut self, name: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("save \"{}\"", name))
+            .and_then(|_| self.expect_ok())
+    }
+    pub fn pl_rename(&mut self, name: &str, newname: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("rename \"{}\" \"{}\"", name, newname))
+            .and_then(|_| self.expect_ok())
+    }
+    pub fn pl_songs(&mut self, name: &str) -> Result<Vec<Song>> {
+        self.run_command_fmt(format_args!("listplaylistinfo \"{}\"", name))
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+    }
+    pub fn pl_append(&mut self, name: &str, path: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("playlistadd \"{}\" \"{}\"", name, path))
+            .and_then(|_| self.expect_ok())
+    }
+    pub fn pl_delete(&mut self, name: &str, pos: u32) -> Result<()> {
+        self.run_command_fmt(format_args!("playlistdelete \"{}\" {}", name, pos))
+            .and_then(|_| self.expect_ok())
+    }
+    pub fn pl_shift(&mut self, name: &str, from: u32, to: u32) -> Result<()> {
+        self.run_command_fmt(format_args!("playlistmove \"{}\" {} {}", name, from, to))
+            .and_then(|_| self.expect_ok())
+    }
+    // }}}
+
+    // Database methods {{{
+    pub fn rescan(&mut self) -> Result<u32> {
+        self.run_command("rescan")
+            .and_then(|_| self.read_field("updating_db"))
+            .and_then(|v| self.expect_ok()
+                      .and_then(|_| v.parse().map_err(From::from)))
+    }
+
+    pub fn update(&mut self) -> Result<u32> {
+        self.run_command("update")
+            .and_then(|_| self.read_field("updating_db"))
+            .and_then(|v| self.expect_ok()
+                      .and_then(|_| v.parse().map_err(From::from)))
+    }
+    // }}}
+
+    // Database search {{{
+    pub fn search(&mut self, query: Query) -> Result<Vec<Song>> {
+        self.run_command_fmt(format_args!("search {}", query))
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+    }
+    // }}}
+
+    // Output methods {{{
+    pub fn outputs(&mut self) -> Result<Vec<Output>> {
+        self.run_command("outputs")
+            .and_then(|_| self.read_pairs().split("outputid").map(|v| v.and_then(Output::from_map)).collect())
+    }
+
+    pub fn out_disable<T: ToOutputId>(&mut self, id: T) -> Result<()> {
+        self.run_command_fmt(format_args!("disableoutput {}", id.to_output_id()))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn out_enable<T: ToOutputId>(&mut self, id: T) -> Result<()> {
+        self.run_command_fmt(format_args!("enableoutput {}", id.to_output_id()))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn out_toggle<T: ToOutputId>(&mut self, id: T) -> Result<()> {
+        self.run_command_fmt(format_args!("toggleoutput {}", id.to_output_id()))
+            .and_then(|_| self.expect_ok())
+    }
+    // }}}
+
+    // Helper methods {{{
     fn read_line(&mut self) -> Result<String> {
         let mut buf = String::new();
         try!(self.socket.read_line(&mut buf));
@@ -142,14 +424,14 @@ impl<S: Read+Write> Client<S> {
         self.read_pairs().collect()
     }
 
-    fn write_command(&mut self, command: &str) -> Result<()> {
+    fn run_command(&mut self, command: &str) -> Result<()> {
         self.socket.write_all(command.as_bytes())
             .and_then(|_| self.socket.write(&[0x0a]))
             .and_then(|_| self.socket.flush())
             .map_err(From::from)
     }
 
-    fn write_command_args(&mut self, command: Arguments) -> Result<()> {
+    fn run_command_fmt(&mut self, command: Arguments) -> Result<()> {
         self.socket.write_fmt(command)
             .and_then(|_| self.socket.write(&[0x0a]))
             .and_then(|_| self.socket.flush())
@@ -186,256 +468,7 @@ impl<S: Read+Write> Client<S> {
             Err(Error::Proto(ProtoError::NoField(field)))
         }
     }
-
-    pub fn status(&mut self) -> Result<Status> {
-        self.write_command("status")
-            .and_then(|_| self.read_map())
-            .and_then(Status::from_map)
-    }
-
-    pub fn clearerror(&mut self) -> Result<()> {
-        self.write_command("clearerror")
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn volume(&mut self, volume: i8) -> Result<()> {
-        self.write_command_args(format_args!("setvol {}", volume))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn repeat(&mut self, value: bool) -> Result<()> {
-        self.write_command_args(format_args!("repeat {}", value as u8))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn random(&mut self, value: bool) -> Result<()> {
-        self.write_command_args(format_args!("random {}", value as u8))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn single(&mut self, value: bool) -> Result<()> {
-        self.write_command_args(format_args!("single {}", value as u8))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn consume(&mut self, value: bool) -> Result<()> {
-        self.write_command_args(format_args!("consume {}", value as u8))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn crossfade(&mut self, value: u64) -> Result<()> {
-        self.write_command_args(format_args!("crossfade {}", value))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn mixrampdb(&mut self, value: f32) -> Result<()> {
-        self.write_command_args(format_args!("mixrampdb {}", value))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn mixrampdelay<T: ToSeconds>(&mut self, value: T) -> Result<()> {
-        self.write_command_args(format_args!("mixrampdelay {}", value.to_seconds()))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn replaygain(&mut self, gain: ReplayGain) -> Result<()> {
-        self.write_command_args(format_args!("replay_gain_mode {}", gain))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn get_replaygain(&mut self) -> Result<ReplayGain> {
-        try!(self.write_command("replay_gain_status"));
-
-        let reply = try!(self.read_field("replay_gain_mode"));
-        try!(self.expect_ok());
-
-        reply.parse().map_err(From::from)
-    }
-
-    pub fn switch<T: ToQueuePlace>(&mut self, place: T) -> Result<()> {
-        self.write_command_args(format_args!("play{} {}", if T::is_id() { "id" } else { "" }, place.to_place()))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn play(&mut self) -> Result<()> {
-        self.write_command("play").and_then(|_| self.expect_ok())
-    }
-
-    pub fn next(&mut self) -> Result<()> {
-        self.write_command("next")
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn prev(&mut self) -> Result<()> {
-        self.write_command("previous")
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn stop(&mut self) -> Result<()> {
-        self.write_command("stop")
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn pause(&mut self, value: bool) -> Result<()> {
-        self.write_command_args(format_args!("pause {}", value as u8))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn seek<T: ToSeconds, P: ToQueuePlace>(&mut self, place: Option<P>, pos: T) -> Result<()> {
-        match place {
-            Some(p) => self.write_command_args(format_args!("seek{} {} {}", if P::is_id() { "id" } else { "" }, p.to_place(), pos.to_seconds())),
-            None => self.write_command_args(format_args!("seekcur {}", pos.to_seconds())),
-        }.and_then(|_| self.expect_ok())
-    }
-
-    pub fn currentsong(&mut self) -> Result<Option<Song>> {
-        self.write_command("currentsong")
-            .and_then(|_| self.read_map())
-            .and_then(|m| if m.is_empty() {
-                Ok(None)
-            } else {
-                Song::from_map(m).map(Some)
-            })
-    }
-
-    pub fn clear(&mut self) -> Result<()> {
-        self.write_command("clear")
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn queue<T: ToQueueRangeOrPlace>(&mut self, pos: T) -> Result<Vec<Song>> {
-        self.write_command_args(format_args!("playlist{} {}", if T::is_id() { "id" } else { "info" }, pos.to_range()))
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
-    }
-
-    pub fn changes(&mut self, version: u32) -> Result<Vec<Song>> {
-        self.write_command_args(format_args!("plchanges {}", version))
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
-    }
-
-    pub fn append(&mut self, path: &str) -> Result<Id> {
-        self.write_command_args(format_args!("addid \"{}\"", path))
-            .and_then(|_| self.read_field("Id"))
-            .and_then(|v| self.expect_ok()
-                      .and_then(|_| v.parse().map_err(From::from).map(Id)))
-    }
-
-    pub fn insert(&mut self, path: &str, pos: usize) -> Result<usize> {
-        self.write_command_args(format_args!("addid \"{}\" {}", path, pos))
-            .and_then(|_| self.read_field("Id"))
-            .and_then(|v| self.expect_ok()
-                      .and_then(|_| v.parse().map_err(From::from)))
-    }
-
-    pub fn delete<T: ToQueueRangeOrPlace>(&mut self, pos: T) -> Result<()> {
-            self.write_command_args(format_args!("delete{} {}", if T::is_id() { "id" } else { "" }, pos.to_range()))
-                .and_then(|_| self.expect_ok())
-    }
-
-    pub fn shift<T: ToQueueRangeOrPlace>(&mut self, from: T, to: usize) -> Result<()> {
-        self.write_command_args(format_args!("move{} {} {}", if T::is_id() { "id" } else { "" }, from.to_range(), to))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn swap<T: ToQueuePlace>(&mut self, one: T, two: T) -> Result<()> {
-        self.write_command_args(format_args!("swap{} {} {}", if T::is_id() { "id" } else { "" }, one.to_place(), two.to_place()))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn shuffle<T: ToQueueRange>(&mut self, range: T) -> Result<()> {
-        self.write_command_args(format_args!("shuffle {}", range.to_range()))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn priority<T: ToQueueRangeOrPlace>(&mut self, pos: T, prio: u8) -> Result<()> {
-        self.write_command_args(format_args!("prio{} {} {}", if T::is_id() { "id" } else { "" }, prio, pos.to_range()))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn rescan(&mut self) -> Result<u32> {
-        self.write_command("rescan")
-            .and_then(|_| self.read_field("updating_db"))
-            .and_then(|v| self.expect_ok()
-                      .and_then(|_| v.parse().map_err(From::from)))
-    }
-
-    pub fn update(&mut self) -> Result<u32> {
-        self.write_command("update")
-            .and_then(|_| self.read_field("updating_db"))
-            .and_then(|v| self.expect_ok()
-                      .and_then(|_| v.parse().map_err(From::from)))
-    }
-
-    pub fn outputs(&mut self) -> Result<Vec<Output>> {
-        self.write_command("outputs")
-            .and_then(|_| self.read_pairs().split("outputid").map(|v| v.and_then(Output::from_map)).collect())
-    }
-
-    pub fn playlists(&mut self) -> Result<Vec<Playlist>> {
-        self.write_command("listplaylists")
-            .and_then(|_| self.read_pairs().split("playlist").map(|v| v.and_then(Playlist::from_map)).collect())
-    }
-
-    pub fn ping(&mut self) -> Result<()> {
-        self.write_command("ping").and_then(|_| self.expect_ok())
-    }
-
-    pub fn pl_load<T: ToQueueRange>(&mut self, name: &str, range: T) -> Result<()> {
-        self.write_command_args(format_args!("load \"{}\" {}", name, range.to_range()))
-            .and_then(|_| self.expect_ok())
-    }
-    pub fn pl_clear(&mut self, name: &str) -> Result<()> {
-        self.write_command_args(format_args!("playlistclear \"{}\"", name))
-            .and_then(|_| self.expect_ok())
-    }
-    pub fn pl_remove(&mut self, name: &str) -> Result<()> {
-        self.write_command_args(format_args!("rm \"{}\"", name))
-            .and_then(|_| self.expect_ok())
-    }
-    pub fn pl_save(&mut self, name: &str) -> Result<()> {
-        self.write_command_args(format_args!("save \"{}\"", name))
-            .and_then(|_| self.expect_ok())
-    }
-    pub fn pl_rename(&mut self, name: &str, newname: &str) -> Result<()> {
-        self.write_command_args(format_args!("rename \"{}\" \"{}\"", name, newname))
-            .and_then(|_| self.expect_ok())
-    }
-    pub fn pl_songs(&mut self, name: &str) -> Result<Vec<Song>> {
-        self.write_command_args(format_args!("listplaylistinfo \"{}\"", name))
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
-    }
-    pub fn pl_append(&mut self, name: &str, path: &str) -> Result<()> {
-        self.write_command_args(format_args!("playlistadd \"{}\" \"{}\"", name, path))
-            .and_then(|_| self.expect_ok())
-    }
-    pub fn pl_delete(&mut self, name: &str, pos: u32) -> Result<()> {
-        self.write_command_args(format_args!("playlistdelete \"{}\" {}", name, pos))
-            .and_then(|_| self.expect_ok())
-    }
-    pub fn pl_shift(&mut self, name: &str, from: u32, to: u32) -> Result<()> {
-        self.write_command_args(format_args!("playlistmove \"{}\" {} {}", name, from, to))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn search(&mut self, query: Query) -> Result<Vec<Song>> {
-        self.write_command_args(format_args!("search {}", query))
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
-    }
-
-    pub fn out_disable<T: ToOutputId>(&mut self, id: T) -> Result<()> {
-        self.write_command_args(format_args!("disableoutput {}", id.to_output_id()))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn out_enable<T: ToOutputId>(&mut self, id: T) -> Result<()> {
-        self.write_command_args(format_args!("enableoutput {}", id.to_output_id()))
-            .and_then(|_| self.expect_ok())
-    }
-
-    pub fn out_toggle<T: ToOutputId>(&mut self, id: T) -> Result<()> {
-        self.write_command_args(format_args!("toggleoutput {}", id.to_output_id()))
-            .and_then(|_| self.expect_ok())
-    }
+    // }}}
 }
 
 // }}}
