@@ -35,7 +35,8 @@ impl FromStr for Range {
 #[derive(Debug)]
 pub struct Song {
     pub file: String,
-    pub last_mod: Tm,
+    pub name: Option<String>,
+    pub last_mod: Option<Tm>,
     pub duration: Duration,
     pub place: Option<QueuePlace>,
     pub range: Option<Range>,
@@ -46,8 +47,10 @@ impl Song {
     pub fn from_map(mut map: BTreeMap<String, String>) -> Result<Song, Error> {
         Ok(Song {
             file: try!(map.remove("file").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("file")))),
-            last_mod: try!(map.remove("Last-Modified").ok_or(Error::Proto(ProtoError::NoField("Last-Modified")))
-                           .and_then(|v| strptime(&*v, "%Y-%m-%dT%H:%M:%S%Z").map_err(From::from))),
+            last_mod: try!(map.remove("Last-Modified")
+                           .map(|v| strptime(&*v, "%Y-%m-%dT%H:%M:%S%Z").map(Some).map_err(From::from))
+                           .unwrap_or(Ok(None))),
+            name: map.remove("Name").map(|v| v.to_owned()),
             duration: try!(map.remove("Time").ok_or(Error::Proto(ProtoError::NoField("Time")))
                            .and_then(|v| v.parse().map(Duration::seconds).map_err(From::from))),
             range: try!(map.remove("Range").map(|v| v.parse().map(Some)).unwrap_or(Ok(None))),
