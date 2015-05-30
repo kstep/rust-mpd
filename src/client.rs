@@ -550,7 +550,6 @@ impl<S: Read+Write> Client<S> {
     // }}}
 
     // TODO: mount/unmount/listmounts/listneighbors
-    // TODO: sticker get/set/delete/list/find
     // Sticker methods {{{
     pub fn sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<String> {
         self.run_command_fmt(format_args!("sticker set {} \"{}\" {}", typ, uri, name))
@@ -590,11 +589,12 @@ impl<S: Read+Write> Client<S> {
                       .collect())
     }
 
-    pub fn find_sticker_eq(&mut self, typ: &str, uri: &str, name: &str, value: &str) -> Result<Vec<(String, String)>> {
+    pub fn find_sticker_eq(&mut self, typ: &str, uri: &str, name: &str, value: &str) -> Result<Vec<String>> {
         self.run_command_fmt(format_args!("sticker find {} \"{}\" {} = \"{}\"", typ, uri, name, value))
-            .and_then(|_| self.read_pairs().split("file").map(|rmap| rmap.map(|mut map|
-                        (map.remove("file").unwrap(),
-                         map.remove("sticker").and_then(|s| s.splitn(2, "=").nth(1).map(|s| s.to_owned())).unwrap())))
+            .and_then(|_| self.read_pairs()
+                      .filter(|r| r.as_ref()
+                              .map(|&(ref a, _)| *a == "file").unwrap_or(true))
+                      .map(|r| r.map(|(_, b)| b))
                       .collect())
     }
     // }}}
@@ -685,7 +685,6 @@ impl<'a, S: 'a+Read+Write> IdleGuard<'a, S> {
             .filter(|r| r.as_ref()
                     .map(|&(ref a, _)| *a == "changed").unwrap_or(true))
             .map(|r| r.and_then(|(_, b)| b.parse().map_err(From::from)))
-            .inspect(|v| println!("{:?}", v))
             .collect();
         forget(self);
         result
