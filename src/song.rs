@@ -2,7 +2,6 @@ use time::{strptime, Duration, Tm};
 
 use std::collections::BTreeMap;
 use std::str::FromStr;
-use std::convert::From;
 
 use error::{Error, ParseError, ProtoError};
 
@@ -37,7 +36,7 @@ pub struct Song {
     pub file: String,
     pub name: Option<String>,
     pub last_mod: Option<Tm>,
-    pub duration: Duration,
+    pub duration: Option<Duration>,
     pub place: Option<QueuePlace>,
     pub range: Option<Range>,
     pub tags: BTreeMap<String, String>,
@@ -48,12 +47,11 @@ impl Song {
         Ok(Song {
             file: try!(map.remove("file").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("file")))),
             last_mod: try!(map.remove("Last-Modified")
-                           .map(|v| strptime(&*v, "%Y-%m-%dT%H:%M:%S%Z").map(Some).map_err(From::from))
+                           .map(|v| strptime(&*v, "%Y-%m-%dT%H:%M:%S%Z").map_err(ParseError::BadTime).map(Some))
                            .unwrap_or(Ok(None))),
             name: map.remove("Name").map(|v| v.to_owned()),
-            duration: try!(map.remove("Time").ok_or(Error::Proto(ProtoError::NoField("Time")))
-                           .and_then(|v| v.parse().map(Duration::seconds).map_err(From::from))),
-            range: try!(map.remove("Range").map(|v| v.parse().map(Some)).unwrap_or(Ok(None))),
+            duration: pop_field!(map, opt "Time").map(Duration::seconds),
+            range: pop_field!(map, opt "Range"),
             place: {
                 if let (Some(id), Some(pos)) = (map.remove("Id"), map.remove("Pos")) {
                     Some(QueuePlace {
