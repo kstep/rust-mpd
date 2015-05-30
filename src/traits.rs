@@ -1,8 +1,8 @@
-use std::ops;
+use std::ops::{Range, RangeFrom, RangeTo, RangeFull};
 use time::Duration;
 use output::Output;
 use playlist::Playlist;
-use song::Id;
+use song::{self, Id, Song};
 
 pub trait ToPlaylistName {
     fn to_name(&self) -> &str;
@@ -78,49 +78,49 @@ impl<T: ToQueuePlace> ToQueueRangeOrPlace for T {
     }
 }
 
-impl ToQueueRange for ops::Range<u32> {
+impl ToQueueRange for Range<u32> {
     fn to_range(self) -> String {
         format!("{}:{}", self.start, self.end)
     }
 }
 
-impl ToQueueRangeOrPlace for ops::Range<u32> {
+impl ToQueueRangeOrPlace for Range<u32> {
     fn to_range(self) -> String {
         ToQueueRange::to_range(self)
     }
 }
 
-impl ToQueueRange for ops::RangeTo<u32> {
+impl ToQueueRange for RangeTo<u32> {
     fn to_range(self) -> String {
         format!(":{}", self.end)
     }
 }
 
-impl ToQueueRangeOrPlace for ops::RangeTo<u32> {
+impl ToQueueRangeOrPlace for RangeTo<u32> {
     fn to_range(self) -> String {
         ToQueueRange::to_range(self)
     }
 }
 
-impl ToQueueRange for ops::RangeFrom<u32> {
+impl ToQueueRange for RangeFrom<u32> {
     fn to_range(self) -> String {
         format!("{}:", self.start)
     }
 }
 
-impl ToQueueRangeOrPlace for ops::RangeFrom<u32> {
+impl ToQueueRangeOrPlace for RangeFrom<u32> {
     fn to_range(self) -> String {
         ToQueueRange::to_range(self)
     }
 }
 
-impl ToQueueRange for ops::RangeFull {
+impl ToQueueRange for RangeFull {
     fn to_range(self) -> String {
         String::new()
     }
 }
 
-impl ToQueueRangeOrPlace for ops::RangeFull {
+impl ToQueueRangeOrPlace for RangeFull {
     fn to_range(self) -> String {
         ToQueueRange::to_range(self)
     }
@@ -143,10 +143,10 @@ impl ToQueuePlace for u32 {
 }
 
 impl IsId for u32 {}
-impl IsId for ops::Range<u32> {}
-impl IsId for ops::RangeTo<u32> {}
-impl IsId for ops::RangeFrom<u32> {}
-impl IsId for ops::RangeFull {}
+impl IsId for Range<u32> {}
+impl IsId for RangeTo<u32> {}
+impl IsId for RangeFrom<u32> {}
+impl IsId for RangeFull {}
 impl IsId for Id {
     fn is_id() -> bool {
         true
@@ -165,5 +165,79 @@ impl ToOutputId for u32 {
 impl ToOutputId for Output {
     fn to_output_id(self) -> u32 {
         self.id
+    }
+}
+
+pub trait ToSongRange {
+    fn to_range(self) -> song::Range;
+}
+
+impl ToSongRange for Range<Duration> {
+    fn to_range(self) -> song::Range {
+        song::Range(self.start, Some(self.end))
+    }
+}
+
+impl ToSongRange for Range<u32> {
+    fn to_range(self) -> song::Range {
+        song::Range(Duration::seconds(self.start as i64), Some(Duration::seconds(self.end as i64)))
+    }
+}
+
+impl ToSongRange for RangeFrom<Duration> {
+    fn to_range(self) -> song::Range {
+        song::Range(self.start, None)
+    }
+}
+
+impl ToSongRange for RangeFrom<u32> {
+    fn to_range(self) -> song::Range {
+        song::Range(Duration::seconds(self.start as i64), None)
+    }
+}
+
+impl ToSongRange for RangeTo<Duration> {
+    fn to_range(self) -> song::Range {
+        song::Range(Duration::zero(), Some(self.end))
+    }
+}
+
+impl ToSongRange for RangeTo<u32> {
+    fn to_range(self) -> song::Range {
+        song::Range(Duration::zero(), Some(Duration::seconds(self.end as i64)))
+    }
+}
+
+impl ToSongRange for RangeFull {
+    fn to_range(self) -> song::Range {
+        song::Range(Duration::zero(), None)
+    }
+}
+
+impl ToSongRange for song::Range {
+    fn to_range(self) -> song::Range {
+        self
+    }
+}
+
+pub trait ToSongId {
+    fn to_song_id(&self) -> Id;
+}
+
+impl ToSongId for Song {
+    fn to_song_id(&self) -> Id {
+        self.place.unwrap().id
+    }
+}
+
+impl ToSongId for u32 {
+    fn to_song_id(&self) -> Id {
+        Id(*self)
+    }
+}
+
+impl ToSongId for Id {
+    fn to_song_id(&self) -> Id {
+        *self
     }
 }

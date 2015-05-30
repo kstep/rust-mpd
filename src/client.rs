@@ -308,6 +308,11 @@ impl<S: Read+Write> Client<S> {
         self.run_command_fmt(format_args!("prio{} {} {}", if T::is_id() { "id" } else { "" }, prio, pos.to_range()))
             .and_then(|_| self.expect_ok())
     }
+
+    pub fn range<T: ToSongId, R: ToSongRange>(&mut self, song: T, range: R) -> Result<()> {
+        self.run_command_fmt(format_args!("rangeid {} {}", song.to_song_id(), range.to_range()))
+            .and_then(|_| self.expect_ok())
+    }
     // }}}
 
     // Connection settings {{{

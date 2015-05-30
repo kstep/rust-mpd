@@ -2,11 +2,18 @@ use time::{strptime, Duration, Tm};
 
 use std::collections::BTreeMap;
 use std::str::FromStr;
+use std::fmt;
 
 use error::{Error, ParseError, ProtoError};
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Id(pub u32);
+
+impl fmt::Display for Id {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct QueuePlace {
@@ -16,7 +23,15 @@ pub struct QueuePlace {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct Range(Duration, Option<Duration>);
+pub struct Range(pub Duration, pub Option<Duration>);
+
+impl fmt::Display for Range {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.0.num_seconds().fmt(f)
+            .and_then(|_| f.write_str(":"))
+            .and_then(|_| self.1.map(|v| v.num_seconds().fmt(f)).unwrap_or(Ok(())))
+    }
+}
 
 impl FromStr for Range {
     type Err = ParseError;
