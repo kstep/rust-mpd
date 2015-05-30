@@ -16,6 +16,7 @@ pub mod stats;
 pub mod search;
 pub mod message;
 pub mod idle;
+pub mod mount;
 
 mod traits;
 pub mod client;
@@ -32,3 +33,4 @@ pub use stats::Stats;
 pub use search::{Term, Query, Clause};
 pub use message::{Message, Channel};
 pub use idle::Subsystem;
+pub use mount::{Mount, Neighbor};

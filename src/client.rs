@@ -19,6 +19,7 @@ use plugin::Plugin;
 use message::{Channel, Message};
 use idle::Subsystem;
 use search::Query;
+use mount::{Mount, Neighbor};
 
 use traits::*;
 
@@ -549,7 +550,28 @@ impl<S: Read+Write> Client<S> {
     }
     // }}}
 
-    // TODO: mount/unmount/listmounts/listneighbors
+    // Mount methods {{{
+    pub fn mounts(&mut self) -> Result<Vec<Mount>> {
+        self.run_command("listmounts")
+            .and_then(|_| self.read_pairs().split("mount").map(|v| v.and_then(Mount::from_map)).collect())
+    }
+
+    pub fn neighbors(&mut self) -> Result<Vec<Neighbor>> {
+        self.run_command("listneighbors")
+            .and_then(|_| self.read_pairs().split("neighbor").map(|v| v.and_then(Neighbor::from_map)).collect())
+    }
+
+    pub fn mount(&mut self, path: &str, uri: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("mount \"{}\" \"{}\"", path, uri))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn unmount(&mut self, path: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("unmount \"{}\"", path))
+            .and_then(|_| self.expect_ok())
+    }
+    // }}}
+
     // Sticker methods {{{
     pub fn sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<String> {
         self.run_command_fmt(format_args!("sticker set {} \"{}\" {}", typ, uri, name))
