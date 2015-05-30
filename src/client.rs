@@ -551,6 +551,53 @@ impl<S: Read+Write> Client<S> {
 
     // TODO: mount/unmount/listmounts/listneighbors
     // TODO: sticker get/set/delete/list/find
+    // Sticker methods {{{
+    pub fn sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<String> {
+        self.run_command_fmt(format_args!("sticker set {} \"{}\" {}", typ, uri, name))
+            .and_then(|_| self.read_field("sticker"))
+            .and_then(|s| self.expect_ok().map(|_| s))
+    }
+
+    pub fn set_sticker(&mut self, typ: &str, uri: &str, name: &str, value: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("sticker set {} \"{}\" {} \"{}\"", typ, uri, name, value))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn delete_sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("sticker delete {} \"{}\" {}", typ, uri, name))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn clear_stickers(&mut self, typ: &str, uri: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("sticker delete {} \"{}\"", typ, uri))
+            .and_then(|_| self.expect_ok())
+    }
+
+    pub fn stickers(&mut self, typ: &str, uri: &str) -> Result<Vec<String>> {
+        self.run_command_fmt(format_args!("sticker list {} \"{}\"", typ, uri))
+            .and_then(|_| self.read_pairs()
+                      .filter(|r| r.as_ref()
+                              .map(|&(ref a, _)| *a == "sticker").unwrap_or(true))
+                      .map(|r| r.map(|(_, b)| b.splitn(2, "=").nth(1).map(|s| s.to_owned()).unwrap()))
+                      .collect())
+    }
+
+    pub fn find_sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<Vec<(String, String)>> {
+        self.run_command_fmt(format_args!("sticker find {} \"{}\" {}", typ, uri, name))
+            .and_then(|_| self.read_pairs().split("file").map(|rmap| rmap.map(|mut map|
+                        (map.remove("file").unwrap(),
+                         map.remove("sticker").and_then(|s| s.splitn(2, "=").nth(1).map(|s| s.to_owned())).unwrap())))
+                      .collect())
+    }
+
+    pub fn find_sticker_eq(&mut self, typ: &str, uri: &str, name: &str, value: &str) -> Result<Vec<(String, String)>> {
+        self.run_command_fmt(format_args!("sticker find {} \"{}\" {} = \"{}\"", typ, uri, name, value))
+            .and_then(|_| self.read_pairs().split("file").map(|rmap| rmap.map(|mut map|
+                        (map.remove("file").unwrap(),
+                         map.remove("sticker").and_then(|s| s.splitn(2, "=").nth(1).map(|s| s.to_owned())).unwrap())))
+                      .collect())
+    }
+    // }}}
 
     // Helper methods {{{
     fn read_line(&mut self) -> Result<String> {
