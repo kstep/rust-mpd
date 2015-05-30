@@ -270,15 +270,15 @@ impl<S: Read+Write> Client<S> {
             .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
     }
 
-    pub fn append(&mut self, path: &str) -> Result<Id> {
-        self.run_command_fmt(format_args!("addid \"{}\"", path))
+    pub fn append<P: AsRef<str>>(&mut self, path: P) -> Result<Id> {
+        self.run_command_fmt(format_args!("addid \"{}\"", path.as_ref()))
             .and_then(|_| self.read_field("Id"))
             .and_then(|v| self.expect_ok()
                       .and_then(|_| v.parse().map_err(From::from).map(Id)))
     }
 
-    pub fn insert(&mut self, path: &str, pos: usize) -> Result<usize> {
-        self.run_command_fmt(format_args!("addid \"{}\" {}", path, pos))
+    pub fn insert<P: AsRef<str>>(&mut self, path: P, pos: usize) -> Result<usize> {
+        self.run_command_fmt(format_args!("addid \"{}\" {}", path.as_ref(), pos))
             .and_then(|_| self.read_field("Id"))
             .and_then(|v| self.expect_ok()
                       .and_then(|_| v.parse().map_err(From::from)))
@@ -358,8 +358,8 @@ impl<S: Read+Write> Client<S> {
         self.run_command_fmt(format_args!("listplaylistinfo \"{}\"", name.to_name()))
             .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
     }
-    pub fn pl_append<N: ToPlaylistName>(&mut self, name: N, path: &str) -> Result<()> {
-        self.run_command_fmt(format_args!("playlistadd \"{}\" \"{}\"", name.to_name(), path))
+    pub fn pl_append<N: ToPlaylistName, P: AsRef<str>>(&mut self, name: N, path: P) -> Result<()> {
+        self.run_command_fmt(format_args!("playlistadd \"{}\" \"{}\"", name.to_name(), path.as_ref()))
             .and_then(|_| self.expect_ok())
     }
     pub fn pl_delete<N: ToPlaylistName>(&mut self, name: N, pos: u32) -> Result<()> {
