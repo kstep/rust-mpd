@@ -4,6 +4,7 @@ use std::convert::From;
 use time::Duration;
 
 use error::{Error, ProtoError, ParseError};
+use song::{Id, QueuePlace};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Status {
@@ -15,12 +16,11 @@ pub struct Status {
     pub queue_version: u32,
     pub queue_len: u32,
     pub state: State,
-    //song: Option<MpdQueuePlace>,
-    //nextsong: Option<MpdQueuePlace>,
-    //play_time: Option<Duration>,
-    //total_time: Option<Duration>,
-    //elapsed: Option<Duration>,
-    //duration: Option<Duration>,
+    pub song: Option<QueuePlace>,
+    pub nextsong: Option<QueuePlace>,
+    pub time: Option<(Duration, Duration)>,
+    pub elapsed: Option<Duration>,
+    pub duration: Option<Duration>,
     pub bitrate: Option<u32>,
     pub crossfade: Option<u64>,
     pub mixrampdb: f32,
@@ -43,12 +43,31 @@ impl Status {
             queue_version: get_field!(map, "playlist"),
             queue_len: get_field!(map, "playlistlength"),
             state: get_field!(map, "state"),
-            //song: Option<MpdQueuePlace>,
-            //nextsong: Option<MpdQueuePlace>,
-            //play_time: Option<Duration>,
-            //total_time: Option<Duration>,
-            //elapsed: Option<Duration>,
-            //duration: Option<Duration>,
+            song: try!(map.get("song").map(|v| v.parse().map_err(ParseError::BadInteger)).and_then(|posres|
+                  map.get("songid").map(|v| v.parse().map_err(ParseError::BadInteger)).map(|idres|
+                    posres.and_then(|pos| idres.map(|id| Some(QueuePlace {
+                      id: Id(id),
+                      pos: pos,
+                      prio: 0
+                    }))))).unwrap_or(Ok(None))),
+            nextsong: try!(map.get("nextsong").map(|v| v.parse().map_err(ParseError::BadInteger)).and_then(|posres|
+                  map.get("nextsongid").map(|v| v.parse().map_err(ParseError::BadInteger)).map(|idres|
+                    posres.and_then(|pos| idres.map(|id| Some(QueuePlace {
+                      id: Id(id),
+                      pos: pos,
+                      prio: 0
+                    }))))).unwrap_or(Ok(None))),
+            time: try!(map.get("time").map(|time| {
+                let mut splits = time.splitn(2, ':').map(|v| v.parse().map_err(ParseError::BadInteger).map(Duration::seconds));
+                match (splits.next(), splits.next()) {
+                    (Some(Ok(a)), Some(Ok(b))) => Ok(Some((a, b))),
+                    (Some(Err(e)), _) | (_, Some(Err(e))) => Err(e),
+                    _ => Ok(None)
+                }
+            }).unwrap_or(Ok(None))),
+            // TODO: float errors don't work on stable
+            elapsed: map.get("elapsed").and_then(|f| f.parse::<f32>().ok()).map(|v| Duration::milliseconds((v * 1000.0) as i64)),
+            duration: get_field!(map, opt "duration").map(Duration::seconds),
             bitrate: get_field!(map, opt "bitrate"),
             crossfade: get_field!(map, opt "xfade"),
             mixrampdb: 0.0, //get_field!(map, "mixrampdb"),

@@ -9,7 +9,7 @@ use error::{Error, ParseError, ProtoError};
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Id(pub u32);
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct QueuePlace {
     pub id: Id,
     pub pos: u32,
