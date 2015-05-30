@@ -20,6 +20,12 @@ impl<'a> ToPlaylistName for &'a Playlist {
     }
 }
 
+impl<'a> ToPlaylistName for &'a String {
+    fn to_name(&self) -> &str {
+        &*self
+    }
+}
+
 impl ToPlaylistName for str {
     fn to_name(&self) -> &str {
         self
