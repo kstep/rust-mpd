@@ -313,6 +313,15 @@ impl<S: Read+Write> Client<S> {
         self.run_command_fmt(format_args!("rangeid {} {}", song.to_song_id(), range.to_range()))
             .and_then(|_| self.expect_ok())
     }
+
+    pub fn tag<T: ToSongId>(&mut self, song: T, tag: &str, value: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("addtagid {} {} \"{}\"", song.to_song_id(), tag, value))
+            .and_then(|_| self.expect_ok())
+    }
+    pub fn untag<T: ToSongId>(&mut self, song: T, tag: &str) -> Result<()> {
+        self.run_command_fmt(format_args!("cleartagid {} {}", song.to_song_id(), tag))
+            .and_then(|_| self.expect_ok())
+    }
     // }}}
 
     // Connection settings {{{
@@ -540,7 +549,6 @@ impl<S: Read+Write> Client<S> {
     }
     // }}}
 
-    // TODO: rangeid songid start:end, addtagid songid tag value, cleartagid songid [tag]
     // TODO: mount/unmount/listmounts/listneighbors
     // TODO: sticker get/set/delete/list/find
 
