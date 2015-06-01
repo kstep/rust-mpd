@@ -1,3 +1,15 @@
+#![deny(missing_docs)]
+
+//! MPD client for Rust
+//!
+//! This crate tries to provide ideomatic Rust API for [Music Player Daemon][mpd].
+//! The main entry point to the API is [`Client`](client/struct.Client.html) struct,
+//! and inherent methods of the struct follow [MPD protocol][proto] for most part,
+//! making use of traits to overload different parameters for convinience.
+//!
+//! [mpd]: http://www.musicpd.org/
+//! [proto]: http://www.musicpd.org/doc/protocol/
+
 extern crate rustc_serialize;
 extern crate time;
 extern crate bufstream;

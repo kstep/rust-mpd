@@ -1,16 +1,21 @@
+//! The module defines playlist data structures
 
 use time::{strptime, Tm};
 
 use std::collections::BTreeMap;
 use error::{Error, ProtoError};
 
+/// Playlist
 #[derive(Clone, Debug, PartialEq)]
 pub struct Playlist {
+    /// name
     pub name: String,
+    /// last modified
     pub last_mod: Tm
 }
 
 impl Playlist {
+    /// build playlist from map
     pub fn from_map(map: BTreeMap<String, String>) -> Result<Playlist, Error> {
         Ok(Playlist {
             name: try!(map.get("playlist").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("playlist")))),

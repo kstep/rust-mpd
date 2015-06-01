@@ -1,13 +1,29 @@
+//! The module describes data structures for MPD (virtual) mounts system
+//!
+//! This mounts has nothing to do with system-wide Unix mounts, as they are
+//! implemented inside MPD only, so they doesn't require root access.
+//!
+//! The MPD mounts are plugin-based, so MPD can mount any resource as
+//! a source of songs for its database (like network shares).
+//!
+//! Possible, but inactive, mounts are named "neighbors" and can be
+//! listed with `neighbors()` method.
+
 use std::collections::BTreeMap;
 
 use error::{Error, ProtoError};
 
+/// Mount point
+#[derive(Clone, Debug, PartialEq)]
 pub struct Mount {
+    /// mount point name
     pub name: String,
+    /// mount storage URI
     pub storage: String
 }
 
 impl Mount {
+    /// build mount from map
     pub fn from_map(map: BTreeMap<String, String>) -> Result<Mount, Error> {
         Ok(Mount {
             name: try!(map.get("mount").map(|s| s.to_owned()).ok_or(Error::Proto(ProtoError::NoField("mount")))),
@@ -16,12 +32,17 @@ impl Mount {
     }
 }
 
+/// Neighbor
+#[derive(Clone, Debug, PartialEq)]
 pub struct Neighbor {
+    /// neighbor name
     pub name: String,
+    /// neighbor storage URI
     pub storage: String
 }
 
 impl Neighbor {
+    /// build neighbor from map
     pub fn from_map(map: BTreeMap<String, String>) -> Result<Neighbor, Error> {
         Ok(Neighbor {
             name: try!(map.get("name").map(|s| s.to_owned()).ok_or(Error::Proto(ProtoError::NoField("name")))),

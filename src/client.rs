@@ -1,3 +1,9 @@
+//! This module defines client data structure — the main entry point to MPD communication
+//!
+//! Almost every method of the `Client` structure corresponds to some command in [MPD protocol][mpd].
+//!
+//! [proto]: http://www.musicpd.org/doc/protocol/
+
 use std::collections::BTreeMap;
 use std::io::{self, Read, Write, BufRead, Lines};
 use std::convert::From;
@@ -95,9 +101,11 @@ impl<I> Pairs<I> where I: Iterator<Item=io::Result<String>> {
 // }}}
 
 // Client {{{
+/// Client connection
 #[derive(Debug)]
 pub struct Client<S=TcpStream> where S: Read+Write {
     socket: BufStream<S>,
+    /// MPD version
     pub version: Version
 }
 
@@ -109,10 +117,12 @@ impl Default for Client<TcpStream> {
 
 impl<S: Read+Write> Client<S> {
     // Constructors {{{
+    /// Connect client to some IP address
     pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<Client<TcpStream>> {
         TcpStream::connect(addr).map_err(Error::Io).and_then(Client::new)
     }
 
+    /// Create client from some arbitrary pre-connected socket
     pub fn new(socket: S) -> Result<Client<S>> {
         let mut socket = BufStream::new(socket);
 
@@ -477,6 +487,8 @@ impl<S: Read+Write> Client<S> {
     // TODO: findadd type what [...], listallinfo [uri], listfiles [uri], lsinfo [uri]
     // TODO: list type [filtertype] [filterwhat] [...] [group] [grouptype] [...]
     // TODO: searchaddpl name type what [...], readcomments
+
+    /// TODO: under construction
     pub fn search(&mut self, query: Query) -> Result<Vec<Song>> {
         self.run_command_fmt(format_args!("search {}", query))
             .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
@@ -823,9 +835,13 @@ impl<S: Read+Write> Client<S> {
 
 // }}}
 
+/// "Idle" mode guard enforcing MPD asynchronous events protocol
+///
+/// See [`idle`](../idle/index.html) module documentation for details.
 pub struct IdleGuard<'a, S: 'a+Read+Write>(&'a mut Client<S>);
 
 impl<'a, S: 'a+Read+Write> IdleGuard<'a, S> {
+    /// Get list of subsystems with new events, interrupting idle mode in process
     pub fn get(self) -> Result<Vec<Subsystem>> {
         let result = self.0.read_pairs()
             .filter(|r| r.as_ref()

@@ -1,3 +1,5 @@
+//! The module defines MPD status data structures
+
 use std::collections::BTreeMap;
 use std::str::FromStr;
 use std::convert::From;
@@ -7,32 +9,55 @@ use time::Duration;
 use error::{Error, ProtoError, ParseError};
 use song::{Id, QueuePlace};
 
+/// MPD status
 #[derive(Debug, PartialEq, Clone)]
 pub struct Status {
+    /// volume (0-100, or -1 if volume is unavailable (e.g. for HTTPD ouput type)
     pub volume: i8,
+    /// repeat mode
     pub repeat: bool,
+    /// random mode
     pub random: bool,
+    /// single mode
     pub single: bool,
+    /// consume mode
     pub consume: bool,
+    /// queue version number
     pub queue_version: u32,
+    /// queue length
     pub queue_len: u32,
+    /// playback state
     pub state: State,
+    /// currently playing song place in the queue
     pub song: Option<QueuePlace>,
+    /// next song to play place in the queue
     pub nextsong: Option<QueuePlace>,
+    /// time current song played, and total song duration (in seconds resolution)
     pub time: Option<(Duration, Duration)>,
+    /// elapsed play time current song played (in milliseconds resolution)
     pub elapsed: Option<Duration>,
+    /// current song duration
     pub duration: Option<Duration>,
+    /// current song bitrate, kbps
     pub bitrate: Option<u32>,
-    pub crossfade: Option<u64>,
+    /// crossfade timeout, seconds
+    pub crossfade: Option<Duration>,
+    /// mixramp threshold, dB
     pub mixrampdb: f32,
+    /// mixramp duration, seconds
     pub mixrampdelay: Option<Duration>,
+    /// current audio playback format
     pub audio: Option<AudioFormat>,
+    /// current DB updating job number (if DB updating is in progress)
     pub updating_db: Option<u32>,
+    /// last player error (if happened, can be reset with `clearerror()` method)
     pub error: Option<String>,
+    /// replay gain mode
     pub replaygain: Option<ReplayGain>
 }
 
 impl Status {
+    /// build status from map
     pub fn from_map(map: BTreeMap<String, String>) -> Result<Status, Error> {
         Ok(Status {
             volume: get_field!(map, "volume"),
@@ -71,7 +96,7 @@ impl Status {
             elapsed: map.get("elapsed").and_then(|f| f.parse::<f32>().ok()).map(|v| Duration::milliseconds((v * 1000.0) as i64)),
             duration: get_field!(map, opt "duration").map(Duration::seconds),
             bitrate: get_field!(map, opt "bitrate"),
-            crossfade: get_field!(map, opt "xfade"),
+            crossfade: get_field!(map, opt "xfade").map(Duration::seconds),
             mixrampdb: 0.0, //get_field!(map, "mixrampdb"),
             mixrampdelay: None, //get_field!(map, opt "mixrampdelay").map(|v: f64| Duration::milliseconds((v * 1000.0) as i64)),
             audio: get_field!(map, opt "audio"),
@@ -82,10 +107,14 @@ impl Status {
     }
 }
 
+/// Audio playback format
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct AudioFormat {
+    /// sample rate, kbps
     pub rate: u32,
+    /// sample resolution in bits, can be 0 for floating point resolution
     pub bits: u8,
+    /// number of channels
     pub chans: u8
 }
 
@@ -101,10 +130,14 @@ impl FromStr for AudioFormat {
     }
 }
 
+/// Playback state
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum State {
+    /// player stopped
     Stop,
+    /// player is playing
     Play,
+    /// player paused
     Pause
 }
 
@@ -120,11 +153,16 @@ impl FromStr for State {
     }
 }
 
+/// Replay gain mode
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ReplayGain {
+    /// off
     Off,
+    /// track
     Track,
+    /// album
     Album,
+    /// auto
     Auto
 }
 

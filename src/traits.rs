@@ -1,3 +1,6 @@
+#![allow(missing_docs)]
+//! These are inner traits to support methods overloading for the `Client`
+
 use std::ops::{Range, RangeFrom, RangeTo, RangeFull};
 use time::Duration;
 use output::Output;

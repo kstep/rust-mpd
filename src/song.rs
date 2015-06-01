@@ -1,3 +1,5 @@
+//! The module defines song structs and methods.
+
 use time::{strptime, Duration, Tm};
 
 use std::collections::BTreeMap;
@@ -6,6 +8,7 @@ use std::fmt;
 
 use error::{Error, ParseError, ProtoError};
 
+/// Song ID
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Id(pub u32);
 
@@ -15,13 +18,18 @@ impl fmt::Display for Id {
     }
 }
 
+/// Song place in the queue
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct QueuePlace {
+    /// song ID
     pub id: Id,
+    /// absolute zero-based song position
     pub pos: u32,
+    /// song priority, if present, defaults to 0
     pub prio: u8
 }
 
+/// Song range
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Range(pub Duration, pub Option<Duration>);
 
@@ -46,18 +54,27 @@ impl FromStr for Range {
     }
 }
 
+/// Song data
 #[derive(Debug, Clone, PartialEq)]
 pub struct Song {
+    /// filename
     pub file: String,
+    /// name (for streams)
     pub name: Option<String>,
+    /// last modification time
     pub last_mod: Option<Tm>,
+    /// duration (in seconds resolution)
     pub duration: Option<Duration>,
+    /// place in the queue (if queued for playback)
     pub place: Option<QueuePlace>,
+    /// range to play (if queued for playback and range was set)
     pub range: Option<Range>,
+    /// arbitrary tags, like album, artist etc
     pub tags: BTreeMap<String, String>,
 }
 
 impl Song {
+    /// build song from map
     pub fn from_map(mut map: BTreeMap<String, String>) -> Result<Song, Error> {
         Ok(Song {
             file: try!(map.remove("file").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("file")))),

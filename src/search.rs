@@ -1,3 +1,6 @@
+#![allow(missing_docs)]
+// TODO: unfinished functionality
+
 use std::fmt;
 
 pub enum Term {

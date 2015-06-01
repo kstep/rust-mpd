@@ -1,8 +1,11 @@
+//! This module defines MPD version type and parsing code
+
 use std::str::FromStr;
 
 use error::ParseError;
 
 // Version {{{
+/// MPD version
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct Version(pub u16, pub u16, pub u16);
 

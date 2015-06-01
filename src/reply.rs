@@ -1,11 +1,20 @@
+//! The module describes all possible replies from MPD server.
+//!
+//! Also it contains most generic parser, which can handle
+//! all possible server replies.
+
 use std::str::FromStr;
 
 use error::{ParseError, ServerError};
 
+/// All possible MPD server replies
 #[derive(Debug, Clone, PartialEq)]
 pub enum Reply {
+    /// `OK` and `list_OK` replies
     Ok,
+    /// `ACK` reply (server error)
     Ack(ServerError),
+    /// a data pair reply (in `field: value` format)
     Pair(String, String)
 }
 

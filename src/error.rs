@@ -1,3 +1,17 @@
+//! This module defines different errors occurring during communication with MPD.
+//!
+//! There're following kinds of possible errors:
+//!
+//!   - IO errors (due to network communication failures),
+//!   - parsing errors (because of bugs in parsing server response),
+//!   - protocol errors (happen when we get unexpected data from server,
+//!     mostly because protocol version mismatch, network data corruption
+//!     or just bugs in the client),
+//!   - server errors (run-time errors coming from MPD due to some MPD
+//!     errors, like database failures or sound problems)
+//!
+//! This module defines all necessary infrastructure to represent these kinds or errors.
+
 use time::ParseError as TimeParseError;
 use std::convert::From;
 use std::io::Error as IoError;
@@ -8,19 +22,32 @@ use std::num::{ParseIntError, ParseFloatError};
 use std::result;
 
 // Server errors {{{
+/// Server error codes, as defined in [libmpdclient](http://www.musicpd.org/doc/libmpdclient/protocol_8h_source.html)
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum ErrorCode {
+    /// not a list
     NotList = 1,
+    /// bad command arguments
     Argument = 2,
+    /// invalid password
     Password = 3,
+    /// insufficient permissions
     Permission = 4,
+    /// unknown command
     UnknownCmd = 5,
+    /// object doesn't exist
     NoExist = 50,
+    /// maximum playlist size exceeded
     PlaylistMax = 51,
+    /// general system error
     System = 52,
+    /// error loading playlist
     PlaylistLoad = 53,
+    /// update database is already in progress
     UpdateAlready = 54,
+    /// player synchronization error
     PlayerSync = 55,
+    /// object already exists
     Exist = 56,
 }
 
@@ -75,11 +102,16 @@ impl fmt::Display for ErrorCode {
     }
 }
 
+/// Server error
 #[derive(Debug, Clone, PartialEq)]
 pub struct ServerError {
+    /// server error code
     pub code: ErrorCode,
+    /// command position in command list
     pub pos: u16,
+    /// command name, which caused the error
     pub command: String,
+    /// detailed error description
     pub detail: String
 }
 
@@ -132,14 +164,20 @@ impl FromStr for ServerError {
 // }}}
 
 // Error {{{
+/// Main error type, describing all possible error classes for the crate
 #[derive(Debug)]
 pub enum Error {
+    /// IO errors (low-level network communication failures)
     Io(IoError),
+    /// parsing errors (unknown data came from server)
     Parse(ParseError),
+    /// protocol errors (e.g. missing required fields in server response, no handshake message etc.)
     Proto(ProtoError),
+    /// server errors (a.k.a. `ACK` responses from server)
     Server(ServerError)
 }
 
+/// Shortcut type for MPD results
 pub type Result<T> = result::Result<T, Error>;
 
 impl StdError for Error {
@@ -197,26 +235,49 @@ impl From<ServerError> for Error {
 // }}}
 
 // Parse errors {{{
+/// Parsing error kinds
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParseError {
+    /// invalid integer
     BadInteger(ParseIntError),
+    /// invalid float
     BadFloat(ParseFloatError),
+    /// some other invalid value
     BadValue(String),
+    /// date/time parsing error
     BadTime(TimeParseError),
+    /// invalid version format (should be x.y.z)
     BadVersion,
+    /// the response is not an `ACK` (not an error)
+    /// (this is not actually an error, just a marker
+    /// to try to parse the response as some other type,
+    /// like a pair)
     NotAck,
+    /// invalid pair
     BadPair,
+    /// invalid error code in `ACK` response
     BadCode,
+    /// invalid command position in `ACK` response
     BadPos,
+    /// missing command position and/or error code in `ACK` response
     NoCodePos,
+    /// missing error message in `ACK` response
     NoMessage,
+    /// missing bitrate in audio format field
     NoRate,
+    /// missing bits in audio format field
     NoBits,
+    /// missing channels in audio format field
     NoChans,
+    /// invalid bitrate in audio format field
     BadRate(ParseIntError),
+    /// invalid bits in audio format field
     BadBits(ParseIntError),
+    /// invalid channels in audio format field
     BadChans(ParseIntError),
+    /// unknown state in state status field
     BadState(String),
+    /// unknown error code in `ACK` response
     BadErrorCode(usize)
 
 }
@@ -274,11 +335,20 @@ impl From<ParseFloatError> for ParseError {
 // }}}
 
 // Protocol errors {{{
+/// Protocol errors
+///
+/// They usually occur when server violate expected command response format,
+/// like missing fields in answer to some command, missing closing `OK`
+/// line after data stream etc.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProtoError {
+    /// `OK` was expected, but it was missing
     NotOk,
+    /// a data pair was expected
     NotPair,
+    /// invalid handshake banner received
     BadBanner,
+    /// expected some field, but it was missing
     NoField(&'static str)
 }
 

@@ -1,8 +1,37 @@
+//! The module defines structers and protocols for asynchrnonous MPD communication
+//!
+//! The MPD supports very simple protocol for asyncrhonous client notifications about
+//! different player events. First user issues `idle` command with optional argument
+//! to filter events by source subsystem (like "database", "player", "mixer" etc.)
+//!
+//! Once in "idle" mode, client connection timeout is disabled, and MPD will notify
+//! client about next event when one occurs (if originated from one of designated
+//! subsystems, if specified).
+//!
+//! (Actually MPD notifies only about general subsystem source of event, e.g.
+//! if user changed volume, client will get `mixer` event in idle mode, so
+//! it should issue `status` command then and check for any mixer-related field
+//! changes.)
+//!
+//! Once some such event occurs, and client is nofified about it, idle mode is interrupted,
+//! and client must issue another `idle` command to continue listening for interesting
+//! events.
+//!
+//! While in "idle" mode, client can't issue any commands, except for special `noidle`
+//! command, which interrupts "idle" mode, and provides a list queued events
+//! since last `idle` command, if they occurred.
+//!
+//! The module describes subsystems enum only, but the main workflow is determined by
+//! [`IdleGuard`](client/struct.IdleGuard.html) struct, which catches mutable reference
+//! to original `Client` struct, thus enforcing MPD contract in regards of (im)possibility
+//! to send commands while in "idle" mode.
+
 use std::fmt;
 use std::str::FromStr;
 
 use error::ParseError;
 
+/// Subsystems for `idle` command
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Subsystem {
     /// database: the song database has been modified after update.
