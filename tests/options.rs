@@ -3,6 +3,7 @@ extern crate time;
 
 mod helpers;
 use helpers::connect;
+use time::Duration;
 
 #[test]
 fn status() {
@@ -62,12 +63,12 @@ fn volume() {
 fn crossfade() {
     let mut mpd = connect();
     mpd.crossfade(1000).unwrap();
-    assert_eq!(mpd.status().unwrap().crossfade, Some(1000));
+    assert_eq!(mpd.status().unwrap().crossfade, Some(Duration::seconds(1000)));
     mpd.crossfade(0).unwrap();
     assert_eq!(mpd.status().unwrap().crossfade,
         if mpd.version >= mpd::Version(0, 19, 0) {
             None
         } else {
-            Some(0)
+            Some(Duration::zero())
         });
 }
