@@ -16,6 +16,10 @@ fn out_toggle() {
 
     mpd.out_disable(0).unwrap();
     mpd.out_enable(0).unwrap();
-    mpd.out_toggle(0).unwrap();
+
+    if mpd.version >= mpd::Version(0, 17, 0) {
+        mpd.out_toggle(0).unwrap();
+    }
+
     mpd.output(0, true).unwrap();
 }
