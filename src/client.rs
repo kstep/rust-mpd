@@ -9,9 +9,8 @@ use bufstream::BufStream;
 use version::Version;
 use error::{ProtoError, Error, Result};
 use reply::Reply;
-use status::Status;
+use status::{Status, ReplayGain};
 use stats::Stats;
-use replaygain::ReplayGain;
 use song::{Song, Id};
 use output::Output;
 use playlist::Playlist;
@@ -134,111 +133,127 @@ impl<S: Read+Write> Client<S> {
     // }}}
 
     // Playback options & status {{{
+    /// Get MPD status
     pub fn status(&mut self) -> Result<Status> {
-        self.run_command("status")
+        self.run_command("command_list_begin")
+            .and_then(|_| self.run_command("status"))
+            .and_then(|_| self.run_command("replay_gain_status"))
+            .and_then(|_| self.run_command("command_list_end"))
             .and_then(|_| self.read_map())
             .and_then(Status::from_map)
     }
 
+    /// Get MPD playing statistics
     pub fn stats(&mut self) -> Result<Stats> {
         self.run_command("stats")
             .and_then(|_| self.read_map())
             .and_then(Stats::from_map)
     }
 
+    /// Clear error state
     pub fn clearerror(&mut self) -> Result<()> {
         self.run_command("clearerror")
             .and_then(|_| self.expect_ok())
     }
 
+    /// Set volume
     pub fn volume(&mut self, volume: i8) -> Result<()> {
         self.run_command_fmt(format_args!("setvol {}", volume))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Set repeat state
     pub fn repeat(&mut self, value: bool) -> Result<()> {
         self.run_command_fmt(format_args!("repeat {}", value as u8))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Set random state
     pub fn random(&mut self, value: bool) -> Result<()> {
         self.run_command_fmt(format_args!("random {}", value as u8))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Set single state
     pub fn single(&mut self, value: bool) -> Result<()> {
         self.run_command_fmt(format_args!("single {}", value as u8))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Set consume state
     pub fn consume(&mut self, value: bool) -> Result<()> {
         self.run_command_fmt(format_args!("consume {}", value as u8))
             .and_then(|_| self.expect_ok())
     }
 
-    pub fn crossfade(&mut self, value: u64) -> Result<()> {
-        self.run_command_fmt(format_args!("crossfade {}", value))
+    /// Set crossfade time in seconds
+    pub fn crossfade<T: ToSeconds>(&mut self, value: T) -> Result<()> {
+        self.run_command_fmt(format_args!("crossfade {}", value.to_seconds()))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Set mixramp level in dB
     pub fn mixrampdb(&mut self, value: f32) -> Result<()> {
         self.run_command_fmt(format_args!("mixrampdb {}", value))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Set mixramp delay in seconds
     pub fn mixrampdelay<T: ToSeconds>(&mut self, value: T) -> Result<()> {
         self.run_command_fmt(format_args!("mixrampdelay {}", value.to_seconds()))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Set replay gain mode
     pub fn replaygain(&mut self, gain: ReplayGain) -> Result<()> {
         self.run_command_fmt(format_args!("replay_gain_mode {}", gain))
             .and_then(|_| self.expect_ok())
     }
-
-    pub fn get_replaygain(&mut self) -> Result<ReplayGain> {
-        self.run_command("replay_gain_status")
-            .and_then(|_| self.read_field("replay_gain_mode"))
-            .and_then(|v| self.expect_ok()
-                      .and_then(|_| v.parse().map_err(From::from)))
-    }
     // }}}
 
     // Playback control {{{
+    /// Start playback
     pub fn play(&mut self) -> Result<()> {
         self.run_command("play").and_then(|_| self.expect_ok())
     }
 
+    /// Start playback from given song in a queue
     pub fn switch<T: ToQueuePlace>(&mut self, place: T) -> Result<()> {
         self.run_command_fmt(format_args!("play{} {}", if T::is_id() { "id" } else { "" }, place.to_place()))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Switch to a next song in queue
     pub fn next(&mut self) -> Result<()> {
         self.run_command("next")
             .and_then(|_| self.expect_ok())
     }
 
+    /// Switch to a previous song in queue
     pub fn prev(&mut self) -> Result<()> {
         self.run_command("previous")
             .and_then(|_| self.expect_ok())
     }
 
+    /// Stop playback
     pub fn stop(&mut self) -> Result<()> {
         self.run_command("stop")
             .and_then(|_| self.expect_ok())
     }
 
+    /// Set pause state
     pub fn pause(&mut self, value: bool) -> Result<()> {
         self.run_command_fmt(format_args!("pause {}", value as u8))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Seek to a given place (in seconds) in a given song
     pub fn seek<T: ToSeconds, P: ToQueuePlace>(&mut self, place: P, pos: T) -> Result<()> {
         self.run_command_fmt(format_args!("seek{} {} {}", if P::is_id() { "id" } else { "" }, place.to_place(), pos.to_seconds()))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Seek to a given place (in seconds) in the current song
     pub fn rewind<T: ToSeconds>(&mut self, pos: T) -> Result<()> {
         self.run_command_fmt(format_args!("seekcur {}", pos.to_seconds()))
             .and_then(|_| self.expect_ok())
@@ -246,11 +261,19 @@ impl<S: Read+Write> Client<S> {
     // }}}
 
     // Queue control {{{
-    pub fn queue<T: ToQueueRangeOrPlace>(&mut self, pos: T) -> Result<Vec<Song>> {
+    /// List given song or range of songs in a play queue
+    pub fn songs<T: ToQueueRangeOrPlace>(&mut self, pos: T) -> Result<Vec<Song>> {
         self.run_command_fmt(format_args!("playlist{} {}", if T::is_id() { "id" } else { "info" }, pos.to_range()))
             .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
     }
 
+    /// List all songs in a play queue
+    pub fn queue(&mut self) -> Result<Vec<Song>> {
+        self.run_command("playlistinfo")
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+    }
+
+    /// Get current playing song
     pub fn currentsong(&mut self) -> Result<Option<Song>> {
         self.run_command("currentsong")
             .and_then(|_| self.read_map())
@@ -261,23 +284,27 @@ impl<S: Read+Write> Client<S> {
             })
     }
 
+    /// Clear current queue
     pub fn clear(&mut self) -> Result<()> {
         self.run_command("clear")
             .and_then(|_| self.expect_ok())
     }
 
+    /// List all changes in a queue since given version
     pub fn changes(&mut self, version: u32) -> Result<Vec<Song>> {
         self.run_command_fmt(format_args!("plchanges {}", version))
             .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
     }
 
-    pub fn append<P: AsRef<str>>(&mut self, path: P) -> Result<Id> {
+    /// Append a song into a queue
+    pub fn push<P: AsRef<str>>(&mut self, path: P) -> Result<Id> {
         self.run_command_fmt(format_args!("addid \"{}\"", path.as_ref()))
             .and_then(|_| self.read_field("Id"))
             .and_then(|v| self.expect_ok()
                       .and_then(|_| v.parse().map_err(From::from).map(Id)))
     }
 
+    /// Insert a song into a given position in a queue
     pub fn insert<P: AsRef<str>>(&mut self, path: P, pos: usize) -> Result<usize> {
         self.run_command_fmt(format_args!("addid \"{}\" {}", path.as_ref(), pos))
             .and_then(|_| self.read_field("Id"))
@@ -285,40 +312,51 @@ impl<S: Read+Write> Client<S> {
                       .and_then(|_| v.parse().map_err(From::from)))
     }
 
+    /// Delete a song (at some position) or several songs (in a range) from a queue
     pub fn delete<T: ToQueueRangeOrPlace>(&mut self, pos: T) -> Result<()> {
             self.run_command_fmt(format_args!("delete{} {}", if T::is_id() { "id" } else { "" }, pos.to_range()))
                 .and_then(|_| self.expect_ok())
     }
 
+    /// Move a song (at a some position) or several songs (in a range) to other position in queue
     pub fn shift<T: ToQueueRangeOrPlace>(&mut self, from: T, to: usize) -> Result<()> {
         self.run_command_fmt(format_args!("move{} {} {}", if T::is_id() { "id" } else { "" }, from.to_range(), to))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Swap to songs in a queue
     pub fn swap<T: ToQueuePlace>(&mut self, one: T, two: T) -> Result<()> {
         self.run_command_fmt(format_args!("swap{} {} {}", if T::is_id() { "id" } else { "" }, one.to_place(), two.to_place()))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Shuffle queue in a given range (use `..` to shuffle full queue)
     pub fn shuffle<T: ToQueueRange>(&mut self, range: T) -> Result<()> {
         self.run_command_fmt(format_args!("shuffle {}", range.to_range()))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Set song priority in a queue
     pub fn priority<T: ToQueueRangeOrPlace>(&mut self, pos: T, prio: u8) -> Result<()> {
         self.run_command_fmt(format_args!("prio{} {} {}", if T::is_id() { "id" } else { "" }, prio, pos.to_range()))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Set song range (in seconds) to play
+    ///
+    /// Doesn't work for currently playing song.
     pub fn range<T: ToSongId, R: ToSongRange>(&mut self, song: T, range: R) -> Result<()> {
         self.run_command_fmt(format_args!("rangeid {} {}", song.to_song_id(), range.to_range()))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Add tag to a song
     pub fn tag<T: ToSongId>(&mut self, song: T, tag: &str, value: &str) -> Result<()> {
         self.run_command_fmt(format_args!("addtagid {} {} \"{}\"", song.to_song_id(), tag, value))
             .and_then(|_| self.expect_ok())
     }
+
+    /// Delete tag from a song
     pub fn untag<T: ToSongId>(&mut self, song: T, tag: &str) -> Result<()> {
         self.run_command_fmt(format_args!("cleartagid {} {}", song.to_song_id(), tag))
             .and_then(|_| self.expect_ok())
@@ -326,61 +364,88 @@ impl<S: Read+Write> Client<S> {
     // }}}
 
     // Connection settings {{{
+    /// Just pings MPD server, does nothing
     pub fn ping(&mut self) -> Result<()> {
         self.run_command("ping").and_then(|_| self.expect_ok())
     }
 
+    /// Close MPD connection
     pub fn close(&mut self) -> Result<()> {
         self.run_command("close").and_then(|_| self.expect_ok())
     }
 
+    /// Kill MPD server
     pub fn kill(&mut self) -> Result<()> {
         self.run_command("kill").and_then(|_| self.expect_ok())
     }
 
+    /// Login to MPD server with given password
     pub fn login(&mut self, password: &str) -> Result<()> {
         self.run_command_fmt(format_args!("password \"{}\"", password)).and_then(|_| self.expect_ok())
     }
     // }}}
 
     // Playlist methods {{{
+    /// List all playlists
     pub fn playlists(&mut self) -> Result<Vec<Playlist>> {
         self.run_command("listplaylists")
             .and_then(|_| self.read_pairs().split("playlist").map(|v| v.and_then(Playlist::from_map)).collect())
     }
 
-    pub fn pl_load<T: ToQueueRange, N: ToPlaylistName>(&mut self, name: N, range: T) -> Result<()> {
+    /// List all songs in a playlist
+    pub fn playlist<N: ToPlaylistName>(&mut self, name: N) -> Result<Vec<Song>> {
+        self.run_command_fmt(format_args!("listplaylistinfo \"{}\"", name.to_name()))
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+    }
+
+    /// Load playlist into queue
+    ///
+    /// You can give either full range (`..`) to load all songs in a playlist,
+    /// or some partial range to load only part of playlist.
+    pub fn load<T: ToQueueRange, N: ToPlaylistName>(&mut self, name: N, range: T) -> Result<()> {
         self.run_command_fmt(format_args!("load \"{}\" {}", name.to_name(), range.to_range()))
             .and_then(|_| self.expect_ok())
     }
-    pub fn pl_clear<N: ToPlaylistName>(&mut self, name: N) -> Result<()> {
-        self.run_command_fmt(format_args!("playlistclear \"{}\"", name.to_name()))
-            .and_then(|_| self.expect_ok())
-    }
-    pub fn pl_remove<N: ToPlaylistName>(&mut self, name: N) -> Result<()> {
-        self.run_command_fmt(format_args!("rm \"{}\"", name.to_name()))
-            .and_then(|_| self.expect_ok())
-    }
-    pub fn pl_save<N: ToPlaylistName>(&mut self, name: N) -> Result<()> {
+
+    /// Save current queue into playlist
+    ///
+    /// If playlist with given name doesn't exist, create new one.
+    pub fn save<N: ToPlaylistName>(&mut self, name: N) -> Result<()> {
         self.run_command_fmt(format_args!("save \"{}\"", name.to_name()))
             .and_then(|_| self.expect_ok())
     }
+
+    /// Rename playlist
     pub fn pl_rename<N: ToPlaylistName>(&mut self, name: N, newname: &str) -> Result<()> {
         self.run_command_fmt(format_args!("rename \"{}\" \"{}\"", name.to_name(), newname))
             .and_then(|_| self.expect_ok())
     }
-    pub fn pl_songs<N: ToPlaylistName>(&mut self, name: N) -> Result<Vec<Song>> {
-        self.run_command_fmt(format_args!("listplaylistinfo \"{}\"", name.to_name()))
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+
+    /// Clear playlist
+    pub fn pl_clear<N: ToPlaylistName>(&mut self, name: N) -> Result<()> {
+        self.run_command_fmt(format_args!("playlistclear \"{}\"", name.to_name()))
+            .and_then(|_| self.expect_ok())
     }
-    pub fn pl_append<N: ToPlaylistName, P: AsRef<str>>(&mut self, name: N, path: P) -> Result<()> {
+
+    /// Delete playlist
+    pub fn pl_remove<N: ToPlaylistName>(&mut self, name: N) -> Result<()> {
+        self.run_command_fmt(format_args!("rm \"{}\"", name.to_name()))
+            .and_then(|_| self.expect_ok())
+    }
+
+    /// Add new songs to a playlist
+    pub fn pl_push<N: ToPlaylistName, P: AsRef<str>>(&mut self, name: N, path: P) -> Result<()> {
         self.run_command_fmt(format_args!("playlistadd \"{}\" \"{}\"", name.to_name(), path.as_ref()))
             .and_then(|_| self.expect_ok())
     }
+
+    /// Delete a song at a given position in a playlist
     pub fn pl_delete<N: ToPlaylistName>(&mut self, name: N, pos: u32) -> Result<()> {
         self.run_command_fmt(format_args!("playlistdelete \"{}\" {}", name.to_name(), pos))
             .and_then(|_| self.expect_ok())
     }
+
+    /// Move song in a playlist from one position into another
     pub fn pl_shift<N: ToPlaylistName>(&mut self, name: N, from: u32, to: u32) -> Result<()> {
         self.run_command_fmt(format_args!("playlistmove \"{}\" {} {}", name.to_name(), from, to))
             .and_then(|_| self.expect_ok())
@@ -388,6 +453,8 @@ impl<S: Read+Write> Client<S> {
     // }}}
 
     // Database methods {{{
+    /// Run database rescan, i.e. remove non-existing files from DB
+    /// as well as add new files to DB
     pub fn rescan(&mut self) -> Result<u32> {
         self.run_command("rescan")
             .and_then(|_| self.read_field("updating_db"))
@@ -395,6 +462,7 @@ impl<S: Read+Write> Client<S> {
                       .and_then(|_| v.parse().map_err(From::from)))
     }
 
+    /// Run database update, i.e. remove non-existing files from DB
     pub fn update(&mut self) -> Result<u32> {
         self.run_command("update")
             .and_then(|_| self.read_field("updating_db"))
@@ -416,21 +484,30 @@ impl<S: Read+Write> Client<S> {
     // }}}
 
     // Output methods {{{
+    /// List all outputs
     pub fn outputs(&mut self) -> Result<Vec<Output>> {
         self.run_command("outputs")
             .and_then(|_| self.read_pairs().split("outputid").map(|v| v.and_then(Output::from_map)).collect())
     }
 
+    /// Set given output enabled state
+    pub fn output<T: ToOutputId>(&mut self, id: T, state: bool) -> Result<()> {
+        if state { self.out_enable(id) } else { self.out_disable(id) }
+    }
+
+    /// Disable given output
     pub fn out_disable<T: ToOutputId>(&mut self, id: T) -> Result<()> {
         self.run_command_fmt(format_args!("disableoutput {}", id.to_output_id()))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Enable given output
     pub fn out_enable<T: ToOutputId>(&mut self, id: T) -> Result<()> {
         self.run_command_fmt(format_args!("enableoutput {}", id.to_output_id()))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Toggle given output
     pub fn out_toggle<T: ToOutputId>(&mut self, id: T) -> Result<()> {
         self.run_command_fmt(format_args!("toggleoutput {}", id.to_output_id()))
             .and_then(|_| self.expect_ok())
@@ -438,12 +515,14 @@ impl<S: Read+Write> Client<S> {
     // }}}
 
     // Reflection methods {{{
+    /// Get current music directory
     pub fn music_directory(&mut self) -> Result<String> {
         self.run_command("config")
             .and_then(|_| self.read_field("music_directory"))
             .and_then(|d| self.expect_ok().map(|_| d))
     }
 
+    /// List all available commands
     pub fn commands(&mut self) -> Result<Vec<String>> {
         self.run_command("commands")
             .and_then(|_| self.read_pairs()
@@ -453,6 +532,7 @@ impl<S: Read+Write> Client<S> {
                       .collect())
     }
 
+    /// List all forbidden commands
     pub fn notcommands(&mut self) -> Result<Vec<String>> {
         self.run_command("notcommands")
             .and_then(|_| self.read_pairs()
@@ -462,6 +542,7 @@ impl<S: Read+Write> Client<S> {
                       .collect())
     }
 
+    /// List all available URL handlers
     pub fn urlhandlers(&mut self) -> Result<Vec<String>> {
         self.run_command("urlhandlers")
             .and_then(|_| self.read_pairs()
@@ -471,6 +552,7 @@ impl<S: Read+Write> Client<S> {
                       .collect())
     }
 
+    /// List all supported tag types
     pub fn tagtypes(&mut self) -> Result<Vec<String>> {
         self.run_command("tagtypes")
             .and_then(|_| self.read_pairs()
@@ -480,6 +562,7 @@ impl<S: Read+Write> Client<S> {
                       .collect())
     }
 
+    /// List all available decoder plugins
     pub fn decoders(&mut self) -> Result<Vec<Plugin>> {
         try!(self.run_command("decoders"));
 
@@ -508,6 +591,7 @@ impl<S: Read+Write> Client<S> {
     // }}}
 
     // Messaging {{{
+    /// List all channels available for current connection
     pub fn channels(&mut self) -> Result<Vec<Channel>> {
         self.run_command("channels")
             .and_then(|_| self.read_pairs()
@@ -517,21 +601,25 @@ impl<S: Read+Write> Client<S> {
                       .collect())
     }
 
+    /// Read queued messages from subscribed channels
     pub fn readmessages(&mut self) -> Result<Vec<Message>> {
         self.run_command("readmessages")
             .and_then(|_| self.read_pairs().split("channel").map(|v| v.and_then(Message::from_map)).collect())
     }
 
+    /// Send a message to a channel
     pub fn sendmessage(&mut self, channel: Channel, message: &str) -> Result<()> {
         self.run_command_fmt(format_args!("sendmessage {} \"{}\"", channel, message))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Subscribe to a channel
     pub fn subscribe(&mut self, channel: Channel) -> Result<()> {
         self.run_command_fmt(format_args!("subscribe {}", channel))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Unsubscribe to a channel
     pub fn unsubscribe(&mut self, channel: Channel) -> Result<()> {
         self.run_command_fmt(format_args!("unsubscribe {}", channel))
             .and_then(|_| self.expect_ok())
@@ -539,10 +627,27 @@ impl<S: Read+Write> Client<S> {
     // }}}
 
     // Event handling {{{
+    /// Wait for events from a set of subsystems and return list of affected subsystems
+    ///
+    /// This is a blocking operation. If empty subsystems slice is given,
+    /// wait for all event from any subsystem.
     pub fn wait(&mut self, subsystems: &[Subsystem]) -> Result<Vec<Subsystem>> {
         self.idle(subsystems).and_then(IdleGuard::get)
     }
 
+    /// Start listening for events from a set of subsystems
+    ///
+    /// If empty subsystems slice is given, wait for all event from any subsystem.
+    ///
+    /// This method returns `IdleGuard`, which takes mutable reference of an initial client,
+    /// thus disallowing any operations on this mpd connection.
+    ///
+    /// You can call `.get()` method of this struct to stop waiting and get all queued events
+    /// matching given subsystems filter. This call consumes a guard, stops waiting
+    /// and releases client object.
+    ///
+    /// If the guard goes out of scope, wait lock is released as well, but all queued events
+    /// will be silently ignored.
     pub fn idle<'a>(&'a mut self, subsystems: &[Subsystem]) -> Result<IdleGuard<'a, S>> {
         let subsystems = subsystems.iter().map(|v| v.to_string()).collect::<Vec<String>>().connect(" ");
         try!(self.run_command_fmt(format_args!("idle {}", subsystems)));
@@ -551,21 +656,31 @@ impl<S: Read+Write> Client<S> {
     // }}}
 
     // Mount methods {{{
+    /// List all (virtual) mounts
+    ///
+    /// These mounts exist inside MPD process only, thus they can work without root permissions.
     pub fn mounts(&mut self) -> Result<Vec<Mount>> {
         self.run_command("listmounts")
             .and_then(|_| self.read_pairs().split("mount").map(|v| v.and_then(Mount::from_map)).collect())
     }
 
+    /// List all network neighbors, which can be potentially mounted
     pub fn neighbors(&mut self) -> Result<Vec<Neighbor>> {
         self.run_command("listneighbors")
             .and_then(|_| self.read_pairs().split("neighbor").map(|v| v.and_then(Neighbor::from_map)).collect())
     }
 
+    /// Mount given neighbor to a mount point
+    ///
+    /// The mount exists inside MPD process only, thus it can work without root permissions.
     pub fn mount(&mut self, path: &str, uri: &str) -> Result<()> {
         self.run_command_fmt(format_args!("mount \"{}\" \"{}\"", path, uri))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Unmount given active (virtual) mount
+    ///
+    /// The mount exists inside MPD process only, thus it can work without root permissions.
     pub fn unmount(&mut self, path: &str) -> Result<()> {
         self.run_command_fmt(format_args!("unmount \"{}\"", path))
             .and_then(|_| self.expect_ok())
@@ -573,27 +688,32 @@ impl<S: Read+Write> Client<S> {
     // }}}
 
     // Sticker methods {{{
+    /// Show sticker value for a given object, identified by type and uri
     pub fn sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<String> {
         self.run_command_fmt(format_args!("sticker set {} \"{}\" {}", typ, uri, name))
             .and_then(|_| self.read_field("sticker"))
             .and_then(|s| self.expect_ok().map(|_| s))
     }
 
+    /// Set sticker value for a given object, identified by type and uri
     pub fn set_sticker(&mut self, typ: &str, uri: &str, name: &str, value: &str) -> Result<()> {
         self.run_command_fmt(format_args!("sticker set {} \"{}\" {} \"{}\"", typ, uri, name, value))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Delete sticker from a given object, identified by type and uri
     pub fn delete_sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<()> {
         self.run_command_fmt(format_args!("sticker delete {} \"{}\" {}", typ, uri, name))
             .and_then(|_| self.expect_ok())
     }
 
+    /// Remove all stickers from a given object, identified by type and uri
     pub fn clear_stickers(&mut self, typ: &str, uri: &str) -> Result<()> {
         self.run_command_fmt(format_args!("sticker delete {} \"{}\"", typ, uri))
             .and_then(|_| self.expect_ok())
     }
 
+    /// List all stickers from a given object, identified by type and uri
     pub fn stickers(&mut self, typ: &str, uri: &str) -> Result<Vec<String>> {
         self.run_command_fmt(format_args!("sticker list {} \"{}\"", typ, uri))
             .and_then(|_| self.read_pairs()
@@ -603,6 +723,8 @@ impl<S: Read+Write> Client<S> {
                       .collect())
     }
 
+    /// List all (file, sticker) pairs for sticker name and objects of given type
+    /// from given directory (identified by uri)
     pub fn find_sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<Vec<(String, String)>> {
         self.run_command_fmt(format_args!("sticker find {} \"{}\" {}", typ, uri, name))
             .and_then(|_| self.read_pairs().split("file").map(|rmap| rmap.map(|mut map|
@@ -611,6 +733,8 @@ impl<S: Read+Write> Client<S> {
                       .collect())
     }
 
+    /// List all files of a given type under given directory (identified by uri)
+    /// with a tag set to given value
     pub fn find_sticker_eq(&mut self, typ: &str, uri: &str, name: &str, value: &str) -> Result<Vec<String>> {
         self.run_command_fmt(format_args!("sticker find {} \"{}\" {} = \"{}\"", typ, uri, name, value))
             .and_then(|_| self.read_pairs()

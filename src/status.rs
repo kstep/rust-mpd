@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::str::FromStr;
 use std::convert::From;
+use std::fmt;
 use time::Duration;
 
 use error::{Error, ProtoError, ParseError};
@@ -27,7 +28,8 @@ pub struct Status {
     pub mixrampdelay: Option<Duration>,
     pub audio: Option<AudioFormat>,
     pub updating_db: Option<u32>,
-    pub error: Option<String>
+    pub error: Option<String>,
+    pub replaygain: Option<ReplayGain>
 }
 
 impl Status {
@@ -75,6 +77,7 @@ impl Status {
             audio: get_field!(map, opt "audio"),
             updating_db: get_field!(map, opt "updating_db"),
             error: map.get("error").map(|v| v.to_owned()),
+            replaygain: get_field!(map, opt "replay_gain_mode"),
         })
     }
 }
@@ -114,5 +117,39 @@ impl FromStr for State {
             "pause" => Ok(State::Pause),
             _ => Err(ParseError::BadState(s.to_owned())),
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ReplayGain {
+    Off,
+    Track,
+    Album,
+    Auto
+}
+
+impl FromStr for ReplayGain {
+    type Err = ParseError;
+    fn from_str(s: &str) -> Result<ReplayGain, ParseError> {
+        use self::ReplayGain::*;
+        match s {
+            "off" => Ok(Off),
+            "track" => Ok(Track),
+            "album" => Ok(Album),
+            "auto" => Ok(Auto),
+            _ => Err(ParseError::BadValue(s.to_owned()))
+        }
+    }
+}
+
+impl fmt::Display for ReplayGain {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::ReplayGain::*;
+        f.write_str(match *self {
+            Off => "off",
+            Track => "track",
+            Album => "album",
+            Auto => "auto",
+        })
     }
 }

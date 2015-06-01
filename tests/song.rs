@@ -13,8 +13,11 @@ fn currentsong() {
 #[test]
 fn queue() {
     let mut mpd = connect();
-    let songs = mpd.queue(..).unwrap();
-    println!("{:?}", songs);
+    let queue = mpd.queue().unwrap();
+    println!("{:?}", queue);
+
+    let songs = mpd.songs(..).unwrap();
+    assert_eq!(songs, queue);
 }
 
 #[test]

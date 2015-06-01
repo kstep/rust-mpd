@@ -7,7 +7,6 @@ pub mod error;
 pub mod version;
 pub mod reply;
 pub mod status;
-pub mod replaygain;
 pub mod song;
 pub mod output;
 pub mod playlist;
@@ -22,8 +21,7 @@ mod traits;
 pub mod client;
 
 pub use client::Client;
-pub use status::Status;
-pub use replaygain::ReplayGain;
+pub use status::{Status, ReplayGain};
 pub use version::Version;
 pub use song::Song;
 pub use playlist::Playlist;

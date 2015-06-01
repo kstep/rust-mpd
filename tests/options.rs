@@ -48,17 +48,6 @@ test_option!(repeat, true, false);
 //test_option!(mixrampdelay, 1 => Some(Duration::seconds(1)), 0 => None);
 
 #[test]
-fn replaygain() {
-    let mut mpd = connect();
-    if mpd.version >= mpd::Version(0, 16, 0) {
-        mpd.replaygain(mpd::ReplayGain::Track).unwrap();
-        assert_eq!(mpd.get_replaygain().unwrap(), mpd::ReplayGain::Track);
-        mpd.replaygain(mpd::ReplayGain::Off).unwrap();
-        assert_eq!(mpd.get_replaygain().unwrap(), mpd::ReplayGain::Off);
-    }
-}
-
-#[test]
 fn volume() {
     let mut mpd = connect();
     if mpd.status().unwrap().volume >= 0 {

@@ -22,7 +22,7 @@ pub struct QueuePlace {
     pub prio: u8
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Range(pub Duration, pub Option<Duration>);
 
 impl fmt::Display for Range {
@@ -46,7 +46,7 @@ impl FromStr for Range {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Song {
     pub file: String,
     pub name: Option<String>,
