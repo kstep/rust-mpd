@@ -1,6 +1,6 @@
-//! The module defines structers and protocols for asynchrnonous MPD communication
+//! The module defines structures and protocols for asynchronous MPD communication
 //!
-//! The MPD supports very simple protocol for asyncrhonous client notifications about
+//! The MPD supports very simple protocol for asynchronous client notifications about
 //! different player events. First user issues `idle` command with optional argument
 //! to filter events by source subsystem (like "database", "player", "mixer" etc.)
 //!
@@ -13,7 +13,7 @@
 //! it should issue `status` command then and check for any mixer-related field
 //! changes.)
 //!
-//! Once some such event occurs, and client is nofified about it, idle mode is interrupted,
+//! Once some such event occurs, and client is notified about it, idle mode is interrupted,
 //! and client must issue another `idle` command to continue listening for interesting
 //! events.
 //!
@@ -22,7 +22,7 @@
 //! since last `idle` command, if they occurred.
 //!
 //! The module describes subsystems enum only, but the main workflow is determined by
-//! [`IdleGuard`](client/struct.IdleGuard.html) struct, which catches mutable reference
+//! [`IdleGuard`](../client/struct.IdleGuard.html) struct, which catches mutable reference
 //! to original `Client` struct, thus enforcing MPD contract in regards of (im)possibility
 //! to send commands while in "idle" mode.
 

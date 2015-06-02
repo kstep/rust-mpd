@@ -2,10 +2,10 @@
 
 //! MPD client for Rust
 //!
-//! This crate tries to provide ideomatic Rust API for [Music Player Daemon][mpd].
+//! This crate tries to provide idiomatic Rust API for [Music Player Daemon][mpd].
 //! The main entry point to the API is [`Client`](client/struct.Client.html) struct,
 //! and inherent methods of the struct follow [MPD protocol][proto] for most part,
-//! making use of traits to overload different parameters for convinience.
+//! making use of traits to overload different parameters for convenience.
 //!
 //! [mpd]: http://www.musicpd.org/
 //! [proto]: http://www.musicpd.org/doc/protocol/

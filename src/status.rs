@@ -12,7 +12,7 @@ use song::{Id, QueuePlace};
 /// MPD status
 #[derive(Debug, PartialEq, Clone)]
 pub struct Status {
-    /// volume (0-100, or -1 if volume is unavailable (e.g. for HTTPD ouput type)
+    /// volume (0-100, or -1 if volume is unavailable (e.g. for HTTPD output type)
     pub volume: i8,
     /// repeat mode
     pub repeat: bool,
