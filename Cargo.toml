@@ -1,11 +1,11 @@
 [package]
 name = "mpd"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["Konstantin Stepanov <me@kstep.me>"]
 description = "A client library for MPD (music player daemon), like libmpdclient but in Rust"
 homepage = "https://github.com/kstep/rust-mpd"
 repository = "https://github.com/kstep/rust-mpd.git"
-documentation = "https://kstep.me/rust/doc/mpd/mpd/index.html"
+documentation = "http://kstep.me/rust/doc/mpd/mpd/index.html"
 license = "MIT"
 
 [dependencies]
