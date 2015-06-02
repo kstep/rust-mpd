@@ -115,13 +115,15 @@ impl Default for Client<TcpStream> {
     }
 }
 
-impl<S: Read+Write> Client<S> {
-    // Constructors {{{
+impl Client<TcpStream> {
     /// Connect client to some IP address
     pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<Client<TcpStream>> {
         TcpStream::connect(addr).map_err(Error::Io).and_then(Client::new)
     }
+}
 
+impl<S: Read+Write> Client<S> {
+    // Constructors {{{
     /// Create client from some arbitrary pre-connected socket
     pub fn new(socket: S) -> Result<Client<S>> {
         let mut socket = BufStream::new(socket);

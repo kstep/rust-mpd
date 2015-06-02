@@ -9,6 +9,28 @@
 //!
 //! [mpd]: http://www.musicpd.org/
 //! [proto]: http://www.musicpd.org/doc/protocol/
+//!
+//! # Usage
+//!
+//! ```text
+//! [dependencies]
+//! mpd = "*"
+//! ```
+//!
+//! ```rust,no_run
+//! extern crate mpd;
+//!
+//! use mpd::Client;
+//! use std::net::TcpStream;
+//!
+//! # fn main() {
+//! let mut conn = Client::connect("127.0.0.1:6600").unwrap();
+//! conn.volume(100).unwrap();
+//! conn.load("My Lounge Playlist", ..).unwrap();
+//! conn.play().unwrap();
+//! println!("Status: {:?}", conn.status());
+//! # }
+//! ```
 
 extern crate rustc_serialize;
 extern crate time;
