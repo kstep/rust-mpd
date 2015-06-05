@@ -7,6 +7,7 @@ use std::str::FromStr;
 use std::fmt;
 
 use error::{Error, ParseError, ProtoError};
+use convert::FromMap;
 
 /// Song ID
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord)]
@@ -73,9 +74,9 @@ pub struct Song {
     pub tags: BTreeMap<String, String>,
 }
 
-impl Song {
+impl FromMap for Song {
     /// build song from map
-    pub fn from_map(mut map: BTreeMap<String, String>) -> Result<Song, Error> {
+    fn from_map(mut map: BTreeMap<String, String>) -> Result<Song, Error> {
         Ok(Song {
             file: try!(map.remove("file").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("file")))),
             last_mod: try!(map.remove("Last-Modified")

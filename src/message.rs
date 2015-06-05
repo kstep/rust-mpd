@@ -13,6 +13,7 @@ use std::fmt;
 use std::collections::BTreeMap;
 
 use error::{Error, ProtoError};
+use convert::FromMap;
 
 /// Message
 #[derive(Debug, PartialEq, Clone)]
@@ -23,9 +24,8 @@ pub struct Message {
     pub message: String
 }
 
-impl Message {
-    /// build message from map
-    pub fn from_map(map: BTreeMap<String, String>) -> Result<Message, Error> {
+impl FromMap for Message {
+    fn from_map(map: BTreeMap<String, String>) -> Result<Message, Error> {
         Ok(Message {
             channel: Channel(try!(map.get("channel").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("channel"))))),
             message: try!(map.get("message").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("message")))),

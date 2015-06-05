@@ -8,6 +8,7 @@ use time::Duration;
 
 use error::{Error, ProtoError, ParseError};
 use song::{Id, QueuePlace};
+use convert::FromMap;
 
 /// MPD status
 #[derive(Debug, PartialEq, Clone)]
@@ -56,9 +57,9 @@ pub struct Status {
     pub replaygain: Option<ReplayGain>
 }
 
-impl Status {
+impl FromMap for Status {
     /// build status from map
-    pub fn from_map(map: BTreeMap<String, String>) -> Result<Status, Error> {
+    fn from_map(map: BTreeMap<String, String>) -> Result<Status, Error> {
         Ok(Status {
             volume: get_field!(map, "volume"),
 

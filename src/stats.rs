@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 use std::convert::From;
 
 use error::{Error, ProtoError};
+use convert::FromMap;
 
 /// DB and playback statistics
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -26,9 +27,9 @@ pub struct Stats {
     pub db_update: Timespec,
 }
 
-impl Stats {
+impl FromMap for Stats {
     /// build stats from map
-    pub fn from_map(map: BTreeMap<String, String>) -> Result<Stats, Error> {
+    fn from_map(map: BTreeMap<String, String>) -> Result<Stats, Error> {
         Ok(Stats {
             artists: get_field!(map, "artists"),
             albums: get_field!(map, "albums"),

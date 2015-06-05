@@ -37,6 +37,7 @@ extern crate time;
 extern crate bufstream;
 
 mod macros;
+mod convert;
 pub mod error;
 pub mod version;
 pub mod reply;
@@ -51,7 +52,6 @@ pub mod message;
 pub mod idle;
 pub mod mount;
 
-mod convert;
 mod proto;
 pub mod client;
 

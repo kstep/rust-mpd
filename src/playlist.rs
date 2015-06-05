@@ -4,6 +4,7 @@ use time::{strptime, Tm};
 
 use std::collections::BTreeMap;
 use error::{Error, ProtoError};
+use convert::FromMap;
 
 /// Playlist
 #[derive(Clone, Debug, PartialEq)]
@@ -14,9 +15,8 @@ pub struct Playlist {
     pub last_mod: Tm
 }
 
-impl Playlist {
-    /// build playlist from map
-    pub fn from_map(map: BTreeMap<String, String>) -> Result<Playlist, Error> {
+impl FromMap for Playlist {
+    fn from_map(map: BTreeMap<String, String>) -> Result<Playlist, Error> {
         Ok(Playlist {
             name: try!(map.get("playlist").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("playlist")))),
             last_mod: try!(map.get("Last-Modified").ok_or(Error::Proto(ProtoError::NoField("Last-Modified")))

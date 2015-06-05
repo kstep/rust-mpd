@@ -1,11 +1,18 @@
 #![allow(missing_docs)]
 //! These are inner traits to support methods overloading for the `Client`
 
+use std::collections::BTreeMap;
 use std::ops::{Range, RangeFrom, RangeTo, RangeFull};
+
 use time::Duration;
 use output::Output;
 use playlist::Playlist;
 use song::{self, Id, Song};
+use error::Error;
+
+pub trait FromMap {
+    fn from_map(map: BTreeMap<String, String>) -> Result<Self, Error>;
+}
 
 // Playlist name polymorphisms {{{
 pub trait ToPlaylistName {

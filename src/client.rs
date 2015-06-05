@@ -77,14 +77,14 @@ impl<S: Read+Write> Client<S> {
             .and_then(|_| self.run_command("replay_gain_status"))
             .and_then(|_| self.run_command("command_list_end"))
             .and_then(|_| self.read_map())
-            .and_then(Status::from_map)
+            .and_then(FromMap::from_map)
     }
 
     /// Get MPD playing statistics
     pub fn stats(&mut self) -> Result<Stats> {
         self.run_command("stats")
             .and_then(|_| self.read_map())
-            .and_then(Stats::from_map)
+            .and_then(FromMap::from_map)
     }
 
     /// Clear error state
@@ -201,13 +201,13 @@ impl<S: Read+Write> Client<S> {
     /// List given song or range of songs in a play queue
     pub fn songs<T: ToQueueRangeOrPlace>(&mut self, pos: T) -> Result<Vec<Song>> {
         self.run_command_fmt(format_args!("playlist{} {}", if T::is_id() { "id" } else { "info" }, pos.to_range()))
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(FromMap::from_map)).collect())
     }
 
     /// List all songs in a play queue
     pub fn queue(&mut self) -> Result<Vec<Song>> {
         self.run_command("playlistinfo")
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(FromMap::from_map)).collect())
     }
 
     /// Get current playing song
@@ -217,7 +217,7 @@ impl<S: Read+Write> Client<S> {
             .and_then(|m| if m.is_empty() {
                 Ok(None)
             } else {
-                Song::from_map(m).map(Some)
+                FromMap::from_map(m).map(Some)
             })
     }
 
@@ -230,7 +230,7 @@ impl<S: Read+Write> Client<S> {
     /// List all changes in a queue since given version
     pub fn changes(&mut self, version: u32) -> Result<Vec<Song>> {
         self.run_command_fmt(format_args!("plchanges {}", version))
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(FromMap::from_map)).collect())
     }
 
     /// Append a song into a queue
@@ -326,13 +326,13 @@ impl<S: Read+Write> Client<S> {
     /// List all playlists
     pub fn playlists(&mut self) -> Result<Vec<Playlist>> {
         self.run_command("listplaylists")
-            .and_then(|_| self.read_pairs().split("playlist").map(|v| v.and_then(Playlist::from_map)).collect())
+            .and_then(|_| self.read_pairs().split("playlist").map(|v| v.and_then(FromMap::from_map)).collect())
     }
 
     /// List all songs in a playlist
     pub fn playlist<N: ToPlaylistName>(&mut self, name: N) -> Result<Vec<Song>> {
         self.run_command_fmt(format_args!("listplaylistinfo \"{}\"", name.to_name()))
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(FromMap::from_map)).collect())
     }
 
     /// Load playlist into queue
@@ -418,7 +418,7 @@ impl<S: Read+Write> Client<S> {
     /// TODO: under construction
     pub fn search(&mut self, query: Query) -> Result<Vec<Song>> {
         self.run_command_fmt(format_args!("search {}", query))
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(Song::from_map)).collect())
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(FromMap::from_map)).collect())
     }
     // }}}
 
@@ -426,7 +426,7 @@ impl<S: Read+Write> Client<S> {
     /// List all outputs
     pub fn outputs(&mut self) -> Result<Vec<Output>> {
         self.run_command("outputs")
-            .and_then(|_| self.read_pairs().split("outputid").map(|v| v.and_then(Output::from_map)).collect())
+            .and_then(|_| self.read_pairs().split("outputid").map(|v| v.and_then(FromMap::from_map)).collect())
     }
 
     /// Set given output enabled state
@@ -543,7 +543,7 @@ impl<S: Read+Write> Client<S> {
     /// Read queued messages from subscribed channels
     pub fn readmessages(&mut self) -> Result<Vec<Message>> {
         self.run_command("readmessages")
-            .and_then(|_| self.read_pairs().split("channel").map(|v| v.and_then(Message::from_map)).collect())
+            .and_then(|_| self.read_pairs().split("channel").map(|v| v.and_then(FromMap::from_map)).collect())
     }
 
     /// Send a message to a channel
@@ -571,13 +571,13 @@ impl<S: Read+Write> Client<S> {
     /// These mounts exist inside MPD process only, thus they can work without root permissions.
     pub fn mounts(&mut self) -> Result<Vec<Mount>> {
         self.run_command("listmounts")
-            .and_then(|_| self.read_pairs().split("mount").map(|v| v.and_then(Mount::from_map)).collect())
+            .and_then(|_| self.read_pairs().split("mount").map(|v| v.and_then(FromMap::from_map)).collect())
     }
 
     /// List all network neighbors, which can be potentially mounted
     pub fn neighbors(&mut self) -> Result<Vec<Neighbor>> {
         self.run_command("listneighbors")
-            .and_then(|_| self.read_pairs().split("neighbor").map(|v| v.and_then(Neighbor::from_map)).collect())
+            .and_then(|_| self.read_pairs().split("neighbor").map(|v| v.and_then(FromMap::from_map)).collect())
     }
 
     /// Mount given neighbor to a mount point
