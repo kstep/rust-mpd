@@ -28,8 +28,12 @@
 
 use std::fmt;
 use std::str::FromStr;
+use std::io::{Read, Write};
+use std::mem::forget;
 
-use error::ParseError;
+use error::{ParseError, Error};
+use client::Client;
+use proto::Proto;
 
 /// Subsystems for `idle` command
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -98,3 +102,65 @@ impl fmt::Display for Subsystem {
     }
 }
 
+
+/// "Idle" mode guard enforcing MPD asynchronous events protocol
+pub struct IdleGuard<'a, S: 'a+Read+Write>(&'a mut Client<S>);
+
+impl<'a, S: 'a+Read+Write> IdleGuard<'a, S> {
+    /// Get list of subsystems with new events, interrupting idle mode in process
+    pub fn get(self) -> Result<Vec<Subsystem>, Error> {
+        let result = self.0.read_pairs()
+            .filter(|r| r.as_ref()
+                    .map(|&(ref a, _)| *a == "changed").unwrap_or(true))
+            .map(|r| r.and_then(|(_, b)| b.parse().map_err(From::from)))
+            .collect();
+        forget(self);
+        result
+    }
+}
+
+impl<'a, S: 'a+Read+Write> Drop for IdleGuard<'a, S> {
+    fn drop(&mut self) {
+        let _ = self.0.run_command("noidle").map(|_| self.0.drain());
+    }
+}
+
+/// This trait implements `idle` command of MPD protocol
+///
+/// See module's documentation for details.
+pub trait Idle {
+    /// Stream type of a client
+    type Stream: Read+Write;
+
+    /// Start listening for events from a set of subsystems
+    ///
+    /// If empty subsystems slice is given, wait for all event from any subsystem.
+    ///
+    /// This method returns `IdleGuard`, which takes mutable reference of an initial client,
+    /// thus disallowing any operations on this mpd connection.
+    ///
+    /// You can call `.get()` method of this struct to stop waiting and get all queued events
+    /// matching given subsystems filter. This call consumes a guard, stops waiting
+    /// and releases client object.
+    ///
+    /// If the guard goes out of scope, wait lock is released as well, but all queued events
+    /// will be silently ignored.
+    fn idle<'a>(&'a mut self, subsystems: &[Subsystem]) -> Result<IdleGuard<'a, Self::Stream>, Error>;
+
+    /// Wait for events from a set of subsystems and return list of affected subsystems
+    ///
+    /// This is a blocking operation. If empty subsystems slice is given,
+    /// wait for all event from any subsystem.
+    fn wait(&mut self, subsystems: &[Subsystem]) -> Result<Vec<Subsystem>, Error> {
+        self.idle(subsystems).and_then(IdleGuard::get)
+    }
+}
+
+impl<S: Read+Write> Idle for Client<S> {
+    type Stream = S;
+    fn idle<'a>(&'a mut self, subsystems: &[Subsystem]) -> Result<IdleGuard<'a, S>, Error> {
+        let subsystems = subsystems.iter().map(|v| v.to_string()).collect::<Vec<String>>().connect(" ");
+        try!(self.run_command_fmt(format_args!("idle {}", subsystems)));
+        Ok(IdleGuard(self))
+    }
+}

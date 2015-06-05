@@ -2,6 +2,8 @@ extern crate mpd;
 
 mod helpers;
 
+use mpd::Idle;
+
 #[test]
 fn idle() {
     let mut mpd = helpers::connect();

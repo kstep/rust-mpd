@@ -65,5 +65,5 @@ pub use plugin::Plugin;
 pub use stats::Stats;
 pub use search::{Term, Query, Clause};
 pub use message::{Message, Channel};
-pub use idle::Subsystem;
+pub use idle::{Idle, Subsystem};
 pub use mount::{Mount, Neighbor};
