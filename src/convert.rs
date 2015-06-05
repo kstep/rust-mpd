@@ -10,6 +10,7 @@ use playlist::Playlist;
 use song::{self, Id, Song};
 use error::Error;
 
+#[doc(hidden)]
 pub trait FromMap {
     fn from_map(map: BTreeMap<String, String>) -> Result<Self, Error>;
 }

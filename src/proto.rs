@@ -80,6 +80,7 @@ impl<I> Pairs<I> where I: Iterator<Item=io::Result<String>> {
 }
 
 // Client inner communication methods {{{
+#[doc(hidden)]
 pub trait Proto {
     type Stream: Read+Write;
 
