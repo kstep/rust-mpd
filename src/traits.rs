@@ -7,6 +7,7 @@ use output::Output;
 use playlist::Playlist;
 use song::{self, Id, Song};
 
+// Playlist name polymorphisms {{{
 pub trait ToPlaylistName {
     fn to_name(&self) -> &str;
 }
@@ -46,7 +47,9 @@ impl ToPlaylistName for String {
         &*self
     }
 }
+// }}}
 
+// Seconds polymorphisms {{{
 pub trait ToSeconds {
     fn to_seconds(self) -> f64;
 }
@@ -68,6 +71,9 @@ impl ToSeconds for Duration {
         self.num_milliseconds() as f64 / 1000.0
     }
 }
+// }}}
+
+// Queue place polymorphisms {{{
 
 pub trait IsId {
     fn is_id() -> bool { false }
@@ -162,6 +168,30 @@ impl IsId for Id {
     }
 }
 
+pub trait ToSongId {
+    fn to_song_id(&self) -> Id;
+}
+
+impl ToSongId for Song {
+    fn to_song_id(&self) -> Id {
+        self.place.unwrap().id
+    }
+}
+
+impl ToSongId for u32 {
+    fn to_song_id(&self) -> Id {
+        Id(*self)
+    }
+}
+
+impl ToSongId for Id {
+    fn to_song_id(&self) -> Id {
+        *self
+    }
+}
+// }}}
+
+// Output id polymorphisms {{{
 pub trait ToOutputId {
     fn to_output_id(self) -> u32;
 }
@@ -176,7 +206,9 @@ impl ToOutputId for Output {
         self.id
     }
 }
+// }}}
 
+// Song play range polymorphisms {{{
 pub trait ToSongRange {
     fn to_range(self) -> song::Range;
 }
@@ -228,25 +260,5 @@ impl ToSongRange for song::Range {
         self
     }
 }
+// }}}
 
-pub trait ToSongId {
-    fn to_song_id(&self) -> Id;
-}
-
-impl ToSongId for Song {
-    fn to_song_id(&self) -> Id {
-        self.place.unwrap().id
-    }
-}
-
-impl ToSongId for u32 {
-    fn to_song_id(&self) -> Id {
-        Id(*self)
-    }
-}
-
-impl ToSongId for Id {
-    fn to_song_id(&self) -> Id {
-        *self
-    }
-}
