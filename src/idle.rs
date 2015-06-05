@@ -22,7 +22,7 @@
 //! since last `idle` command, if they occurred.
 //!
 //! The module describes subsystems enum only, but the main workflow is determined by
-//! [`IdleGuard`](../client/struct.IdleGuard.html) struct, which catches mutable reference
+//! [`IdleGuard`](struct.IdleGuard.html) struct, which catches mutable reference
 //! to original `Client` struct, thus enforcing MPD contract in regards of (im)possibility
 //! to send commands while in "idle" mode.
 

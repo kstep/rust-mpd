@@ -1,6 +1,6 @@
 //! This module defines client data structure — the main entry point to MPD communication
 //!
-//! Almost every method of the `Client` structure corresponds to some command in [MPD protocol][mpd].
+//! Almost every method of the `Client` structure corresponds to some command in [MPD protocol][proto].
 //!
 //! [proto]: http://www.musicpd.org/doc/protocol/
 
