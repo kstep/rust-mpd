@@ -51,7 +51,8 @@ pub mod message;
 pub mod idle;
 pub mod mount;
 
-mod traits;
+mod convert;
+mod proto;
 pub mod client;
 
 pub use client::Client;

@@ -15,12 +15,8 @@ pub struct Clause(pub Term, pub String);
 
 pub struct Query {
     pub clauses: Vec<Clause>,
+    pub group: Option<Vec<String>>,
     pub window: Option<(u32, Option<u32>)>,
-}
-
-pub struct Count {
-    pub clauses: Option<Vec<Clause>>,
-    pub group: Option<String>
 }
 
 impl fmt::Display for Term {
