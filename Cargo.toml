@@ -12,3 +12,6 @@ license = "MIT"
 rustc-serialize = "*"
 time = "*"
 bufstream = "*"
+
+[dev-dependencies]
+unix_socket = "*"
