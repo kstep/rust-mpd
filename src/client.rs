@@ -215,7 +215,7 @@ impl<S: Read+Write> Client<S> {
             .and_then(|m| if m.is_empty() {
                 Ok(None)
             } else {
-                FromMap::from_map(m).map(Some)
+                self.read_struct().map(Some)
             })
     }
 

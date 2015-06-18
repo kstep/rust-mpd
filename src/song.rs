@@ -7,7 +7,7 @@ use std::str::FromStr;
 use std::fmt;
 
 use error::{Error, ParseError, ProtoError};
-use convert::FromMap;
+use convert::FromIter;
 
 /// Song ID
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Default)]
@@ -34,6 +34,12 @@ pub struct QueuePlace {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Range(pub Duration, pub Option<Duration>);
 
+impl Default for Range {
+    fn default() -> Range {
+        Range(Duration::seconds(0), None)
+    }
+}
+
 impl fmt::Display for Range {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.num_seconds().fmt(f)
@@ -56,7 +62,7 @@ impl FromStr for Range {
 }
 
 /// Song data
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Song {
     /// filename
     pub file: String,
@@ -74,30 +80,36 @@ pub struct Song {
     pub tags: BTreeMap<String, String>,
 }
 
-impl FromMap for Song {
+impl<I: Iterator<Item=Result<(String, String), Error>>> FromIter<I> for Song {
     /// build song from map
-    fn from_map(mut map: BTreeMap<String, String>) -> Result<Song, Error> {
-        Ok(Song {
-            file: try!(map.remove("file").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("file")))),
-            last_mod: try!(map.remove("Last-Modified")
-                           .map(|v| strptime(&*v, "%Y-%m-%dT%H:%M:%S%Z").map_err(ParseError::BadTime).map(Some))
-                           .unwrap_or(Ok(None))),
-            name: map.remove("Name").map(|v| v.to_owned()),
-            duration: pop_field!(map, opt "Time").map(Duration::seconds),
-            range: pop_field!(map, opt "Range"),
-            place: {
-                if let (Some(id), Some(pos)) = (map.remove("Id"), map.remove("Pos")) {
-                    Some(QueuePlace {
-                        id: Id(try!(id.parse())),
-                        pos: try!(pos.parse()),
-                        prio: try!(map.remove("Prio").map(|v| v.parse()).unwrap_or(Ok(0)))
-                    })
-                } else {
-                    None
-                }
-            },
-            tags: map
-        })
+    fn from_iter(iter: I) -> Result<Song, Error> {
+        let mut result = Song::default();
+
+        for res in iter {
+            let line = try!(res);
+            match &*line.0 {
+                "file" => result.file = line.1.to_owned(),
+                "Last-Modified" => result.last_mod = try!(strptime(&*line.1, "%Y-%m-%dT%H:%M:%S%Z").map_err(ParseError::BadTime).map(Some)),
+                "Name" => result.name = Some(line.1.to_owned()),
+                "Time" => result.duration = Some(Duration::seconds(try!(line.1.parse()))),
+                "Range" => result.range = Some(try!(line.1.parse())),
+                "Id" => match result.place {
+                    None => result.place = Some(QueuePlace { id: Id(try!(line.1.parse())), pos: 0, prio: 0 }),
+                    Some(ref mut place) => place.id = Id(try!(line.1.parse())),
+                },
+                "Pos" => match result.place {
+                    None => result.place = Some(QueuePlace { pos: try!(line.1.parse()), id: Id(0), prio: 0 }),
+                    Some(ref mut place) => place.pos = try!(line.1.parse()),
+                },
+                "Prio" => match result.place {
+                    None => result.place = Some(QueuePlace { prio: try!(line.1.parse()), id: Id(0), pos: 0 }),
+                    Some(ref mut place) => place.prio = try!(line.1.parse()),
+                },
+                _ => { result.tags.insert(line.0, line.1); }
+            }
+        }
+
+        Ok(result)
     }
 }
 
