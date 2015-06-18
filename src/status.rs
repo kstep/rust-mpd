@@ -1,14 +1,12 @@
 //! The module defines MPD status data structures
 
-use std::collections::BTreeMap;
 use std::str::FromStr;
-use std::convert::From;
 use std::fmt;
 use time::Duration;
 
-use error::{Error, ProtoError, ParseError};
+use error::{Error, ParseError};
 use song::{Id, QueuePlace};
-use convert::{FromMap, FromIter};
+use convert::FromIter;
 
 /// MPD status
 #[derive(Debug, PartialEq, Clone, Default)]

@@ -76,9 +76,7 @@ impl<S: Read+Write> Client<S> {
             .and_then(|_| self.run_command("status"))
             .and_then(|_| self.run_command("replay_gain_status"))
             .and_then(|_| self.run_command("command_list_end"))
-            .and_then(|_| FromIter::from_iter(self.read_pairs()))
-            //.and_then(|_| self.read_map())
-            //.and_then(FromMap::from_map)
+            .and_then(|_| self.read_struct())
     }
 
     /// Get MPD playing statistics

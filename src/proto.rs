@@ -8,6 +8,7 @@ use bufstream::BufStream;
 
 use reply::Reply;
 use error::{Result, Error, ProtoError};
+use convert::FromIter;
 
 pub struct Pairs<I>(pub I);
 
@@ -92,6 +93,13 @@ pub trait Proto {
 
     fn read_map(&mut self) -> Result<BTreeMap<String, String>> {
         self.read_pairs().collect()
+    }
+
+    fn read_struct<'a, T>(&'a mut self) -> Result<T>
+        where T: 'a + FromIter<Pairs<Lines<&'a mut BufStream<Self::Stream>>>>,
+              Self::Stream: 'a
+    {
+        FromIter::from_iter(self.read_pairs())
     }
 
     fn drain(&mut self) -> Result<()> {
