@@ -82,8 +82,7 @@ impl<S: Read+Write> Client<S> {
     /// Get MPD playing statistics
     pub fn stats(&mut self) -> Result<Stats> {
         self.run_command("stats")
-            .and_then(|_| self.read_map())
-            .and_then(FromMap::from_map)
+            .and_then(|_| self.read_struct())
     }
 
     /// Clear error state

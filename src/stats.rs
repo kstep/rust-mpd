@@ -2,11 +2,8 @@
 
 use time::{Duration, Timespec};
 
-use std::collections::BTreeMap;
-use std::convert::From;
-
-use error::{Error, ProtoError};
-use convert::FromMap;
+use error::Error;
+use convert::FromIter;
 
 /// DB and playback statistics
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -27,17 +24,39 @@ pub struct Stats {
     pub db_update: Timespec,
 }
 
-impl FromMap for Stats {
-    /// build stats from map
-    fn from_map(map: BTreeMap<String, String>) -> Result<Stats, Error> {
-        Ok(Stats {
-            artists: get_field!(map, "artists"),
-            albums: get_field!(map, "albums"),
-            songs: get_field!(map, "songs"),
-            uptime: Duration::seconds(get_field!(map, "uptime")),
-            playtime: Duration::seconds(get_field!(map, "playtime")),
-            db_playtime: Duration::seconds(get_field!(map, "db_playtime")),
-            db_update: Timespec::new(get_field!(map, "db_update"), 0),
-        })
+impl Default for Stats {
+    fn default() -> Stats {
+        Stats {
+            artists: 0,
+            albums: 0,
+            songs: 0,
+            uptime: Duration::seconds(0),
+            playtime: Duration::seconds(0),
+            db_playtime: Duration::seconds(0),
+            db_update: Timespec::new(0, 0),
+        }
+    }
+}
+
+impl<I: Iterator<Item=Result<(String, String), Error>>> FromIter<I> for Stats {
+    /// build stats from iterator
+    fn from_iter(iter: I) -> Result<Stats, Error> {
+        let mut result = Stats::default();
+
+        for res in iter {
+            let line = try!(res);
+            match &*line.0 {
+                "artists" => result.artists = try!(line.1.parse()),
+                "albums" => result.albums = try!(line.1.parse()),
+                "songs" => result.songs = try!(line.1.parse()),
+                "uptime" => result.uptime = Duration::seconds(try!(line.1.parse())),
+                "playtime" => result.playtime = Duration::seconds(try!(line.1.parse())),
+                "db_playtime" => result.db_playtime = Duration::seconds(try!(line.1.parse())),
+                "db_update" => result.db_update = Timespec::new(try!(line.1.parse()), 0),
+                _ => ()
+            }
+        }
+
+        Ok(result)
     }
 }
