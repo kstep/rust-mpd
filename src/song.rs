@@ -10,7 +10,7 @@ use error::{Error, ParseError, ProtoError};
 use convert::FromMap;
 
 /// Song ID
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Default)]
 pub struct Id(pub u32);
 
 impl fmt::Display for Id {
@@ -20,7 +20,7 @@ impl fmt::Display for Id {
 }
 
 /// Song place in the queue
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub struct QueuePlace {
     /// song ID
     pub id: Id,

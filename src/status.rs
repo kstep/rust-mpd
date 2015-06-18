@@ -8,10 +8,10 @@ use time::Duration;
 
 use error::{Error, ProtoError, ParseError};
 use song::{Id, QueuePlace};
-use convert::FromMap;
+use convert::{FromMap, FromIter};
 
 /// MPD status
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Default)]
 pub struct Status {
     /// volume (0-100, or -1 if volume is unavailable (e.g. for HTTPD output type)
     pub volume: i8,
@@ -57,54 +57,63 @@ pub struct Status {
     pub replaygain: Option<ReplayGain>
 }
 
-impl FromMap for Status {
-    /// build status from map
-    fn from_map(map: BTreeMap<String, String>) -> Result<Status, Error> {
-        Ok(Status {
-            volume: get_field!(map, "volume"),
+impl<I: Iterator<Item=Result<(String, String), Error>>> FromIter<I> for Status {
+    fn from_iter(iter: I) -> Result<Status, Error> {
+        let mut result = Status::default();
 
-            repeat: get_field!(map, bool "repeat"),
-            random: get_field!(map, bool "random"),
-            single: get_field!(map, bool "single"),
-            consume: get_field!(map, bool "consume"),
+        for res in iter {
+            let line = try!(res);
+            match &*line.0 {
+                "volume" => result.volume = try!(line.1.parse()),
 
-            queue_version: get_field!(map, "playlist"),
-            queue_len: get_field!(map, "playlistlength"),
-            state: get_field!(map, "state"),
-            song: try!(map.get("song").map(|v| v.parse().map_err(ParseError::BadInteger)).and_then(|posres|
-                  map.get("songid").map(|v| v.parse().map_err(ParseError::BadInteger)).map(|idres|
-                    posres.and_then(|pos| idres.map(|id| Some(QueuePlace {
-                      id: Id(id),
-                      pos: pos,
-                      prio: 0
-                    }))))).unwrap_or(Ok(None))),
-            nextsong: try!(map.get("nextsong").map(|v| v.parse().map_err(ParseError::BadInteger)).and_then(|posres|
-                  map.get("nextsongid").map(|v| v.parse().map_err(ParseError::BadInteger)).map(|idres|
-                    posres.and_then(|pos| idres.map(|id| Some(QueuePlace {
-                      id: Id(id),
-                      pos: pos,
-                      prio: 0
-                    }))))).unwrap_or(Ok(None))),
-            time: try!(map.get("time").map(|time| {
-                let mut splits = time.splitn(2, ':').map(|v| v.parse().map_err(ParseError::BadInteger).map(Duration::seconds));
-                match (splits.next(), splits.next()) {
-                    (Some(Ok(a)), Some(Ok(b))) => Ok(Some((a, b))),
-                    (Some(Err(e)), _) | (_, Some(Err(e))) => Err(e),
-                    _ => Ok(None)
-                }
-            }).unwrap_or(Ok(None))),
-            // TODO: float errors don't work on stable
-            elapsed: map.get("elapsed").and_then(|f| f.parse::<f32>().ok()).map(|v| Duration::milliseconds((v * 1000.0) as i64)),
-            duration: get_field!(map, opt "duration").map(Duration::seconds),
-            bitrate: get_field!(map, opt "bitrate"),
-            crossfade: get_field!(map, opt "xfade").map(Duration::seconds),
-            mixrampdb: 0.0, //get_field!(map, "mixrampdb"),
-            mixrampdelay: None, //get_field!(map, opt "mixrampdelay").map(|v: f64| Duration::milliseconds((v * 1000.0) as i64)),
-            audio: get_field!(map, opt "audio"),
-            updating_db: get_field!(map, opt "updating_db"),
-            error: map.get("error").map(|v| v.to_owned()),
-            replaygain: get_field!(map, opt "replay_gain_mode"),
-        })
+                "repeat" => result.repeat = &*line.1 == "1",
+                "random" => result.random = &*line.1 == "1",
+                "single" => result.single = &*line.1 == "1",
+                "consume" => result.consume = &*line.1 == "1",
+
+                "playlist" => result.queue_version = try!(line.1.parse()),
+                "playlistlength" => result.queue_len = try!(line.1.parse()),
+                "state" => result.state = try!(line.1.parse()),
+                "songid" => match result.song {
+                    None => result.song = Some(QueuePlace { id: Id(try!(line.1.parse())), pos: 0, prio: 0 }),
+                    Some(ref mut place) => place.id = Id(try!(line.1.parse())),
+                },
+                "song" => match result.song {
+                    None => result.song = Some(QueuePlace { pos: try!(line.1.parse()), id: Id(0), prio: 0 }),
+                    Some(ref mut place) => place.pos = try!(line.1.parse()),
+                },
+                "nextsongid" => match result.nextsong {
+                    None => result.song = Some(QueuePlace { id: Id(try!(line.1.parse())), pos: 0, prio: 0 }),
+                    Some(ref mut place) => place.id = Id(try!(line.1.parse())),
+                },
+                "nextsong" => match result.nextsong {
+                    None => result.song = Some(QueuePlace { pos: try!(line.1.parse()), id: Id(0), prio: 0 }),
+                    Some(ref mut place) => place.pos = try!(line.1.parse()),
+                },
+                "time" => result.time = try!({
+                    let mut splits = line.1.splitn(2, ':').map(|v| v.parse().map_err(ParseError::BadInteger).map(Duration::seconds));
+                    match (splits.next(), splits.next()) {
+                        (Some(Ok(a)), Some(Ok(b))) => Ok(Some((a, b))),
+                        (Some(Err(e)), _) | (_, Some(Err(e))) => Err(e),
+                        _ => Ok(None)
+                    }
+                }),
+                // TODO" => float errors don't work on stable
+                "elapsed" => result.elapsed = line.1.parse::<f32>().ok().map(|v| Duration::seconds((v * 1000.0) as i64)),
+                "duration" => result.duration = Some(Duration::seconds(try!(line.1.parse()))),
+                "bitrate" => result.bitrate = Some(try!(line.1.parse())),
+                "xfade" => result.crossfade = Some(Duration::seconds(try!(line.1.parse()))),
+                //"mixrampdb" => 0.0, //get_field!(map, "mixrampdb"),
+                //"mixrampdelay" => None, //get_field!(map, opt "mixrampdelay").map(|v: f64| Duration::milliseconds((v * 1000.0) as i64)),
+                "audio" => result.audio = Some(try!(line.1.parse())),
+                "updating_db" => result.updating_db = Some(try!(line.1.parse())),
+                "error" => result.error = Some(line.1.to_owned()),
+                "replay_gain_mode" => result.replaygain = Some(try!(line.1.parse())),
+                _ => ()
+            }
+        }
+
+        Ok(result)
     }
 }
 
@@ -140,6 +149,12 @@ pub enum State {
     Play,
     /// player paused
     Pause
+}
+
+impl Default for State {
+    fn default() -> State {
+        State::Stop
+    }
 }
 
 impl FromStr for State {

@@ -15,6 +15,11 @@ pub trait FromMap {
     fn from_map(map: BTreeMap<String, String>) -> Result<Self, Error>;
 }
 
+#[doc(hidden)]
+pub trait FromIter<I: Iterator<Item=Result<(String, String), Error>>> {
+    fn from_iter(iter: I) -> Result<Self, Error>;
+}
+
 // Playlist name polymorphisms {{{
 pub trait ToPlaylistName {
     fn to_name(&self) -> &str;
