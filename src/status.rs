@@ -176,7 +176,7 @@ impl FromStr for AudioFormat {
 }
 
 /// Playback state
-#[derive(Debug, Copy, Clone, PartialEq, RustcEncodable)]
+#[derive(Debug, Copy, Clone, PartialEq, RustcEncodable, RustcDecodable)]
 pub enum State {
     /// player stopped
     Stop,
@@ -205,7 +205,7 @@ impl FromStr for State {
 }
 
 /// Replay gain mode
-#[derive(Debug, Clone, Copy, PartialEq, RustcEncodable)]
+#[derive(Debug, Clone, Copy, PartialEq, RustcEncodable, RustcDecodable)]
 pub enum ReplayGain {
     /// off
     Off,
