@@ -3,6 +3,7 @@
 use std::str::FromStr;
 use std::fmt;
 use time::Duration;
+use rustc_serialize::{Encodable, Encoder};
 
 use error::{Error, ParseError};
 use song::{Id, QueuePlace};
@@ -53,6 +54,42 @@ pub struct Status {
     pub error: Option<String>,
     /// replay gain mode
     pub replaygain: Option<ReplayGain>
+}
+
+impl Encodable for Status {
+    fn encode<S: Encoder>(&self, e: &mut S) -> Result<(), S::Error> {
+        e.emit_struct("Status", 21, |e|
+            e.emit_struct_field("volume", 0, |e| self.volume.encode(e)).and_then(|_|
+            e.emit_struct_field("repeat", 1, |e| self.repeat.encode(e))).and_then(|_|
+            e.emit_struct_field("random", 2, |e| self.random.encode(e))).and_then(|_|
+            e.emit_struct_field("single", 3, |e| self.single.encode(e))).and_then(|_|
+            e.emit_struct_field("consume", 4, |e| self.consume.encode(e))).and_then(|_|
+            e.emit_struct_field("queue_version", 5, |e| self.queue_version.encode(e))).and_then(|_|
+            e.emit_struct_field("queue_len", 6, |e| self.queue_len.encode(e))).and_then(|_|
+            e.emit_struct_field("state", 7, |e| self.state.encode(e))).and_then(|_|
+            e.emit_struct_field("song", 8, |e| self.song.encode(e))).and_then(|_|
+            e.emit_struct_field("nextsong", 9, |e| self.nextsong.encode(e))).and_then(|_|
+            e.emit_struct_field("time", 10, |e| e.emit_option(
+                    |e| self.time.map(|p| e.emit_option_some(|e| e.emit_tuple(2, |e|
+                                                                e.emit_tuple_arg(0, |e| p.0.num_seconds().encode(e)).and_then(|_|
+                                                                e.emit_tuple_arg(1, |e| p.1.num_seconds().encode(e)))
+                                                                ))).unwrap_or_else(|| e.emit_option_none())))).and_then(|_|
+            e.emit_struct_field("elapsed", 11, |e| e.emit_option(
+                    |e| self.elapsed.map(|d| e.emit_option_some(|e| d.num_seconds().encode(e))).unwrap_or_else(|| e.emit_option_none())))).and_then(|_|
+            e.emit_struct_field("duration", 12, |e| e.emit_option(
+                    |e| self.duration.map(|d| e.emit_option_some(|e| d.num_seconds().encode(e))).unwrap_or_else(|| e.emit_option_none())))).and_then(|_|
+            e.emit_struct_field("bitrate", 13, |e| self.bitrate.encode(e))).and_then(|_|
+            e.emit_struct_field("crossfade", 14, |e| e.emit_option(
+                    |e| self.crossfade.map(|d| e.emit_option_some(|e| d.num_seconds().encode(e))).unwrap_or_else(|| e.emit_option_none())))).and_then(|_|
+            e.emit_struct_field("mixrampdb", 15, |e| self.mixrampdb.encode(e))).and_then(|_|
+            e.emit_struct_field("mixrampdelay", 16, |e| e.emit_option(
+                    |e| self.mixrampdelay.map(|d| e.emit_option_some(|e| d.num_seconds().encode(e))).unwrap_or_else(|| e.emit_option_none())))).and_then(|_|
+            e.emit_struct_field("audio", 17, |e| self.audio.encode(e))).and_then(|_|
+            e.emit_struct_field("updating_db", 18, |e| self.updating_db.encode(e))).and_then(|_|
+            e.emit_struct_field("error", 19, |e| self.error.encode(e))).and_then(|_|
+            e.emit_struct_field("replaygain", 20,|e| self.replaygain.encode(e))))
+
+    }
 }
 
 impl FromIter for Status {
