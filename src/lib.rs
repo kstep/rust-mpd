@@ -58,7 +58,7 @@ pub mod client;
 pub use client::Client;
 pub use status::{Status, State, ReplayGain};
 pub use version::Version;
-pub use song::Song;
+pub use song::{Id, Song};
 pub use playlist::Playlist;
 pub use output::Output;
 pub use plugin::Plugin;

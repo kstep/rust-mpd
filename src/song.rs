@@ -1,7 +1,7 @@
 //! The module defines song structs and methods.
 
 use time::{strptime, Duration, Tm};
-use rustc_serialize::{Encodable, Encoder};
+use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -17,6 +17,12 @@ pub struct Id(pub u32);
 impl Encodable for Id {
     fn encode<S: Encoder>(&self, e: &mut S) -> Result<(), S::Error> {
         self.0.encode(e)
+    }
+}
+
+impl Decodable for Id {
+    fn decode<S: Decoder>(d: &mut S) -> Result<Id, S::Error> {
+        d.read_u32().map(Id)
     }
 }
 
