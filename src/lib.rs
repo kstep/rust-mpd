@@ -56,7 +56,7 @@ mod proto;
 pub mod client;
 
 pub use client::Client;
-pub use status::{Status, ReplayGain};
+pub use status::{Status, State, ReplayGain};
 pub use version::Version;
 pub use song::Song;
 pub use playlist::Playlist;
