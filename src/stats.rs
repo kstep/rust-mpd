@@ -38,9 +38,9 @@ impl Default for Stats {
     }
 }
 
-impl<I: Iterator<Item=Result<(String, String), Error>>> FromIter<I> for Stats {
+impl FromIter for Stats {
     /// build stats from iterator
-    fn from_iter(iter: I) -> Result<Stats, Error> {
+    fn from_iter<I: Iterator<Item=Result<(String, String), Error>>>(iter: I) -> Result<Stats, Error> {
         let mut result = Stats::default();
 
         for res in iter {

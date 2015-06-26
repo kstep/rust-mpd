@@ -26,9 +26,10 @@ use convert::*;
 use proto::*;
 
 // Client {{{
+
 /// Client connection
 #[derive(Debug)]
-pub struct Client<S=TcpStream> where S: Read+Write {
+pub struct Client<S=TcpStream> where S: Read + Write {
     socket: BufStream<S>,
     /// MPD version
     pub version: Version

@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use std::str::FromStr;
 use std::fmt;
 
-use error::{Error, ParseError, ProtoError};
+use error::{Error, ParseError};
 use convert::FromIter;
 
 /// Song ID
@@ -80,9 +80,9 @@ pub struct Song {
     pub tags: BTreeMap<String, String>,
 }
 
-impl<I: Iterator<Item=Result<(String, String), Error>>> FromIter<I> for Song {
+impl FromIter for Song {
     /// build song from map
-    fn from_iter(iter: I) -> Result<Song, Error> {
+    fn from_iter<I: Iterator<Item=Result<(String, String), Error>>>(iter: I) -> Result<Song, Error> {
         let mut result = Song::default();
 
         for res in iter {

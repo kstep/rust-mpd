@@ -95,10 +95,7 @@ pub trait Proto {
         self.read_pairs().collect()
     }
 
-    fn read_struct<'a, T>(&'a mut self) -> Result<T>
-        where T: 'a + FromIter<Pairs<Lines<&'a mut BufStream<Self::Stream>>>>,
-              Self::Stream: 'a
-    {
+    fn read_struct<'a, T>(&'a mut self) -> Result<T> where T: 'a + FromIter, Self::Stream: 'a {
         FromIter::from_iter(self.read_pairs())
     }
 

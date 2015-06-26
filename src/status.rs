@@ -55,8 +55,8 @@ pub struct Status {
     pub replaygain: Option<ReplayGain>
 }
 
-impl<I: Iterator<Item=Result<(String, String), Error>>> FromIter<I> for Status {
-    fn from_iter(iter: I) -> Result<Status, Error> {
+impl FromIter for Status {
+    fn from_iter<I: Iterator<Item=Result<(String, String), Error>>>(iter: I) -> Result<Status, Error> {
         let mut result = Status::default();
 
         for res in iter {
