@@ -1,6 +1,7 @@
 //! The module defines song structs and methods.
 
 use time::{strptime, Duration, Tm};
+use rustc_serialize::{Encodable, Encoder};
 
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -33,6 +34,14 @@ pub struct QueuePlace {
 /// Song range
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Range(pub Duration, pub Option<Duration>);
+
+impl Encodable for Range {
+    fn encode<S: Encoder>(&self, e: &mut S) -> Result<(), S::Error> {
+        e.emit_tuple(2, |e|
+            e.emit_tuple_arg(0, |e| e.emit_i64(self.0.num_seconds())).and_then(|_|
+            e.emit_tuple_arg(1, |e| e.emit_option(|e| self.1.map(|d| e.emit_option_some(|e| d.num_seconds().encode(e))).unwrap_or_else(|| e.emit_option_none())))))
+    }
+}
 
 impl Default for Range {
     fn default() -> Range {
@@ -78,6 +87,22 @@ pub struct Song {
     pub range: Option<Range>,
     /// arbitrary tags, like album, artist etc
     pub tags: BTreeMap<String, String>,
+}
+
+impl Encodable for Song {
+    fn encode<S: Encoder>(&self, e: &mut S) -> Result<(), S::Error> {
+        e.emit_struct("Song", 7, |e|
+            e.emit_struct_field("file", 0, |e| self.file.encode(e)).and_then(|_|
+            e.emit_struct_field("name", 1, |e| self.name.encode(e))).and_then(|_|
+            e.emit_struct_field("last_mod", 2, |e| e.emit_option(
+                    |e| self.last_mod.as_ref().map(|m| e.emit_option_some(|e| m.to_timespec().sec.encode(e))).unwrap_or_else(|| e.emit_option_none())))).and_then(|_|
+            e.emit_struct_field("duration", 3, |e| e.emit_option(
+                    |e| self.duration.as_ref().map(|d| e.emit_option_some(|e| d.num_seconds().encode(e))).unwrap_or_else(|| e.emit_option_none())
+                    ))).and_then(|_|
+            e.emit_struct_field("place", 4, |e| self.place.encode(e))).and_then(|_|
+            e.emit_struct_field("range", 5, |e| self.range.encode(e))).and_then(|_|
+            e.emit_struct_field("tags", 6, |e| self.tags.encode(e))))
+    }
 }
 
 impl FromIter for Song {
