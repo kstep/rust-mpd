@@ -1,7 +1,7 @@
 //! The module defines decoder plugin data structures
 
 /// Decoder plugin
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, RustcEncodable)]
 pub struct Plugin {
     /// name
     pub name: String,

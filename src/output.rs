@@ -7,7 +7,7 @@ use std::convert::From;
 use convert::FromMap;
 
 /// Sound output
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, RustcEncodable)]
 pub struct Output {
     /// id
     pub id: u32,

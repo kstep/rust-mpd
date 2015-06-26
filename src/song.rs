@@ -10,7 +10,7 @@ use error::{Error, ParseError};
 use convert::FromIter;
 
 /// Song ID
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Default)]
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Default, RustcEncodable)]
 pub struct Id(pub u32);
 
 impl fmt::Display for Id {
@@ -20,7 +20,7 @@ impl fmt::Display for Id {
 }
 
 /// Song place in the queue
-#[derive(Debug, Copy, Clone, PartialEq, Default)]
+#[derive(Debug, Copy, Clone, PartialEq, Default, RustcEncodable)]
 pub struct QueuePlace {
     /// song ID
     pub id: Id,

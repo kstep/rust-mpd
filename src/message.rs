@@ -16,7 +16,7 @@ use error::{Error, ProtoError};
 use convert::FromMap;
 
 /// Message
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, RustcEncodable)]
 pub struct Message {
     /// channel
     pub channel: Channel,
@@ -34,7 +34,7 @@ impl FromMap for Message {
 }
 
 /// Channel
-#[derive(Debug, PartialEq, PartialOrd, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Clone, RustcEncodable)]
 pub struct Channel(String);
 
 impl fmt::Display for Channel {

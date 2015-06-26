@@ -6,7 +6,7 @@ use error::ParseError;
 
 // Version {{{
 /// MPD version
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, RustcEncodable)]
 pub struct Version(pub u16, pub u16, pub u16);
 
 impl FromStr for Version {

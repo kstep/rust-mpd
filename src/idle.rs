@@ -36,7 +36,7 @@ use client::Client;
 use proto::Proto;
 
 /// Subsystems for `idle` command
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RustcEncodable)]
 pub enum Subsystem {
     /// database: the song database has been modified after update.
     Database,

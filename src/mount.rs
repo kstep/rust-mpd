@@ -15,7 +15,7 @@ use error::{Error, ProtoError};
 use convert::FromMap;
 
 /// Mount point
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, RustcEncodable)]
 pub struct Mount {
     /// mount point name
     pub name: String,
@@ -33,7 +33,7 @@ impl FromMap for Mount {
 }
 
 /// Neighbor
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, RustcEncodable)]
 pub struct Neighbor {
     /// neighbor name
     pub name: String,

@@ -116,7 +116,7 @@ impl FromIter for Status {
 }
 
 /// Audio playback format
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, RustcEncodable)]
 pub struct AudioFormat {
     /// sample rate, kbps
     pub rate: u32,
@@ -139,7 +139,7 @@ impl FromStr for AudioFormat {
 }
 
 /// Playback state
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, RustcEncodable)]
 pub enum State {
     /// player stopped
     Stop,
@@ -168,7 +168,7 @@ impl FromStr for State {
 }
 
 /// Replay gain mode
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, RustcEncodable)]
 pub enum ReplayGain {
     /// off
     Off,
