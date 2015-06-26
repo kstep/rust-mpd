@@ -11,8 +11,14 @@ use error::{Error, ParseError};
 use convert::FromIter;
 
 /// Song ID
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Default, RustcEncodable)]
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Default)]
 pub struct Id(pub u32);
+
+impl Encodable for Id {
+    fn encode<S: Encoder>(&self, e: &mut S) -> Result<(), S::Error> {
+        self.0.encode(e)
+    }
+}
 
 impl fmt::Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
