@@ -23,7 +23,7 @@ use std::result;
 
 // Server errors {{{
 /// Server error codes, as defined in [libmpdclient](http://www.musicpd.org/doc/libmpdclient/protocol_8h_source.html)
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, RustcEncodable)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum ErrorCode {
     /// not a list
     NotList = 1,
@@ -103,7 +103,7 @@ impl fmt::Display for ErrorCode {
 }
 
 /// Server error
-#[derive(Debug, Clone, PartialEq, RustcEncodable)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ServerError {
     /// server error code
     pub code: ErrorCode,
@@ -340,7 +340,7 @@ impl From<ParseFloatError> for ParseError {
 /// They usually occur when server violate expected command response format,
 /// like missing fields in answer to some command, missing closing `OK`
 /// line after data stream etc.
-#[derive(Debug, Clone, PartialEq, RustcEncodable)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ProtoError {
     /// `OK` was expected, but it was missing
     NotOk,
