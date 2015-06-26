@@ -118,11 +118,11 @@ impl FromIter for Status {
                     Some(ref mut place) => place.pos = try!(line.1.parse()),
                 },
                 "nextsongid" => match result.nextsong {
-                    None => result.song = Some(QueuePlace { id: Id(try!(line.1.parse())), pos: 0, prio: 0 }),
+                    None => result.nextsong = Some(QueuePlace { id: Id(try!(line.1.parse())), pos: 0, prio: 0 }),
                     Some(ref mut place) => place.id = Id(try!(line.1.parse())),
                 },
                 "nextsong" => match result.nextsong {
-                    None => result.song = Some(QueuePlace { pos: try!(line.1.parse()), id: Id(0), prio: 0 }),
+                    None => result.nextsong = Some(QueuePlace { pos: try!(line.1.parse()), id: Id(0), prio: 0 }),
                     Some(ref mut place) => place.pos = try!(line.1.parse()),
                 },
                 "time" => result.time = try!({
