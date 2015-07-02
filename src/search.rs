@@ -2,6 +2,10 @@
 // TODO: unfinished functionality
 
 use std::fmt;
+use std::io::{Read, Write};
+use std::borrow::Cow;
+use std::convert::Into;
+use client::Client;
 
 pub enum Term {
     Any,
@@ -13,10 +17,32 @@ pub enum Term {
 
 pub struct Clause(pub Term, pub String);
 
-pub struct Query {
-    pub clauses: Vec<Clause>,
-    pub group: Option<Vec<String>>,
-    pub window: Option<(u32, Option<u32>)>,
+pub struct Query<'a, S: 'a + Read + Write> {
+    client: &'a mut Client<S>,
+    clauses: Vec<Clause>,
+    groups: Option<Vec<String>>,
+    window: Option<(u32, Option<u32>)>,
+}
+
+impl<'a, S: 'a + Read + Write> Query<'a, S> {
+    pub fn new(client: &'a mut Client<S>) -> Query<'a, S> {
+        Query {
+            client: client,
+            clauses: Vec::new(),
+            groups: None,
+            window: None
+        }
+    }
+
+    pub fn and<V: Into<Cow<'a, str>>>(&'a mut self, term: Term, value: V) -> &'a mut Query<'a, S> {
+        self.clauses.push(Clause(term, value.into().into_owned()));
+        self
+    }
+
+    pub fn limit(&'a mut self, offset: u32, limit: u32) -> &'a mut Query<'a, S> {
+        self.window = Some((offset, Some(limit)));
+        self
+    }
 }
 
 impl fmt::Display for Term {
@@ -37,7 +63,7 @@ impl fmt::Display for Clause {
     }
 }
 
-impl fmt::Display for Query {
+impl<'a, S: 'a + Read + Write> fmt::Display for Query<'a, S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for clause in &self.clauses {
             try!(clause.fmt(f));

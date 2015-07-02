@@ -409,10 +409,9 @@ impl<S: Read+Write> Client<S> {
     // TODO: list type [filtertype] [filterwhat] [...] [group] [grouptype] [...]
     // TODO: searchaddpl name type what [...], readcomments
 
-    /// TODO: under construction
-    pub fn search(&mut self, query: Query) -> Result<Vec<Song>> {
-        self.run_command_fmt(format_args!("search {}", query))
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(FromMap::from_map)).collect())
+    /// Initiate query to songs database
+    pub fn search<'a>(&'a mut self) -> Query<'a, S> {
+        Query::new(self)
     }
     // }}}
 
