@@ -410,7 +410,7 @@ impl<S: Read+Write> Client<S> {
     // TODO: searchaddpl name type what [...], readcomments
 
     /// Initiate query to songs database
-    pub fn search<'a>(&'a mut self) -> Query<'a, S> {
+    pub fn query<'a>(&'a mut self) -> Query<'a, S> {
         Query::new(self)
     }
     // }}}

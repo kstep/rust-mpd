@@ -63,7 +63,7 @@ pub use playlist::Playlist;
 pub use output::Output;
 pub use plugin::Plugin;
 pub use stats::Stats;
-pub use search::{Term, Query, Clause};
+pub use search::{Term, Query};
 pub use message::{Message, Channel};
 pub use idle::{Idle, Subsystem};
 pub use mount::{Mount, Neighbor};

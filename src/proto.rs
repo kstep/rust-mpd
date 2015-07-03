@@ -29,7 +29,8 @@ struct Maps<'a, I: 'a> {
     pairs: &'a mut Pairs<I>,
     sep: &'a str,
     value: Option<String>,
-    done: bool
+    done: bool,
+    first: bool
 }
 
 impl<'a, I> Iterator for Maps<'a, I> where I: Iterator<Item=io::Result<String>> {
@@ -50,6 +51,10 @@ impl<'a, I> Iterator for Maps<'a, I> where I: Iterator<Item=io::Result<String>> 
                 Some(Ok((a, b))) => {
                     if &*a == self.sep {
                         self.value = Some(b);
+                        if self.first {
+                            self.first = false;
+                            return self.next();
+                        }
                         break;
                     } else {
                         map.insert(a, b);
@@ -74,8 +79,8 @@ impl<I> Pairs<I> where I: Iterator<Item=io::Result<String>> {
             sep: f,
             value: None,
             done: false,
+            first: true,
         };
-        maps.next(); // swallow first separator
         maps
     }
 }
