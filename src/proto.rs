@@ -72,7 +72,11 @@ impl<'a, I> Iterator for Maps<'a, I> where I: Iterator<Item = io::Result<String>
             }
         }
 
-        Some(Ok(map))
+        if map.is_empty() {
+            None
+        } else {
+            Some(Ok(map))
+        }
     }
 }
 
