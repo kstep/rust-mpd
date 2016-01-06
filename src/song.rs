@@ -89,6 +89,8 @@ pub struct Song {
     pub file: String,
     /// name (for streams)
     pub name: Option<String>,
+    /// title
+    pub title: Option<String>,
     /// last modification time
     pub last_mod: Option<Tm>,
     /// duration (in seconds resolution)
@@ -126,6 +128,7 @@ impl FromIter for Song {
             let line = try!(res);
             match &*line.0 {
                 "file" => result.file = line.1.to_owned(),
+                "Title" => result.title = Some(line.1.to_owned()),
                 "Last-Modified" => result.last_mod = try!(strptime(&*line.1, "%Y-%m-%dT%H:%M:%S%Z").map_err(ParseError::BadTime).map(Some)),
                 "Name" => result.name = Some(line.1.to_owned()),
                 "Time" => result.duration = Some(Duration::seconds(try!(line.1.parse()))),
