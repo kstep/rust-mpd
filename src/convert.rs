@@ -2,7 +2,7 @@
 //! These are inner traits to support methods overloading for the `Client`
 
 use std::collections::BTreeMap;
-use std::ops::{Range, RangeFrom, RangeTo, RangeFull};
+use std::ops::{Range, RangeFrom, RangeFull, RangeTo};
 
 use time::Duration;
 use output::Output;
@@ -17,7 +17,7 @@ pub trait FromMap : Sized {
 
 #[doc(hidden)]
 pub trait FromIter : Sized {
-    fn from_iter<I: Iterator<Item=Result<(String, String), Error>>>(iter: I) -> Result<Self, Error>;
+    fn from_iter<I: Iterator<Item = Result<(String, String), Error>>>(iter: I) -> Result<Self, Error>;
 }
 
 impl<T: FromIter> FromMap for T {
@@ -95,7 +95,9 @@ impl ToSeconds for Duration {
 // Queue place polymorphisms {{{
 
 pub trait IsId {
-    fn is_id() -> bool { false }
+    fn is_id() -> bool {
+        false
+    }
 }
 
 pub trait ToQueueRangeOrPlace : IsId {
@@ -280,4 +282,3 @@ impl ToSongRange for song::Range {
     }
 }
 // }}}
-

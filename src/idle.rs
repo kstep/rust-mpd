@@ -31,7 +31,7 @@ use std::str::FromStr;
 use std::io::{Read, Write};
 use std::mem::forget;
 
-use error::{ParseError, Error};
+use error::{Error, ParseError};
 use client::Client;
 use proto::Proto;
 
@@ -59,7 +59,7 @@ pub enum Subsystem {
     /// subscription: a client has subscribed or unsubscribed to a channel
     Subscription,
     /// message: a message was received on a channel this client is subscribed to; this event is only emitted when the queue is empty
-    Message
+    Message,
 }
 
 impl FromStr for Subsystem {
@@ -78,7 +78,7 @@ impl FromStr for Subsystem {
             "sticker" => Ok(Sticker),
             "subscription" => Ok(Subscription),
             "message" => Ok(Message),
-            _ => Err(ParseError::BadValue(s.to_owned()))
+            _ => Err(ParseError::BadValue(s.to_owned())),
         }
     }
 }
@@ -97,29 +97,33 @@ impl fmt::Display for Subsystem {
             Options => "options",
             Sticker => "sticker",
             Subscription => "subscription",
-            Message => "message"
+            Message => "message",
         })
     }
 }
 
 
 /// "Idle" mode guard enforcing MPD asynchronous events protocol
-pub struct IdleGuard<'a, S: 'a+Read+Write>(&'a mut Client<S>);
+pub struct IdleGuard<'a, S: 'a + Read + Write>(&'a mut Client<S>);
 
-impl<'a, S: 'a+Read+Write> IdleGuard<'a, S> {
+impl<'a, S: 'a + Read + Write> IdleGuard<'a, S> {
     /// Get list of subsystems with new events, interrupting idle mode in process
     pub fn get(self) -> Result<Vec<Subsystem>, Error> {
-        let result = self.0.read_pairs()
-            .filter(|r| r.as_ref()
-                    .map(|&(ref a, _)| *a == "changed").unwrap_or(true))
-            .map(|r| r.and_then(|(_, b)| b.parse().map_err(From::from)))
-            .collect();
+        let result = self.0
+                         .read_pairs()
+                         .filter(|r| {
+                             r.as_ref()
+                              .map(|&(ref a, _)| *a == "changed")
+                              .unwrap_or(true)
+                         })
+                         .map(|r| r.and_then(|(_, b)| b.parse().map_err(From::from)))
+                         .collect();
         forget(self);
         result
     }
 }
 
-impl<'a, S: 'a+Read+Write> Drop for IdleGuard<'a, S> {
+impl<'a, S: 'a + Read + Write> Drop for IdleGuard<'a, S> {
     fn drop(&mut self) {
         let _ = self.0.run_command("noidle").map(|_| self.0.drain());
     }
@@ -156,10 +160,13 @@ pub trait Idle {
     }
 }
 
-impl<S: Read+Write> Idle for Client<S> {
+impl<S: Read + Write> Idle for Client<S> {
     type Stream = S;
     fn idle<'a>(&'a mut self, subsystems: &[Subsystem]) -> Result<IdleGuard<'a, S>, Error> {
-        let subsystems = subsystems.iter().map(|v| v.to_string()).collect::<Vec<String>>().join(" ");
+        let subsystems = subsystems.iter()
+                                   .map(|v| v.to_string())
+                                   .collect::<Vec<String>>()
+                                   .join(" ");
         try!(self.run_command_fmt(format_args!("idle {}", subsystems)));
         Ok(IdleGuard(self))
     }

@@ -16,9 +16,8 @@ impl FromStr for Version {
         match (splits.next(), splits.next(), splits.next()) {
             (Some(Ok(a)), Some(Ok(b)), Some(Ok(c))) => Ok(Version(a, b, c)),
             (Some(Err(e)), _, _) | (_, Some(Err(e)), _) | (_, _, Some(Err(e))) => Err(ParseError::BadInteger(e)),
-            _ => Err(ParseError::BadVersion)
+            _ => Err(ParseError::BadVersion),
         }
     }
 }
 // }}}
-

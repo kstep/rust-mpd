@@ -16,19 +16,21 @@ pub enum Term<'a> {
     File,
     Base,
     LastMod,
-    Tag(Cow<'a, str>)
+    Tag(Cow<'a, str>),
 }
 
 pub struct Filter<'a> {
     typ: Term<'a>,
-    what: Cow<'a, str>
+    what: Cow<'a, str>,
 }
 
 impl<'a> Filter<'a> {
-    fn new<W>(typ: Term<'a>, what: W) -> Filter where W: 'a + Into<Cow<'a, str>> {
+    fn new<W>(typ: Term<'a>, what: W) -> Filter
+        where W: 'a + Into<Cow<'a, str>>
+    {
         Filter {
             typ: typ,
-            what: what.into()
+            what: what.into(),
         }
     }
 }
@@ -46,7 +48,7 @@ impl<'a, S: 'a + Read + Write> Query<'a, S> {
             client: client,
             filters: Vec::new(),
             groups: None,
-            window: None
+            window: None,
         }
     }
 
@@ -63,43 +65,35 @@ impl<'a, S: 'a + Read + Write> Query<'a, S> {
     pub fn group<'b: 'a, G: 'b + Into<Cow<'b, str>>>(&'a mut self, group: G) -> &'a mut Query<'a, S> {
         match self.groups {
             None => self.groups = Some(vec![group.into()]),
-            Some(ref mut groups) => groups.push(group.into())
+            Some(ref mut groups) => groups.push(group.into()),
         };
         self
     }
 
     pub fn find(mut self, fuzzy: bool, add: bool) -> Result<Vec<Song>> {
-        let cmd = if fuzzy {
-            if add {
-                "searchadd"
-            } else {
-                "search"
-            }
-        } else {
-            if add {
-                "findadd"
-            } else {
-                "find"
-            }
-        };
+        let cmd = if fuzzy { if add { "searchadd" } else { "search" } } else { if add { "findadd" } else { "find" } };
         let args = self.to_string();
 
-        self.client.run_command_fmt(format_args!("{} {}", cmd, args))
-            .and_then(|_| self.client
-                      .read_pairs()
-                      .split("file")
-                      .map(|v| v.and_then(FromMap::from_map))
-                      .collect())
+        self.client
+            .run_command_fmt(format_args!("{} {}", cmd, args))
+            .and_then(|_| {
+                self.client
+                    .read_pairs()
+                    .split("file")
+                    .map(|v| v.and_then(FromMap::from_map))
+                    .collect()
+            })
     }
 
     pub fn find_add<N: ToPlaylistName>(mut self, playlist: N) -> Result<()> {
         let args = self.to_string();
-        self.client.run_command_fmt(format_args!("searchaddpl {} {}", playlist.to_name(), args))
+        self.client
+            .run_command_fmt(format_args!("searchaddpl {} {}", playlist.to_name(), args))
             .and_then(|_| self.client.expect_ok())
     }
 
-    //pub fn list(mut self, ty: &str) -> Result<Vec<???>> {
-    //}
+    // pub fn list(mut self, ty: &str) -> Result<Vec<???>> {
+    // }
 }
 
 impl<'a> fmt::Display for Term<'a> {
@@ -109,7 +103,7 @@ impl<'a> fmt::Display for Term<'a> {
             Term::File => f.write_str("file"),
             Term::Base => f.write_str("base"),
             Term::LastMod => f.write_str("modified-since"),
-            Term::Tag(ref tag) => f.write_str(&*tag)
+            Term::Tag(ref tag) => f.write_str(&*tag),
         }
     }
 }
@@ -134,7 +128,7 @@ impl<'a, S: 'a + Read + Write> fmt::Display for Query<'a, S> {
 
         match self.window {
             Some((a, b)) => write!(f, " window {}:{}", a, b),
-            None => Ok(())
+            None => Ok(()),
         }
     }
 }

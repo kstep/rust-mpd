@@ -56,14 +56,14 @@ mod proto;
 pub mod client;
 
 pub use client::Client;
-pub use status::{Status, State, ReplayGain};
+pub use status::{ReplayGain, State, Status};
 pub use version::Version;
 pub use song::{Id, Song};
 pub use playlist::Playlist;
 pub use output::Output;
 pub use plugin::Plugin;
 pub use stats::Stats;
-pub use search::{Term, Query};
-pub use message::{Message, Channel};
+pub use search::{Query, Term};
+pub use message::{Channel, Message};
 pub use idle::{Idle, Subsystem};
 pub use mount::{Mount, Neighbor};

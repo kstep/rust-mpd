@@ -18,7 +18,7 @@ use std::io::Error as IoError;
 use std::error::Error as StdError;
 use std::str::FromStr;
 use std::fmt;
-use std::num::{ParseIntError, ParseFloatError};
+use std::num::{ParseFloatError, ParseIntError};
 use std::result;
 
 // Server errors {{{
@@ -112,7 +112,7 @@ pub struct ServerError {
     /// command name, which caused the error
     pub command: String,
     /// detailed error description
-    pub detail: String
+    pub detail: String,
 }
 
 impl fmt::Display for ServerError {
@@ -144,7 +144,7 @@ impl FromStr for ServerError {
                                 code: code,
                                 pos: pos,
                                 command: command,
-                                detail: detail
+                                detail: detail,
                             })
                         } else {
                             Err(ParseError::NoMessage)
@@ -174,7 +174,7 @@ pub enum Error {
     /// protocol errors (e.g. missing required fields in server response, no handshake message etc.)
     Proto(ProtoError),
     /// server errors (a.k.a. `ACK` responses from server)
-    Server(ServerError)
+    Server(ServerError),
 }
 
 /// Shortcut type for MPD results
@@ -211,26 +211,40 @@ impl fmt::Display for Error {
 }
 
 impl From<IoError> for Error {
-    fn from(e: IoError) -> Error { Error::Io(e) }
+    fn from(e: IoError) -> Error {
+        Error::Io(e)
+    }
 }
 impl From<ParseError> for Error {
-    fn from(e: ParseError) -> Error { Error::Parse(e) }
+    fn from(e: ParseError) -> Error {
+        Error::Parse(e)
+    }
 }
 impl From<ProtoError> for Error {
-    fn from(e: ProtoError) -> Error { Error::Proto(e) }
+    fn from(e: ProtoError) -> Error {
+        Error::Proto(e)
+    }
 }
 impl From<ParseIntError> for Error {
-    fn from(e: ParseIntError) -> Error { Error::Parse(ParseError::BadInteger(e)) }
+    fn from(e: ParseIntError) -> Error {
+        Error::Parse(ParseError::BadInteger(e))
+    }
 }
 impl From<ParseFloatError> for Error {
-    fn from(e: ParseFloatError) -> Error { Error::Parse(ParseError::BadFloat(e)) }
+    fn from(e: ParseFloatError) -> Error {
+        Error::Parse(ParseError::BadFloat(e))
+    }
 }
 impl From<TimeParseError> for Error {
-    fn from(e: TimeParseError) -> Error { Error::Parse(ParseError::BadTime(e)) }
+    fn from(e: TimeParseError) -> Error {
+        Error::Parse(ParseError::BadTime(e))
+    }
 }
 
 impl From<ServerError> for Error {
-    fn from(e: ServerError) -> Error { Error::Server(e) }
+    fn from(e: ServerError) -> Error {
+        Error::Server(e)
+    }
 }
 // }}}
 
@@ -278,8 +292,7 @@ pub enum ParseError {
     /// unknown state in state status field
     BadState(String),
     /// unknown error code in `ACK` response
-    BadErrorCode(usize)
-
+    BadErrorCode(usize),
 }
 
 impl fmt::Display for ParseError {
@@ -349,7 +362,7 @@ pub enum ProtoError {
     /// invalid handshake banner received
     BadBanner,
     /// expected some field, but it was missing
-    NoField(&'static str)
+    NoField(&'static str),
 }
 
 impl fmt::Display for ProtoError {
@@ -368,5 +381,4 @@ impl StdError for ProtoError {
         }
     }
 }
-//}}}
-
+// }}}

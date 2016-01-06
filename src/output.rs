@@ -14,15 +14,17 @@ pub struct Output {
     /// name
     pub name: String,
     /// enabled state
-    pub enabled: bool
+    pub enabled: bool,
 }
 
 impl FromMap for Output {
     fn from_map(map: BTreeMap<String, String>) -> Result<Output, Error> {
         Ok(Output {
             id: get_field!(map, "outputid"),
-            name: try!(map.get("outputname").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("outputname")))),
-            enabled: get_field!(map, bool "outputenabled")
+            name: try!(map.get("outputname")
+                          .map(|v| v.to_owned())
+                          .ok_or(Error::Proto(ProtoError::NoField("outputname")))),
+            enabled: get_field!(map, bool "outputenabled"),
         })
     }
 }

@@ -4,17 +4,17 @@
 //!
 //! [proto]: http://www.musicpd.org/doc/protocol/
 
-use std::io::{Read, Write, BufRead, Lines};
+use std::io::{BufRead, Lines, Read, Write};
 use std::convert::From;
 use std::fmt::Arguments;
 use std::net::{TcpStream, ToSocketAddrs};
 
 use bufstream::BufStream;
 use version::Version;
-use error::{ProtoError, Error, Result};
-use status::{Status, ReplayGain};
+use error::{Error, ProtoError, Result};
+use status::{ReplayGain, Status};
 use stats::Stats;
-use song::{Song, Id};
+use song::{Id, Song};
 use output::Output;
 use playlist::Playlist;
 use plugin::Plugin;
@@ -29,10 +29,12 @@ use proto::*;
 
 /// Client connection
 #[derive(Debug)]
-pub struct Client<S=TcpStream> where S: Read + Write {
+pub struct Client<S = TcpStream>
+    where S: Read + Write
+{
     socket: BufStream<S>,
     /// MPD version
-    pub version: Version
+    pub version: Version,
 }
 
 impl Default for Client<TcpStream> {
@@ -48,7 +50,7 @@ impl Client<TcpStream> {
     }
 }
 
-impl<S: Read+Write> Client<S> {
+impl<S: Read + Write> Client<S> {
     // Constructors {{{
     /// Create client from some arbitrary pre-connected socket
     pub fn new(socket: S) -> Result<Client<S>> {
@@ -65,7 +67,7 @@ impl<S: Read+Write> Client<S> {
 
         Ok(Client {
             socket: socket,
-            version: version
+            version: version,
         })
     }
     // }}}
@@ -231,22 +233,26 @@ impl<S: Read+Write> Client<S> {
     pub fn push<P: AsRef<str>>(&mut self, path: P) -> Result<Id> {
         self.run_command_fmt(format_args!("addid \"{}\"", path.as_ref()))
             .and_then(|_| self.read_field("Id"))
-            .and_then(|v| self.expect_ok()
-                      .and_then(|_| v.parse().map_err(From::from).map(Id)))
+            .and_then(|v| {
+                self.expect_ok()
+                    .and_then(|_| v.parse().map_err(From::from).map(Id))
+            })
     }
 
     /// Insert a song into a given position in a queue
     pub fn insert<P: AsRef<str>>(&mut self, path: P, pos: usize) -> Result<usize> {
         self.run_command_fmt(format_args!("addid \"{}\" {}", path.as_ref(), pos))
             .and_then(|_| self.read_field("Id"))
-            .and_then(|v| self.expect_ok()
-                      .and_then(|_| v.parse().map_err(From::from)))
+            .and_then(|v| {
+                self.expect_ok()
+                    .and_then(|_| v.parse().map_err(From::from))
+            })
     }
 
     /// Delete a song (at some position) or several songs (in a range) from a queue
     pub fn delete<T: ToQueueRangeOrPlace>(&mut self, pos: T) -> Result<()> {
-            self.run_command_fmt(format_args!("delete{} {}", if T::is_id() { "id" } else { "" }, pos.to_range()))
-                .and_then(|_| self.expect_ok())
+        self.run_command_fmt(format_args!("delete{} {}", if T::is_id() { "id" } else { "" }, pos.to_range()))
+            .and_then(|_| self.expect_ok())
     }
 
     /// Move a song (at a some position) or several songs (in a range) to other position in queue
@@ -312,7 +318,8 @@ impl<S: Read+Write> Client<S> {
 
     /// Login to MPD server with given password
     pub fn login(&mut self, password: &str) -> Result<()> {
-        self.run_command_fmt(format_args!("password \"{}\"", password)).and_then(|_| self.expect_ok())
+        self.run_command_fmt(format_args!("password \"{}\"", password))
+            .and_then(|_| self.expect_ok())
     }
     // }}}
 
@@ -389,16 +396,20 @@ impl<S: Read+Write> Client<S> {
     pub fn rescan(&mut self) -> Result<u32> {
         self.run_command("rescan")
             .and_then(|_| self.read_field("updating_db"))
-            .and_then(|v| self.expect_ok()
-                      .and_then(|_| v.parse().map_err(From::from)))
+            .and_then(|v| {
+                self.expect_ok()
+                    .and_then(|_| v.parse().map_err(From::from))
+            })
     }
 
     /// Run database update, i.e. remove non-existing files from DB
     pub fn update(&mut self) -> Result<u32> {
         self.run_command("update")
             .and_then(|_| self.read_field("updating_db"))
-            .and_then(|v| self.expect_ok()
-                      .and_then(|_| v.parse().map_err(From::from)))
+            .and_then(|v| {
+                self.expect_ok()
+                    .and_then(|_| v.parse().map_err(From::from))
+            })
     }
     // }}}
 
@@ -457,41 +468,61 @@ impl<S: Read+Write> Client<S> {
     /// List all available commands
     pub fn commands(&mut self) -> Result<Vec<String>> {
         self.run_command("commands")
-            .and_then(|_| self.read_pairs()
-                      .filter(|r| r.as_ref()
-                              .map(|&(ref a, _)| *a == "command").unwrap_or(true))
-                      .map(|r| r.map(|(_, b)| b))
-                      .collect())
+            .and_then(|_| {
+                self.read_pairs()
+                    .filter(|r| {
+                        r.as_ref()
+                         .map(|&(ref a, _)| *a == "command")
+                         .unwrap_or(true)
+                    })
+                    .map(|r| r.map(|(_, b)| b))
+                    .collect()
+            })
     }
 
     /// List all forbidden commands
     pub fn notcommands(&mut self) -> Result<Vec<String>> {
         self.run_command("notcommands")
-            .and_then(|_| self.read_pairs()
-                      .filter(|r| r.as_ref()
-                              .map(|&(ref a, _)| *a == "command").unwrap_or(true))
-                      .map(|r| r.map(|(_, b)| b))
-                      .collect())
+            .and_then(|_| {
+                self.read_pairs()
+                    .filter(|r| {
+                        r.as_ref()
+                         .map(|&(ref a, _)| *a == "command")
+                         .unwrap_or(true)
+                    })
+                    .map(|r| r.map(|(_, b)| b))
+                    .collect()
+            })
     }
 
     /// List all available URL handlers
     pub fn urlhandlers(&mut self) -> Result<Vec<String>> {
         self.run_command("urlhandlers")
-            .and_then(|_| self.read_pairs()
-                      .filter(|r| r.as_ref()
-                              .map(|&(ref a, _)| *a == "handler").unwrap_or(true))
-                      .map(|r| r.map(|(_, b)| b))
-                      .collect())
+            .and_then(|_| {
+                self.read_pairs()
+                    .filter(|r| {
+                        r.as_ref()
+                         .map(|&(ref a, _)| *a == "handler")
+                         .unwrap_or(true)
+                    })
+                    .map(|r| r.map(|(_, b)| b))
+                    .collect()
+            })
     }
 
     /// List all supported tag types
     pub fn tagtypes(&mut self) -> Result<Vec<String>> {
         self.run_command("tagtypes")
-            .and_then(|_| self.read_pairs()
-                      .filter(|r| r.as_ref()
-                              .map(|&(ref a, _)| *a == "tagtype").unwrap_or(true))
-                      .map(|r| r.map(|(_, b)| b))
-                      .collect())
+            .and_then(|_| {
+                self.read_pairs()
+                    .filter(|r| {
+                        r.as_ref()
+                         .map(|&(ref a, _)| *a == "tagtype")
+                         .unwrap_or(true)
+                    })
+                    .map(|r| r.map(|(_, b)| b))
+                    .collect()
+            })
     }
 
     /// List all available decoder plugins
@@ -509,12 +540,16 @@ impl<S: Read+Write> Client<S> {
                     plugin = Some(Plugin {
                         name: b,
                         suffixes: Vec::new(),
-                        mime_types: Vec::new()
+                        mime_types: Vec::new(),
                     });
-                },
-                "mime_type" => { plugin.as_mut().map(|p| p.mime_types.push(b)); }
-                "suffix" => { plugin.as_mut().map(|p| p.suffixes.push(b)); }
-                _ => unreachable!()
+                }
+                "mime_type" => {
+                    plugin.as_mut().map(|p| p.mime_types.push(b));
+                }
+                "suffix" => {
+                    plugin.as_mut().map(|p| p.suffixes.push(b));
+                }
+                _ => unreachable!(),
             }
         }
         plugin.map(|p| result.push(p));
@@ -526,11 +561,16 @@ impl<S: Read+Write> Client<S> {
     /// List all channels available for current connection
     pub fn channels(&mut self) -> Result<Vec<Channel>> {
         self.run_command("channels")
-            .and_then(|_| self.read_pairs()
-                      .filter(|r| r.as_ref()
-                              .map(|&(ref a, _)| *a == "channel").unwrap_or(true))
-                      .map(|r| r.map(|(_, b)| unsafe { Channel::new_unchecked(b) }))
-                      .collect())
+            .and_then(|_| {
+                self.read_pairs()
+                    .filter(|r| {
+                        r.as_ref()
+                         .map(|&(ref a, _)| *a == "channel")
+                         .unwrap_or(true)
+                    })
+                    .map(|r| r.map(|(_, b)| unsafe { Channel::new_unchecked(b) }))
+                    .collect()
+            })
     }
 
     /// Read queued messages from subscribed channels
@@ -619,39 +659,57 @@ impl<S: Read+Write> Client<S> {
     /// List all stickers from a given object, identified by type and uri
     pub fn stickers(&mut self, typ: &str, uri: &str) -> Result<Vec<String>> {
         self.run_command_fmt(format_args!("sticker list {} \"{}\"", typ, uri))
-            .and_then(|_| self.read_pairs()
-                      .filter(|r| r.as_ref()
-                              .map(|&(ref a, _)| *a == "sticker").unwrap_or(true))
-                      .map(|r| r.map(|(_, b)| b.splitn(2, "=").nth(1).map(|s| s.to_owned()).unwrap()))
-                      .collect())
+            .and_then(|_| {
+                self.read_pairs()
+                    .filter(|r| {
+                        r.as_ref()
+                         .map(|&(ref a, _)| *a == "sticker")
+                         .unwrap_or(true)
+                    })
+                    .map(|r| r.map(|(_, b)| b.splitn(2, "=").nth(1).map(|s| s.to_owned()).unwrap()))
+                    .collect()
+            })
     }
 
     /// List all (file, sticker) pairs for sticker name and objects of given type
     /// from given directory (identified by uri)
     pub fn find_sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<Vec<(String, String)>> {
         self.run_command_fmt(format_args!("sticker find {} \"{}\" {}", typ, uri, name))
-            .and_then(|_| self.read_pairs().split("file").map(|rmap| rmap.map(|mut map|
-                        (map.remove("file").unwrap(),
-                         map.remove("sticker").and_then(|s| s.splitn(2, "=").nth(1).map(|s| s.to_owned())).unwrap())))
-                      .collect())
+            .and_then(|_| {
+                self.read_pairs()
+                    .split("file")
+                    .map(|rmap| {
+                        rmap.map(|mut map| {
+                            (map.remove("file").unwrap(),
+                             map.remove("sticker")
+                                .and_then(|s| s.splitn(2, "=").nth(1).map(|s| s.to_owned()))
+                                .unwrap())
+                        })
+                    })
+                    .collect()
+            })
     }
 
     /// List all files of a given type under given directory (identified by uri)
     /// with a tag set to given value
     pub fn find_sticker_eq(&mut self, typ: &str, uri: &str, name: &str, value: &str) -> Result<Vec<String>> {
         self.run_command_fmt(format_args!("sticker find {} \"{}\" {} = \"{}\"", typ, uri, name, value))
-            .and_then(|_| self.read_pairs()
-                      .filter(|r| r.as_ref()
-                              .map(|&(ref a, _)| *a == "file").unwrap_or(true))
-                      .map(|r| r.map(|(_, b)| b))
-                      .collect())
+            .and_then(|_| {
+                self.read_pairs()
+                    .filter(|r| {
+                        r.as_ref()
+                         .map(|&(ref a, _)| *a == "file")
+                         .unwrap_or(true)
+                    })
+                    .map(|r| r.map(|(_, b)| b))
+                    .collect()
+            })
     }
     // }}}
-
 }
 
 // Helper methods {{{
-impl<S: Read+Write> Proto for Client<S> {
+impl<S: Read + Write> Proto for Client<S> {
     type Stream = S;
 
     fn read_line(&mut self) -> Result<String> {
@@ -668,14 +726,16 @@ impl<S: Read+Write> Proto for Client<S> {
     }
 
     fn run_command(&mut self, command: &str) -> Result<()> {
-        self.socket.write_all(command.as_bytes())
+        self.socket
+            .write_all(command.as_bytes())
             .and_then(|_| self.socket.write(&[0x0a]))
             .and_then(|_| self.socket.flush())
             .map_err(From::from)
     }
 
     fn run_command_fmt(&mut self, command: Arguments) -> Result<()> {
-        self.socket.write_fmt(command)
+        self.socket
+            .write_fmt(command)
             .and_then(|_| self.socket.write(&[0x0a]))
             .and_then(|_| self.socket.flush())
             .map_err(From::from)
@@ -684,4 +744,3 @@ impl<S: Read+Write> Proto for Client<S> {
 // }}}
 
 // }}}
-

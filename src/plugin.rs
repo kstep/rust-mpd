@@ -8,5 +8,5 @@ pub struct Plugin {
     /// supported file suffixes (extensions)
     pub suffixes: Vec<String>,
     /// supported MIME-types
-    pub mime_types: Vec<String>
+    pub mime_types: Vec<String>,
 }

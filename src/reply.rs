@@ -15,7 +15,7 @@ pub enum Reply {
     /// `ACK` reply (server error)
     Ack(ServerError),
     /// a data pair reply (in `field: value` format)
-    Pair(String, String)
+    Pair(String, String),
 }
 
 impl FromStr for Reply {
@@ -30,7 +30,7 @@ impl FromStr for Reply {
                 let mut splits = s.splitn(2, ':');
                 match (splits.next(), splits.next()) {
                     (Some(a), Some(b)) => Ok(Reply::Pair(a.to_owned(), b.trim().to_owned())),
-                    _ => Err(ParseError::BadPair)
+                    _ => Err(ParseError::BadPair),
                 }
             }
         }

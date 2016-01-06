@@ -27,15 +27,15 @@ pub struct Stats {
 
 impl Encodable for Stats {
     fn encode<S: Encoder>(&self, e: &mut S) -> Result<(), S::Error> {
-        e.emit_struct("Stats", 7, |e|
-            e.emit_struct_field("artists", 0, |e| self.artists.encode(e)).and_then(|_|
-            e.emit_struct_field("albums", 1, |e| self.albums.encode(e))).and_then(|_|
-            e.emit_struct_field("songs", 2, |e| self.songs.encode(e))).and_then(|_|
-
-            e.emit_struct_field("uptime", 3, |e| self.uptime.num_seconds().encode(e))).and_then(|_|
-            e.emit_struct_field("playtime", 4, |e| self.playtime.num_seconds().encode(e))).and_then(|_|
-            e.emit_struct_field("db_playtime", 5, |e| self.db_playtime.num_seconds().encode(e))).and_then(|_|
-            e.emit_struct_field("db_update", 6, |e| self.db_update.sec.encode(e))))
+        e.emit_struct("Stats", 7, |e| {
+            e.emit_struct_field("artists", 0, |e| self.artists.encode(e))
+             .and_then(|_| e.emit_struct_field("albums", 1, |e| self.albums.encode(e)))
+             .and_then(|_| e.emit_struct_field("songs", 2, |e| self.songs.encode(e)))
+             .and_then(|_| e.emit_struct_field("uptime", 3, |e| self.uptime.num_seconds().encode(e)))
+             .and_then(|_| e.emit_struct_field("playtime", 4, |e| self.playtime.num_seconds().encode(e)))
+             .and_then(|_| e.emit_struct_field("db_playtime", 5, |e| self.db_playtime.num_seconds().encode(e)))
+             .and_then(|_| e.emit_struct_field("db_update", 6, |e| self.db_update.sec.encode(e)))
+        })
     }
 }
 
@@ -55,7 +55,7 @@ impl Default for Stats {
 
 impl FromIter for Stats {
     /// build stats from iterator
-    fn from_iter<I: Iterator<Item=Result<(String, String), Error>>>(iter: I) -> Result<Stats, Error> {
+    fn from_iter<I: Iterator<Item = Result<(String, String), Error>>>(iter: I) -> Result<Stats, Error> {
         let mut result = Stats::default();
 
         for res in iter {
@@ -68,7 +68,7 @@ impl FromIter for Stats {
                 "playtime" => result.playtime = Duration::seconds(try!(line.1.parse())),
                 "db_playtime" => result.db_playtime = Duration::seconds(try!(line.1.parse())),
                 "db_update" => result.db_update = Timespec::new(try!(line.1.parse()), 0),
-                _ => ()
+                _ => (),
             }
         }
 

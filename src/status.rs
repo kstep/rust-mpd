@@ -53,47 +53,87 @@ pub struct Status {
     /// last player error (if happened, can be reset with `clearerror()` method)
     pub error: Option<String>,
     /// replay gain mode
-    pub replaygain: Option<ReplayGain>
+    pub replaygain: Option<ReplayGain>,
 }
 
 impl Encodable for Status {
     fn encode<S: Encoder>(&self, e: &mut S) -> Result<(), S::Error> {
-        e.emit_struct("Status", 21, |e|
-            e.emit_struct_field("volume", 0, |e| self.volume.encode(e)).and_then(|_|
-            e.emit_struct_field("repeat", 1, |e| self.repeat.encode(e))).and_then(|_|
-            e.emit_struct_field("random", 2, |e| self.random.encode(e))).and_then(|_|
-            e.emit_struct_field("single", 3, |e| self.single.encode(e))).and_then(|_|
-            e.emit_struct_field("consume", 4, |e| self.consume.encode(e))).and_then(|_|
-            e.emit_struct_field("queue_version", 5, |e| self.queue_version.encode(e))).and_then(|_|
-            e.emit_struct_field("queue_len", 6, |e| self.queue_len.encode(e))).and_then(|_|
-            e.emit_struct_field("state", 7, |e| self.state.encode(e))).and_then(|_|
-            e.emit_struct_field("song", 8, |e| self.song.encode(e))).and_then(|_|
-            e.emit_struct_field("nextsong", 9, |e| self.nextsong.encode(e))).and_then(|_|
-            e.emit_struct_field("time", 10, |e| e.emit_option(
-                    |e| self.time.map(|p| e.emit_option_some(|e| e.emit_tuple(2, |e|
-                                                                e.emit_tuple_arg(0, |e| p.0.num_seconds().encode(e)).and_then(|_|
-                                                                e.emit_tuple_arg(1, |e| p.1.num_seconds().encode(e)))
-                                                                ))).unwrap_or_else(|| e.emit_option_none())))).and_then(|_|
-            e.emit_struct_field("elapsed", 11, |e| e.emit_option(
-                    |e| self.elapsed.map(|d| e.emit_option_some(|e| d.num_seconds().encode(e))).unwrap_or_else(|| e.emit_option_none())))).and_then(|_|
-            e.emit_struct_field("duration", 12, |e| e.emit_option(
-                    |e| self.duration.map(|d| e.emit_option_some(|e| d.num_seconds().encode(e))).unwrap_or_else(|| e.emit_option_none())))).and_then(|_|
-            e.emit_struct_field("bitrate", 13, |e| self.bitrate.encode(e))).and_then(|_|
-            e.emit_struct_field("crossfade", 14, |e| e.emit_option(
-                    |e| self.crossfade.map(|d| e.emit_option_some(|e| d.num_seconds().encode(e))).unwrap_or_else(|| e.emit_option_none())))).and_then(|_|
-            e.emit_struct_field("mixrampdb", 15, |e| self.mixrampdb.encode(e))).and_then(|_|
-            e.emit_struct_field("mixrampdelay", 16, |e| e.emit_option(
-                    |e| self.mixrampdelay.map(|d| e.emit_option_some(|e| d.num_seconds().encode(e))).unwrap_or_else(|| e.emit_option_none())))).and_then(|_|
-            e.emit_struct_field("audio", 17, |e| self.audio.encode(e))).and_then(|_|
-            e.emit_struct_field("updating_db", 18, |e| self.updating_db.encode(e))).and_then(|_|
-            e.emit_struct_field("error", 19, |e| self.error.encode(e))).and_then(|_|
-            e.emit_struct_field("replaygain", 20,|e| self.replaygain.encode(e))))
+        e.emit_struct("Status", 21, |e| {
+            e.emit_struct_field("volume", 0, |e| self.volume.encode(e))
+             .and_then(|_| e.emit_struct_field("repeat", 1, |e| self.repeat.encode(e)))
+             .and_then(|_| e.emit_struct_field("random", 2, |e| self.random.encode(e)))
+             .and_then(|_| e.emit_struct_field("single", 3, |e| self.single.encode(e)))
+             .and_then(|_| e.emit_struct_field("consume", 4, |e| self.consume.encode(e)))
+             .and_then(|_| e.emit_struct_field("queue_version", 5, |e| self.queue_version.encode(e)))
+             .and_then(|_| e.emit_struct_field("queue_len", 6, |e| self.queue_len.encode(e)))
+             .and_then(|_| e.emit_struct_field("state", 7, |e| self.state.encode(e)))
+             .and_then(|_| e.emit_struct_field("song", 8, |e| self.song.encode(e)))
+             .and_then(|_| e.emit_struct_field("nextsong", 9, |e| self.nextsong.encode(e)))
+             .and_then(|_| {
+                 e.emit_struct_field("time", 10, |e| {
+                     e.emit_option(|e| {
+                         self.time
+                             .map(|p| {
+                                 e.emit_option_some(|e| {
+                                     e.emit_tuple(2, |e| {
+                                         e.emit_tuple_arg(0, |e| p.0.num_seconds().encode(e))
+                                          .and_then(|_| e.emit_tuple_arg(1, |e| p.1.num_seconds().encode(e)))
+                                     })
+                                 })
+                             })
+                             .unwrap_or_else(|| e.emit_option_none())
+                     })
+                 })
+             })
+             .and_then(|_| {
+                 e.emit_struct_field("elapsed", 11, |e| {
+                     e.emit_option(|e| {
+                         self.elapsed
+                             .map(|d| e.emit_option_some(|e| d.num_seconds().encode(e)))
+                             .unwrap_or_else(|| e.emit_option_none())
+                     })
+                 })
+             })
+             .and_then(|_| {
+                 e.emit_struct_field("duration", 12, |e| {
+                     e.emit_option(|e| {
+                         self.duration
+                             .map(|d| e.emit_option_some(|e| d.num_seconds().encode(e)))
+                             .unwrap_or_else(|| e.emit_option_none())
+                     })
+                 })
+             })
+             .and_then(|_| e.emit_struct_field("bitrate", 13, |e| self.bitrate.encode(e)))
+             .and_then(|_| {
+                 e.emit_struct_field("crossfade", 14, |e| {
+                     e.emit_option(|e| {
+                         self.crossfade
+                             .map(|d| e.emit_option_some(|e| d.num_seconds().encode(e)))
+                             .unwrap_or_else(|| e.emit_option_none())
+                     })
+                 })
+             })
+             .and_then(|_| e.emit_struct_field("mixrampdb", 15, |e| self.mixrampdb.encode(e)))
+             .and_then(|_| {
+                 e.emit_struct_field("mixrampdelay", 16, |e| {
+                     e.emit_option(|e| {
+                         self.mixrampdelay
+                             .map(|d| e.emit_option_some(|e| d.num_seconds().encode(e)))
+                             .unwrap_or_else(|| e.emit_option_none())
+                     })
+                 })
+             })
+             .and_then(|_| e.emit_struct_field("audio", 17, |e| self.audio.encode(e)))
+             .and_then(|_| e.emit_struct_field("updating_db", 18, |e| self.updating_db.encode(e)))
+             .and_then(|_| e.emit_struct_field("error", 19, |e| self.error.encode(e)))
+             .and_then(|_| e.emit_struct_field("replaygain", 20, |e| self.replaygain.encode(e)))
+        })
 
     }
 }
 
 impl FromIter for Status {
-    fn from_iter<I: Iterator<Item=Result<(String, String), Error>>>(iter: I) -> Result<Status, Error> {
+    fn from_iter<I: Iterator<Item = Result<(String, String), Error>>>(iter: I) -> Result<Status, Error> {
         let mut result = Status::default();
 
         for res in iter {
@@ -109,42 +149,81 @@ impl FromIter for Status {
                 "playlist" => result.queue_version = try!(line.1.parse()),
                 "playlistlength" => result.queue_len = try!(line.1.parse()),
                 "state" => result.state = try!(line.1.parse()),
-                "songid" => match result.song {
-                    None => result.song = Some(QueuePlace { id: Id(try!(line.1.parse())), pos: 0, prio: 0 }),
-                    Some(ref mut place) => place.id = Id(try!(line.1.parse())),
-                },
-                "song" => match result.song {
-                    None => result.song = Some(QueuePlace { pos: try!(line.1.parse()), id: Id(0), prio: 0 }),
-                    Some(ref mut place) => place.pos = try!(line.1.parse()),
-                },
-                "nextsongid" => match result.nextsong {
-                    None => result.nextsong = Some(QueuePlace { id: Id(try!(line.1.parse())), pos: 0, prio: 0 }),
-                    Some(ref mut place) => place.id = Id(try!(line.1.parse())),
-                },
-                "nextsong" => match result.nextsong {
-                    None => result.nextsong = Some(QueuePlace { pos: try!(line.1.parse()), id: Id(0), prio: 0 }),
-                    Some(ref mut place) => place.pos = try!(line.1.parse()),
-                },
-                "time" => result.time = try!({
-                    let mut splits = line.1.splitn(2, ':').map(|v| v.parse().map_err(ParseError::BadInteger).map(Duration::seconds));
-                    match (splits.next(), splits.next()) {
-                        (Some(Ok(a)), Some(Ok(b))) => Ok(Some((a, b))),
-                        (Some(Err(e)), _) | (_, Some(Err(e))) => Err(e),
-                        _ => Ok(None)
+                "songid" => {
+                    match result.song {
+                        None => {
+                            result.song = Some(QueuePlace {
+                                id: Id(try!(line.1.parse())),
+                                pos: 0,
+                                prio: 0,
+                            })
+                        }
+                        Some(ref mut place) => place.id = Id(try!(line.1.parse())),
                     }
-                }),
+                }
+                "song" => {
+                    match result.song {
+                        None => {
+                            result.song = Some(QueuePlace {
+                                pos: try!(line.1.parse()),
+                                id: Id(0),
+                                prio: 0,
+                            })
+                        }
+                        Some(ref mut place) => place.pos = try!(line.1.parse()),
+                    }
+                }
+                "nextsongid" => {
+                    match result.nextsong {
+                        None => {
+                            result.nextsong = Some(QueuePlace {
+                                id: Id(try!(line.1.parse())),
+                                pos: 0,
+                                prio: 0,
+                            })
+                        }
+                        Some(ref mut place) => place.id = Id(try!(line.1.parse())),
+                    }
+                }
+                "nextsong" => {
+                    match result.nextsong {
+                        None => {
+                            result.nextsong = Some(QueuePlace {
+                                pos: try!(line.1.parse()),
+                                id: Id(0),
+                                prio: 0,
+                            })
+                        }
+                        Some(ref mut place) => place.pos = try!(line.1.parse()),
+                    }
+                }
+                "time" => {
+                    result.time = try!({
+                        let mut splits = line.1.splitn(2, ':').map(|v| v.parse().map_err(ParseError::BadInteger).map(Duration::seconds));
+                        match (splits.next(), splits.next()) {
+                            (Some(Ok(a)), Some(Ok(b))) => Ok(Some((a, b))),
+                            (Some(Err(e)), _) | (_, Some(Err(e))) => Err(e),
+                            _ => Ok(None),
+                        }
+                    })
+                }
                 // TODO" => float errors don't work on stable
-                "elapsed" => result.elapsed = line.1.parse::<f32>().ok().map(|v| Duration::seconds((v * 1000.0) as i64)),
+                "elapsed" => {
+                    result.elapsed = line.1
+                                         .parse::<f32>()
+                                         .ok()
+                                         .map(|v| Duration::seconds((v * 1000.0) as i64))
+                }
                 "duration" => result.duration = Some(Duration::seconds(try!(line.1.parse()))),
                 "bitrate" => result.bitrate = Some(try!(line.1.parse())),
                 "xfade" => result.crossfade = Some(Duration::seconds(try!(line.1.parse()))),
-                //"mixrampdb" => 0.0, //get_field!(map, "mixrampdb"),
-                //"mixrampdelay" => None, //get_field!(map, opt "mixrampdelay").map(|v: f64| Duration::milliseconds((v * 1000.0) as i64)),
+                // "mixrampdb" => 0.0, //get_field!(map, "mixrampdb"),
+                // "mixrampdelay" => None, //get_field!(map, opt "mixrampdelay").map(|v: f64| Duration::milliseconds((v * 1000.0) as i64)),
                 "audio" => result.audio = Some(try!(line.1.parse())),
                 "updating_db" => result.updating_db = Some(try!(line.1.parse())),
                 "error" => result.error = Some(line.1.to_owned()),
                 "replay_gain_mode" => result.replaygain = Some(try!(line.1.parse())),
-                _ => ()
+                _ => (),
             }
         }
 
@@ -160,7 +239,7 @@ pub struct AudioFormat {
     /// sample resolution in bits, can be 0 for floating point resolution
     pub bits: u8,
     /// number of channels
-    pub chans: u8
+    pub chans: u8,
 }
 
 impl FromStr for AudioFormat {
@@ -168,9 +247,15 @@ impl FromStr for AudioFormat {
     fn from_str(s: &str) -> Result<AudioFormat, ParseError> {
         let mut it = s.split(':');
         Ok(AudioFormat {
-            rate: try!(it.next().ok_or(ParseError::NoRate).and_then(|v| v.parse().map_err(ParseError::BadRate))),
-            bits: try!(it.next().ok_or(ParseError::NoBits).and_then(|v| if &*v == "f" { Ok(0) } else { v.parse().map_err(ParseError::BadBits) })),
-            chans: try!(it.next().ok_or(ParseError::NoChans).and_then(|v| v.parse().map_err(ParseError::BadChans))),
+            rate: try!(it.next()
+                         .ok_or(ParseError::NoRate)
+                         .and_then(|v| v.parse().map_err(ParseError::BadRate))),
+            bits: try!(it.next()
+                         .ok_or(ParseError::NoBits)
+                         .and_then(|v| if &*v == "f" { Ok(0) } else { v.parse().map_err(ParseError::BadBits) })),
+            chans: try!(it.next()
+                          .ok_or(ParseError::NoChans)
+                          .and_then(|v| v.parse().map_err(ParseError::BadChans))),
         })
     }
 }
@@ -183,7 +268,7 @@ pub enum State {
     /// player is playing
     Play,
     /// player paused
-    Pause
+    Pause,
 }
 
 impl Default for State {
@@ -214,7 +299,7 @@ pub enum ReplayGain {
     /// album
     Album,
     /// auto
-    Auto
+    Auto,
 }
 
 impl FromStr for ReplayGain {
@@ -226,7 +311,7 @@ impl FromStr for ReplayGain {
             "track" => Ok(Track),
             "album" => Ok(Album),
             "auto" => Ok(Auto),
-            _ => Err(ParseError::BadValue(s.to_owned()))
+            _ => Err(ParseError::BadValue(s.to_owned())),
         }
     }
 }

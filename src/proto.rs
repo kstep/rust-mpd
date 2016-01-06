@@ -1,21 +1,24 @@
 // Hidden internal interface
 #![allow(missing_docs)]
 
-use std::io::{self, Read, Write, BufRead, Lines};
+use std::io::{self, BufRead, Lines, Read, Write};
 use std::collections::BTreeMap;
 use std::fmt::Arguments;
 use bufstream::BufStream;
 
 use reply::Reply;
-use error::{Result, Error, ProtoError};
+use error::{Error, ProtoError, Result};
 use convert::FromIter;
 
 pub struct Pairs<I>(pub I);
 
-impl<I> Iterator for Pairs<I> where I: Iterator<Item=io::Result<String>> {
+impl<I> Iterator for Pairs<I> where I: Iterator<Item = io::Result<String>>
+{
     type Item = Result<(String, String)>;
     fn next(&mut self) -> Option<Result<(String, String)>> {
-        let reply: Option<Result<Reply>> = self.0.next().map(|v| v.map_err(Error::Io).and_then(|s| s.parse::<Reply>().map_err(Error::Parse)));
+        let reply: Option<Result<Reply>> = self.0
+                                               .next()
+                                               .map(|v| v.map_err(Error::Io).and_then(|s| s.parse::<Reply>().map_err(Error::Parse)));
         match reply {
             Some(Ok(Reply::Pair(a, b))) => Some(Ok((a, b))),
             None | Some(Ok(Reply::Ok)) => None,
@@ -30,10 +33,11 @@ struct Maps<'a, I: 'a> {
     sep: &'a str,
     value: Option<String>,
     done: bool,
-    first: bool
+    first: bool,
 }
 
-impl<'a, I> Iterator for Maps<'a, I> where I: Iterator<Item=io::Result<String>> {
+impl<'a, I> Iterator for Maps<'a, I> where I: Iterator<Item = io::Result<String>>
+{
     type Item = Result<BTreeMap<String, String>>;
     fn next(&mut self) -> Option<Result<BTreeMap<String, String>>> {
         if self.done {
@@ -59,7 +63,7 @@ impl<'a, I> Iterator for Maps<'a, I> where I: Iterator<Item=io::Result<String>> 
                     } else {
                         map.insert(a, b);
                     }
-                },
+                }
                 Some(Err(e)) => return Some(Err(e)),
                 None => {
                     self.done = true;
@@ -72,7 +76,8 @@ impl<'a, I> Iterator for Maps<'a, I> where I: Iterator<Item=io::Result<String>> 
     }
 }
 
-impl<I> Pairs<I> where I: Iterator<Item=io::Result<String>> {
+impl<I> Pairs<I> where I: Iterator<Item = io::Result<String>>
+{
     pub fn split<'a, 'b: 'a>(&'a mut self, f: &'b str) -> Maps<'a, I> {
         Maps {
             pairs: self,
@@ -99,7 +104,10 @@ pub trait Proto {
         self.read_pairs().collect()
     }
 
-    fn read_struct<'a, T>(&'a mut self) -> Result<T> where T: 'a + FromIter, Self::Stream: 'a {
+    fn read_struct<'a, T>(&'a mut self) -> Result<T>
+        where T: 'a + FromIter,
+              Self::Stream: 'a
+    {
         FromIter::from_iter(self.read_pairs())
     }
 
@@ -108,7 +116,7 @@ pub trait Proto {
             let reply = try!(self.read_line());
             match &*reply {
                 "OK" | "list_OK" => break,
-                _ => ()
+                _ => (),
             }
         }
         Ok(())
@@ -138,11 +146,7 @@ pub trait Proto {
 
     fn read_field(&mut self, field: &'static str) -> Result<String> {
         let (a, b) = try!(self.read_pair());
-        if &*a == field {
-            Ok(b)
-        } else {
-            Err(Error::Proto(ProtoError::NoField(field)))
-        }
+        if &*a == field { Ok(b) } else { Err(Error::Proto(ProtoError::NoField(field))) }
     }
 }
 // }}}
