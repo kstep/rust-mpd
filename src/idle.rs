@@ -159,7 +159,7 @@ pub trait Idle {
 impl<S: Read+Write> Idle for Client<S> {
     type Stream = S;
     fn idle<'a>(&'a mut self, subsystems: &[Subsystem]) -> Result<IdleGuard<'a, S>, Error> {
-        let subsystems = subsystems.iter().map(|v| v.to_string()).collect::<Vec<String>>().connect(" ");
+        let subsystems = subsystems.iter().map(|v| v.to_string()).collect::<Vec<String>>().join(" ");
         try!(self.run_command_fmt(format_args!("idle {}", subsystems)));
         Ok(IdleGuard(self))
     }

@@ -74,14 +74,13 @@ impl<'a, I> Iterator for Maps<'a, I> where I: Iterator<Item=io::Result<String>> 
 
 impl<I> Pairs<I> where I: Iterator<Item=io::Result<String>> {
     pub fn split<'a, 'b: 'a>(&'a mut self, f: &'b str) -> Maps<'a, I> {
-        let mut maps = Maps {
+        Maps {
             pairs: self,
             sep: f,
             value: None,
             done: false,
             first: true,
-        };
-        maps
+        }
     }
 }
 
