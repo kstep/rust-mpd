@@ -1,10 +1,29 @@
-sudo: required
+sudo: false
 language: rust
+addons:
+  apt:
+    packages:
+      - mpd
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
+      - binutils-dev
 rust:
-    - stable
+  - stable
 before_script:
-    - sudo add-apt-repository -y ppa:jean-francois-dockes/mpd
-    - sudo apt-get update -qq
-    - sudo apt-get install -y mpd
-    - sudo /etc/init.d/mpd start
-    - /usr/bin/mpd --version
+  - "/usr/bin/mpd --version"
+  - "/usr/bin/mpd --verbose /etc/mpd.conf"
+  - |
+    pip install 'travis-cargo<0.2' --user &&
+    export PATH=$HOME/.local/bin:$PATH
+script:
+  - |
+    travis-cargo build &&
+    travis-cargo test &&
+    travis-cargo --only stable doc
+after_success:
+  - travis-cargo --only stable doc-upload
+  - travis-cargo coveralls --no-sudo --verify
+env:
+  global:
+    secure: "kXeKyGCOJGlB3dMVtWMW4CL1LsuSHjJsoVrZ4lgPLaH9MUriVoxCfMslQSmprX1+8EjZ1CpovbuX+uXgyiImcdNVbpgZQoC6rOfSilEtSzoO2pspHuQd7uHkQkUQfP9StnTQUKhDsZLjHyWVSN7/bF5sN9lX1qbOjW1KwqGaRlo="
