@@ -1,9 +1,8 @@
-sudo: false
+sudo: required
 language: rust
 addons:
   apt:
     packages:
-      - mpd
       - libcurl4-openssl-dev
       - libelf-dev
       - libdw-dev
@@ -11,8 +10,9 @@ addons:
 rust:
   - stable
 before_script:
-  - "/usr/bin/mpd --version"
-  - "/usr/bin/mpd --verbose /etc/mpd.conf"
+  - sudo apt-get update -qq
+  - sudo apt-get install -y mpd
+  - /usr/bin/mpd --version
   - |
     pip install 'travis-cargo<0.2' --user &&
     export PATH=$HOME/.local/bin:$PATH
