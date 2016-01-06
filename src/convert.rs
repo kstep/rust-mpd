@@ -11,12 +11,12 @@ use song::{self, Id, Song};
 use error::Error;
 
 #[doc(hidden)]
-pub trait FromMap {
+pub trait FromMap : Sized {
     fn from_map(map: BTreeMap<String, String>) -> Result<Self, Error>;
 }
 
 #[doc(hidden)]
-pub trait FromIter {
+pub trait FromIter : Sized {
     fn from_iter<I: Iterator<Item=Result<(String, String), Error>>>(iter: I) -> Result<Self, Error>;
 }
 
