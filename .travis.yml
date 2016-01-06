@@ -1,5 +1,9 @@
+sudo: required
 language: rust
+rust:
+    - stable
 before_script:
+    - sudo add-apt-repository -y ppa:jean-francois-dockes/mpd
     - sudo apt-get update -qq
     - sudo apt-get install -y mpd
     - sudo /etc/init.d/mpd start
