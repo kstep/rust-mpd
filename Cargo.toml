@@ -1,7 +1,7 @@
 [package]
 authors = ["Konstantin Stepanov <me@kstep.me>"]
 description = "A client library for MPD (music player daemon), like libmpdclient but in Rust"
-documentation = "http://kstep.me/rust/doc/mpd/mpd/index.html"
+documentation = "http://kstep.me/rust-mpd/mpd/index.html"
 homepage = "https://github.com/kstep/rust-mpd"
 license = "MIT"
 name = "mpd"
