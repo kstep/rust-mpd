@@ -6,7 +6,7 @@ homepage = "https://github.com/kstep/rust-mpd"
 license = "MIT/Apache-2.0"
 name = "mpd"
 repository = "https://github.com/kstep/rust-mpd.git"
-version = "0.0.8"
+version = "0.0.9"
 
 [dependencies]
 bufstream = "0.1.1"
