@@ -26,4 +26,4 @@ after_success:
   - travis-cargo coveralls --no-sudo --verify
 env:
   global:
-    secure: "kXeKyGCOJGlB3dMVtWMW4CL1LsuSHjJsoVrZ4lgPLaH9MUriVoxCfMslQSmprX1+8EjZ1CpovbuX+uXgyiImcdNVbpgZQoC6rOfSilEtSzoO2pspHuQd7uHkQkUQfP9StnTQUKhDsZLjHyWVSN7/bF5sN9lX1qbOjW1KwqGaRlo="
+    - secure: aP5EfrUDxaFNEHf8arXLJ1Um76AV+YkBwMkYMNVbXEPy2y8+qAvPMPZDdNH0bSWPtFhcZJi8d2vYAV6tROvAU2xExDSMAeWMzyWylQ5urs/4EcJNL6S3vC4MyVv5/BnWtmyXURoFiXHVpFVq3lsTk939ASPpxnokTJ7uemDSpYY=
