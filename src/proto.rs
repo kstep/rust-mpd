@@ -12,7 +12,8 @@ use convert::FromIter;
 
 pub struct Pairs<I>(pub I);
 
-impl<I> Iterator for Pairs<I> where I: Iterator<Item = io::Result<String>>
+impl<I> Iterator for Pairs<I>
+    where I: Iterator<Item = io::Result<String>>
 {
     type Item = Result<(String, String)>;
     fn next(&mut self) -> Option<Result<(String, String)>> {
@@ -36,7 +37,8 @@ struct Maps<'a, I: 'a> {
     first: bool,
 }
 
-impl<'a, I> Iterator for Maps<'a, I> where I: Iterator<Item = io::Result<String>>
+impl<'a, I> Iterator for Maps<'a, I>
+    where I: Iterator<Item = io::Result<String>>
 {
     type Item = Result<BTreeMap<String, String>>;
     fn next(&mut self) -> Option<Result<BTreeMap<String, String>>> {
@@ -72,15 +74,12 @@ impl<'a, I> Iterator for Maps<'a, I> where I: Iterator<Item = io::Result<String>
             }
         }
 
-        if map.is_empty() {
-            None
-        } else {
-            Some(Ok(map))
-        }
+        if map.is_empty() { None } else { Some(Ok(map)) }
     }
 }
 
-impl<I> Pairs<I> where I: Iterator<Item = io::Result<String>>
+impl<I> Pairs<I>
+    where I: Iterator<Item = io::Result<String>>
 {
     pub fn split<'a, 'b: 'a>(&'a mut self, f: &'b str) -> Maps<'a, I> {
         Maps {
@@ -96,7 +95,7 @@ impl<I> Pairs<I> where I: Iterator<Item = io::Result<String>>
 // Client inner communication methods {{{
 #[doc(hidden)]
 pub trait Proto {
-    type Stream: Read+Write;
+    type Stream: Read + Write;
 
     fn read_line(&mut self) -> Result<String>;
     fn read_pairs(&mut self) -> Pairs<Lines<&mut BufStream<Self::Stream>>>;

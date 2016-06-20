@@ -40,7 +40,8 @@ use proto::Proto;
 pub enum Subsystem {
     /// database: the song database has been modified after update.
     Database,
-    /// update: a database update has started or finished. If the database was modified during the update, the database event is also emitted.
+    /// update: a database update has started or finished.
+    /// If the database was modified during the update, the database event is also emitted.
     Update,
     /// stored_playlist: a stored playlist has been modified, renamed, created or deleted
     Playlist,
@@ -134,7 +135,7 @@ impl<'a, S: 'a + Read + Write> Drop for IdleGuard<'a, S> {
 /// See module's documentation for details.
 pub trait Idle {
     /// Stream type of a client
-    type Stream: Read+Write;
+    type Stream: Read + Write;
 
     /// Start listening for events from a set of subsystems
     ///

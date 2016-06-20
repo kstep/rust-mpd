@@ -11,12 +11,12 @@ use song::{self, Id, Song};
 use error::Error;
 
 #[doc(hidden)]
-pub trait FromMap : Sized {
+pub trait FromMap: Sized {
     fn from_map(map: BTreeMap<String, String>) -> Result<Self, Error>;
 }
 
 #[doc(hidden)]
-pub trait FromIter : Sized {
+pub trait FromIter: Sized {
     fn from_iter<I: Iterator<Item = Result<(String, String), Error>>>(iter: I) -> Result<Self, Error>;
 }
 
@@ -100,7 +100,7 @@ pub trait IsId {
     }
 }
 
-pub trait ToQueueRangeOrPlace : IsId {
+pub trait ToQueueRangeOrPlace: IsId {
     fn to_range(self) -> String;
 }
 
@@ -162,7 +162,7 @@ impl ToQueueRangeOrPlace for RangeFull {
     }
 }
 
-pub trait ToQueuePlace : IsId {
+pub trait ToQueuePlace: IsId {
     fn to_place(self) -> u32;
 }
 
