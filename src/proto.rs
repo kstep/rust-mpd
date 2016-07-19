@@ -29,7 +29,7 @@ impl<I> Iterator for Pairs<I>
     }
 }
 
-struct Maps<'a, I: 'a> {
+pub struct Maps<'a, I: 'a> {
     pairs: &'a mut Pairs<I>,
     sep: &'a str,
     value: Option<String>,
