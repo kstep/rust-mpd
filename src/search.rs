@@ -2,133 +2,103 @@
 // TODO: unfinished functionality
 
 use std::fmt;
-use std::io::{Read, Write};
 use std::borrow::Cow;
 use std::convert::Into;
+use std::ops::Range;
+use time::Duration;
 use client::Client;
-use convert::{FromMap, ToPlaylistName};
+use convert::{FromMap, FromIter, ToPlaylistName};
 use proto::Proto;
 use song::Song;
-use error::Result;
+use error::{Result, Error};
 
-pub enum Term<'a> {
-    Any,
-    File,
-    Base,
-    LastMod,
-    Tag(Cow<'a, str>),
+/// Songs statistics for a search query
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub struct Count {
+    /// number of songs
+    songs: usize,
+    /// total play time of the songs
+    playtime: Duration
 }
 
-pub struct Filter<'a> {
-    typ: Term<'a>,
-    what: Cow<'a, str>,
-}
+impl FromIter for Count {
+    /// build count from iterator
+    fn from_iter<I: Iterator<Item = Result<(String, String)>>>(iter: I) -> Result<Count> {
+        let mut count = Count {
+            songs: 0,
+            playtime: Duration::seconds(0)
+        };
 
-impl<'a> Filter<'a> {
-    fn new<W>(typ: Term<'a>, what: W) -> Filter
-        where W: 'a + Into<Cow<'a, str>>
-    {
-        Filter {
-            typ: typ,
-            what: what.into(),
+        for line in iter {
+            let item = try!(line);
+            match &*item.0 {
+                "songs" => count.songs = try!(item.1.parse()),
+                "playtime" => count.playtime = Duration::seconds(try!(item.1.parse())),
+                _ => ()
+            }
         }
+
+        Ok(count)
     }
 }
 
-pub struct Query<'a, S: 'a + Read + Write> {
-    client: &'a mut Client<S>,
-    filters: Vec<Filter<'a>>,
+pub struct Query<'a> {
+    filters: Vec<(Cow<'a, str>, Cow<'a, str>)>,
     groups: Option<Vec<Cow<'a, str>>>,
     window: Option<(u32, u32)>,
 }
 
-impl<'a, S: 'a + Read + Write> Query<'a, S> {
-    pub fn new(client: &'a mut Client<S>) -> Query<'a, S> {
+impl<'a> Query<'a> {
+    pub fn new() -> Query<'a> {
         Query {
-            client: client,
             filters: Vec::new(),
             groups: None,
             window: None,
         }
     }
 
-    pub fn and<'b: 'a, V: 'b + Into<Cow<'b, str>>>(&'a mut self, term: Term<'b>, value: V) -> &'a mut Query<'a, S> {
-        self.filters.push(Filter::new(term, value));
+    pub fn and<'b: 'a, T, V>(&'a mut self, tag: T, value: V) -> &'a mut Query<'a> 
+        where T: 'b + Into<Cow<'b, str>>,
+              V: 'b + Into<Cow<'b, str>>
+    {
+        self.filters.push((tag.into(), value.into()));
         self
     }
 
-    pub fn limit(&'a mut self, offset: u32, limit: u32) -> &'a mut Query<'a, S> {
+    pub fn limit(&'a mut self, offset: u32, limit: u32) -> &'a mut Query<'a> {
         self.window = Some((offset, limit));
         self
     }
 
-    pub fn group<'b: 'a, G: 'b + Into<Cow<'b, str>>>(&'a mut self, group: G) -> &'a mut Query<'a, S> {
+    pub fn range(&'a mut self, range: Range<u32>) -> &'a mut Query<'a> {
+        self.limit(range.start, range.end)
+    }
+
+    pub fn group<'b: 'a, G: 'b + Into<Cow<'b, str>>>(&'a mut self, group: G) -> &'a mut Query<'a> {
         match self.groups {
             None => self.groups = Some(vec![group.into()]),
             Some(ref mut groups) => groups.push(group.into()),
         };
         self
     }
-
-    pub fn find(mut self, fuzzy: bool, add: bool) -> Result<Vec<Song>> {
-        let cmd = if fuzzy { if add { "searchadd" } else { "search" } } else { if add { "findadd" } else { "find" } };
-        let args = self.to_string();
-
-        self.client
-            .run_command_fmt(format_args!("{} {}", cmd, args))
-            .and_then(|_| {
-                self.client
-                    .read_pairs()
-                    .split("file")
-                    .map(|v| v.and_then(FromMap::from_map))
-                    .collect()
-            })
-    }
-
-    pub fn find_add<N: ToPlaylistName>(mut self, playlist: N) -> Result<()> {
-        let args = self.to_string();
-        self.client
-            .run_command_fmt(format_args!("searchaddpl {} {}", playlist.to_name(), args))
-            .and_then(|_| self.client.expect_ok())
-    }
-
-    // pub fn list(mut self, ty: &str) -> Result<Vec<???>> {
-    // }
 }
 
-impl<'a> fmt::Display for Term<'a> {
+impl<'a> fmt::Display for Query<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Term::Any => f.write_str("any"),
-            Term::File => f.write_str("file"),
-            Term::Base => f.write_str("base"),
-            Term::LastMod => f.write_str("modified-since"),
-            Term::Tag(ref tag) => f.write_str(&*tag),
-        }
-    }
-}
-
-impl<'a> fmt::Display for Filter<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {}", self.typ, self.what)
-    }
-}
-
-impl<'a, S: 'a + Read + Write> fmt::Display for Query<'a, S> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for filter in &self.filters {
-            try!(filter.fmt(f));
+        for &(ref tag, ref value) in &self.filters {
+            try!(write!(f, " {} \"{}\"", tag, value));
         }
 
         if let Some(ref groups) = self.groups {
             for group in groups {
-                try!(write!(f, "group {}", group));
+                try!(write!(f, " group {}", group));
             }
         }
 
-        match self.window {
-            Some((a, b)) => write!(f, " window {}:{}", a, b),
-            None => Ok(()),
+        if let Some((a, b)) = self.window {
+            try!(write!(f, " window {}:{}", a, b));
         }
+
+        Ok(())
     }
 }

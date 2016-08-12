@@ -1,7 +1,7 @@
 extern crate mpd;
 
 use std::net::TcpStream;
-use mpd::Client;
+use mpd::{Client, Query};
 //use mpd::playlists::MpdPlaylist;
 //use mpd::outputs::MpdOutput;
 //use mpd::idle::{MpdEvent, PLAYER, UPDATE};
@@ -12,6 +12,11 @@ fn main() {
     let mut c = Client::new(TcpStream::connect("127.0.0.1:6600").unwrap()).unwrap();
     println!("version: {:?}", c.version);
     println!("status: {:?}", c.status());
+
+    for song in c.find(Query::new().and("artist", "Enigma").and("genre", "New Age"), false).unwrap() {
+        println!("{:?}", song);
+    }
+    println!("count: {:?}", c.count(Query::new().and("artist", "Enigma").and("genre", "New Age")).unwrap());
     //println!("stats: {:?}", c.stats());
     ////println!("song: {:?}", c.current_song());
     //println!("queue: {:?}", c.queue());

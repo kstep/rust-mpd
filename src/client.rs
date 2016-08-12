@@ -8,6 +8,7 @@ use std::io::{BufRead, Lines, Read, Write};
 use std::convert::From;
 use std::fmt::Arguments;
 use std::net::{TcpStream, ToSocketAddrs};
+use std::collections::BTreeMap;
 
 use bufstream::BufStream;
 use version::Version;
@@ -19,7 +20,7 @@ use output::Output;
 use playlist::Playlist;
 use plugin::Plugin;
 use message::{Channel, Message};
-use search::Query;
+use search::{Query, Count};
 use mount::{Mount, Neighbor};
 
 use convert::*;
@@ -421,8 +422,40 @@ impl<S: Read + Write> Client<S> {
     // TODO: searchaddpl name type what [...], readcomments
 
     /// Initiate query to songs database
-    pub fn query<'a>(&'a mut self) -> Query<'a, S> {
-        Query::new(self)
+    pub fn query<'b>(&mut self) -> Query<'b> {
+        Query::new()
+    }
+
+    /// Run songs search by the query
+    pub fn find<'b>(&mut self, query: &Query<'b>, fuzzy: bool) -> Result<Vec<Song>> {
+        self.run_command_fmt(format_args!("{}{}", if fuzzy {"search"} else {"find"}, query))
+            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(FromMap::from_map)).collect())
+    }
+
+    /// Get counts by the query
+    pub fn count<'b>(&mut self, query: &Query<'b>) -> Result<Count> {
+        self.run_command_fmt(format_args!("count{}", query))
+            .and_then(|_| self.read_struct())
+    }
+
+    /// Get counts by the query grouped by given field
+    pub fn count_by<'b>(&mut self, query: &Query<'b>, group: &str) -> Result<BTreeMap<String, Count>> {
+        // TODO
+        self.run_command_fmt(format_args!("count{} group {}", query, group))
+            .and_then(|_| self.read_pairs().split(group).map(|v| v.and_then(FromMap::from_map)).collect())
+    }
+
+    /// Get list of items by the query
+    pub fn list<'b>(&mut self, what: &str, query: &Query<'b>) -> Result<List> {
+        self.run_command_fmt(format_args!("list \"{}\"{}", what, query))
+            .and_then(|_| self.read_struct())
+    }
+
+    /// Get list of items by the query grouped by given field
+    pub fn list_by<'b>(&mut self, what: &str, query: &Query<'b>, groups: &[&str]) -> Result<BTreeMap<String, List>> {
+        // TODO
+        self.run_command_fmt(format_args!("list \"{}\"{} group {}", what, query, group))
+            .and_then(|_| self.read_pairs().split(group).map(|v| v.and_then(FromMap::from_map)).collect())
     }
     // }}}
 
