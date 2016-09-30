@@ -35,65 +35,38 @@ impl<'a> Filter<'a> {
     }
 }
 
-pub struct Query<'a, S: 'a + Read + Write> {
-    client: &'a mut Client<S>,
+pub struct Query<'a> {
     filters: Vec<Filter<'a>>,
     groups: Option<Vec<Cow<'a, str>>>,
     window: Option<(u32, u32)>,
 }
 
-impl<'a, S: 'a + Read + Write> Query<'a, S> {
-    pub fn new(client: &'a mut Client<S>) -> Query<'a, S> {
+impl<'a> Query<'a> {
+    pub fn new() -> Query<'a> {
         Query {
-            client: client,
             filters: Vec::new(),
             groups: None,
             window: None,
         }
     }
 
-    pub fn and<'b: 'a, V: 'b + Into<Cow<'b, str>>>(&'a mut self, term: Term<'b>, value: V) -> &'a mut Query<'a, S> {
+    pub fn and<'b: 'a, V: 'b + Into<Cow<'b, str>>>(&'a mut self, term: Term<'b>, value: V) -> &'a mut Query<'a> {
         self.filters.push(Filter::new(term, value));
         self
     }
 
-    pub fn limit(&'a mut self, offset: u32, limit: u32) -> &'a mut Query<'a, S> {
+    pub fn limit(&'a mut self, offset: u32, limit: u32) -> &'a mut Query<'a> {
         self.window = Some((offset, limit));
         self
     }
 
-    pub fn group<'b: 'a, G: 'b + Into<Cow<'b, str>>>(&'a mut self, group: G) -> &'a mut Query<'a, S> {
+    pub fn group<'b: 'a, G: 'b + Into<Cow<'b, str>>>(&'a mut self, group: G) -> &'a mut Query<'a> {
         match self.groups {
             None => self.groups = Some(vec![group.into()]),
             Some(ref mut groups) => groups.push(group.into()),
         };
         self
     }
-
-    pub fn find(mut self, fuzzy: bool, add: bool) -> Result<Vec<Song>> {
-        let cmd = if fuzzy { if add { "searchadd" } else { "search" } } else { if add { "findadd" } else { "find" } };
-        let args = self.to_string();
-
-        self.client
-            .run_command_fmt(format_args!("{} {}", cmd, args))
-            .and_then(|_| {
-                self.client
-                    .read_pairs()
-                    .split("file")
-                    .map(|v| v.and_then(FromMap::from_map))
-                    .collect()
-            })
-    }
-
-    pub fn find_add<N: ToPlaylistName>(mut self, playlist: N) -> Result<()> {
-        let args = self.to_string();
-        self.client
-            .run_command_fmt(format_args!("searchaddpl {} {}", playlist.to_name(), args))
-            .and_then(|_| self.client.expect_ok())
-    }
-
-    // pub fn list(mut self, ty: &str) -> Result<Vec<???>> {
-    // }
 }
 
 impl<'a> fmt::Display for Term<'a> {
@@ -110,11 +83,11 @@ impl<'a> fmt::Display for Term<'a> {
 
 impl<'a> fmt::Display for Filter<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {}", self.typ, self.what)
+        write!(f, " {} \"{}\"", self.typ, self.what)
     }
 }
 
-impl<'a, S: 'a + Read + Write> fmt::Display for Query<'a, S> {
+impl<'a> fmt::Display for Query<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for filter in &self.filters {
             try!(filter.fmt(f));
@@ -122,7 +95,7 @@ impl<'a, S: 'a + Read + Write> fmt::Display for Query<'a, S> {
 
         if let Some(ref groups) = self.groups {
             for group in groups {
-                try!(write!(f, "group {}", group));
+                try!(write!(f, " group {}", group));
             }
         }
 
