@@ -420,10 +420,28 @@ impl<S: Read + Write> Client<S> {
     // TODO: list type [filtertype] [filterwhat] [...] [group] [grouptype] [...]
     // TODO: searchaddpl name type what [...], readcomments
 
-    /// Initiate query to songs database
-    pub fn query<'a>(&'a mut self) -> Query<'a, S> {
-        Query::new(self)
+    /// Find songs matching Query conditions.
+    pub fn find(&mut self, query: &Query) -> Result<Vec<Song>> {
+        self.find_generic("find", query)
     }
+
+    /// Case-insensitively search for songs matching Query conditions.
+    pub fn search(&mut self, query: &Query) -> Result<Vec<Song>> {
+        self.find_generic("search", query)
+    }
+
+    fn find_generic(&mut self, cmd: &str, query: &Query) -> Result<Vec<Song>> {
+        let args = query.to_string();
+
+        self.run_command_fmt(format_args!("{} {}", cmd, args))
+            .and_then(|_| {
+                self.read_pairs()
+                    .split("file")
+                    .map(|v| v.and_then(FromMap::from_map))
+                    .collect()
+            })
+    }
+
     // }}}
 
     // Output methods {{{
