@@ -212,7 +212,7 @@ impl FromIter for Status {
                     result.elapsed = line.1
                                          .parse::<f32>()
                                          .ok()
-                                         .map(|v| Duration::seconds((v * 1000.0) as i64))
+                                         .map(|v| Duration::milliseconds((v * 1000.0) as i64))
                 }
                 "duration" => result.duration = Some(Duration::seconds(try!(line.1.parse()))),
                 "bitrate" => result.bitrate = Some(try!(line.1.parse())),
