@@ -115,11 +115,12 @@ pub struct Song {
 
 impl Encodable for Song {
     fn encode<S: Encoder>(&self, e: &mut S) -> Result<(), S::Error> {
-        e.emit_struct("Song", 7, |e| {
+        e.emit_struct("Song", 8, |e| {
             e.emit_struct_field("file", 0, |e| self.file.encode(e))
              .and_then(|_| e.emit_struct_field("name", 1, |e| self.name.encode(e)))
+             .and_then(|_| e.emit_struct_field("title", 2, |e| self.title.encode(e)))
              .and_then(|_| {
-                 e.emit_struct_field("last_mod", 2, |e| {
+                 e.emit_struct_field("last_mod", 3, |e| {
                      e.emit_option(|e| {
                          self.last_mod
                              .as_ref()
@@ -129,7 +130,7 @@ impl Encodable for Song {
                  })
              })
              .and_then(|_| {
-                 e.emit_struct_field("duration", 3, |e| {
+                 e.emit_struct_field("duration", 4, |e| {
                      e.emit_option(|e| {
                          self.duration
                              .as_ref()
@@ -138,9 +139,9 @@ impl Encodable for Song {
                      })
                  })
              })
-             .and_then(|_| e.emit_struct_field("place", 4, |e| self.place.encode(e)))
-             .and_then(|_| e.emit_struct_field("range", 5, |e| self.range.encode(e)))
-             .and_then(|_| e.emit_struct_field("tags", 6, |e| self.tags.encode(e)))
+             .and_then(|_| e.emit_struct_field("place", 5, |e| self.place.encode(e)))
+             .and_then(|_| e.emit_struct_field("range", 6, |e| self.range.encode(e)))
+             .and_then(|_| e.emit_struct_field("tags", 7, |e| self.tags.encode(e)))
         })
     }
 }
