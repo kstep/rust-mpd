@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `mpd` crate.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, mpd">
+
+    <title>mpd - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'></p><script>window.sidebarCurrent = {name: 'mpd', ty: 'mod', relpath: '../'};</script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Crate <a class='mod' href=''>mpd</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-0' class='srclink' href='../src/mpd/src/lib.rs.html#1-69' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>MPD client for Rust</p>
+
+<p>This crate tries to provide idiomatic Rust API for <a href="http://www.musicpd.org/">Music Player Daemon</a>.
+The main entry point to the API is <a href="client/struct.Client.html"><code>Client</code></a> struct,
+and inherent methods of the struct follow <a href="http://www.musicpd.org/doc/protocol/">MPD protocol</a> for most part,
+making use of traits to overload different parameters for convenience.</p>
+
+<h1 id='usage' class='section-header'><a href='#usage'>Usage</a></h1>
+<pre><code class="language-text">[dependencies]
+mpd = &quot;*&quot;
+</code></pre>
+
+<pre class='rust rust-example-rendered'>
+<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>mpd</span>;
+
+<span class='kw'>use</span> <span class='ident'>mpd</span>::<span class='ident'>Client</span>;
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>net</span>::<span class='ident'>TcpStream</span>;
+
+<span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>conn</span> <span class='op'>=</span> <span class='ident'>Client</span>::<span class='ident'>connect</span>(<span class='string'>&quot;127.0.0.1:6600&quot;</span>).<span class='ident'>unwrap</span>();
+<span class='ident'>conn</span>.<span class='ident'>volume</span>(<span class='number'>100</span>).<span class='ident'>unwrap</span>();
+<span class='ident'>conn</span>.<span class='ident'>load</span>(<span class='string'>&quot;My Lounge Playlist&quot;</span>, ..).<span class='ident'>unwrap</span>();
+<span class='ident'>conn</span>.<span class='ident'>play</span>().<span class='ident'>unwrap</span>();
+<span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;Status: {:?}&quot;</span>, <span class='ident'>conn</span>.<span class='ident'>status</span>());</pre>
+</div><h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
+<table><tr><td><code>pub use client::<a class='struct' href='../mpd/client/struct.Client.html' title='mpd::client::Client'>Client</a>;</code></td></tr><tr><td><code>pub use status::{<a class='enum' href='../mpd/status/enum.ReplayGain.html' title='mpd::status::ReplayGain'>ReplayGain</a>, <a class='enum' href='../mpd/status/enum.State.html' title='mpd::status::State'>State</a>, <a class='struct' href='../mpd/status/struct.Status.html' title='mpd::status::Status'>Status</a>};</code></td></tr><tr><td><code>pub use version::<a class='struct' href='../mpd/version/struct.Version.html' title='mpd::version::Version'>Version</a>;</code></td></tr><tr><td><code>pub use song::{<a class='struct' href='../mpd/song/struct.Id.html' title='mpd::song::Id'>Id</a>, <a class='struct' href='../mpd/song/struct.Song.html' title='mpd::song::Song'>Song</a>};</code></td></tr><tr><td><code>pub use playlist::<a class='struct' href='../mpd/playlist/struct.Playlist.html' title='mpd::playlist::Playlist'>Playlist</a>;</code></td></tr><tr><td><code>pub use output::<a class='struct' href='../mpd/output/struct.Output.html' title='mpd::output::Output'>Output</a>;</code></td></tr><tr><td><code>pub use plugin::<a class='struct' href='../mpd/plugin/struct.Plugin.html' title='mpd::plugin::Plugin'>Plugin</a>;</code></td></tr><tr><td><code>pub use stats::<a class='struct' href='../mpd/stats/struct.Stats.html' title='mpd::stats::Stats'>Stats</a>;</code></td></tr><tr><td><code>pub use search::{<a class='struct' href='../mpd/search/struct.Query.html' title='mpd::search::Query'>Query</a>, <a class='enum' href='../mpd/search/enum.Term.html' title='mpd::search::Term'>Term</a>};</code></td></tr><tr><td><code>pub use message::{<a class='struct' href='../mpd/message/struct.Channel.html' title='mpd::message::Channel'>Channel</a>, <a class='struct' href='../mpd/message/struct.Message.html' title='mpd::message::Message'>Message</a>};</code></td></tr><tr><td><code>pub use idle::{<a class='trait' href='../mpd/idle/trait.Idle.html' title='mpd::idle::Idle'>Idle</a>, <a class='enum' href='../mpd/idle/enum.Subsystem.html' title='mpd::idle::Subsystem'>Subsystem</a>};</code></td></tr><tr><td><code>pub use mount::{<a class='struct' href='../mpd/mount/struct.Mount.html' title='mpd::mount::Mount'>Mount</a>, <a class='struct' href='../mpd/mount/struct.Neighbor.html' title='mpd::mount::Neighbor'>Neighbor</a>};</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='client/index.html'
+                                  title='mpd::client'>client</a></td>
+                           <td class='docblock-short'>
+                                <p>This module defines client data structure — the main entry point to MPD communication</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='error/index.html'
+                                  title='mpd::error'>error</a></td>
+                           <td class='docblock-short'>
+                                <p>This module defines different errors occurring during communication with MPD.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='idle/index.html'
+                                  title='mpd::idle'>idle</a></td>
+                           <td class='docblock-short'>
+                                <p>The module defines structures and protocols for asynchronous MPD communication</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='message/index.html'
+                                  title='mpd::message'>message</a></td>
+                           <td class='docblock-short'>
+                                <p>The module defines structures for MPD client-to-client messaging/subscription protocol</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='mount/index.html'
+                                  title='mpd::mount'>mount</a></td>
+                           <td class='docblock-short'>
+                                <p>The module describes data structures for MPD (virtual) mounts system</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='output/index.html'
+                                  title='mpd::output'>output</a></td>
+                           <td class='docblock-short'>
+                                <p>The module describes output</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='playlist/index.html'
+                                  title='mpd::playlist'>playlist</a></td>
+                           <td class='docblock-short'>
+                                <p>The module defines playlist data structures</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='plugin/index.html'
+                                  title='mpd::plugin'>plugin</a></td>
+                           <td class='docblock-short'>
+                                <p>The module defines decoder plugin data structures</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='reply/index.html'
+                                  title='mpd::reply'>reply</a></td>
+                           <td class='docblock-short'>
+                                <p>The module describes all possible replies from MPD server.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='search/index.html'
+                                  title='mpd::search'>search</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='song/index.html'
+                                  title='mpd::song'>song</a></td>
+                           <td class='docblock-short'>
+                                <p>The module defines song structs and methods.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='stats/index.html'
+                                  title='mpd::stats'>stats</a></td>
+                           <td class='docblock-short'>
+                                <p>The module describes DB and playback statistics</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='status/index.html'
+                                  title='mpd::status'>status</a></td>
+                           <td class='docblock-short'>
+                                <p>The module defines MPD status data structures</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='version/index.html'
+                                  title='mpd::version'>version</a></td>
+                           <td class='docblock-short'>
+                                <p>This module defines MPD version type and parsing code</p>
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "mpd";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    <script defer src="../search-index.js"></script>
+</body>
+</html>

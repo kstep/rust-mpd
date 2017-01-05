@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Subsystem","Subsystems for `idle` command"]],"struct":[["IdleGuard","\"Idle\" mode guard enforcing MPD asynchronous events protocol"]],"trait":[["Idle","This trait implements `idle` command of MPD protocol"]]});

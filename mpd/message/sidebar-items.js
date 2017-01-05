@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Channel","Channel"],["Message","Message"]]});
