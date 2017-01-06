@@ -1,14 +1,14 @@
 #![allow(missing_docs)]
 //! These are inner traits to support methods overloading for the `Client`
 
+use error::Error;
+use output::Output;
+use playlist::Playlist;
+use song::{self, Id, Song};
 use std::collections::BTreeMap;
 use std::ops::{Range, RangeFrom, RangeFull, RangeTo};
 
 use time::Duration;
-use output::Output;
-use playlist::Playlist;
-use song::{self, Id, Song};
-use error::Error;
 
 #[doc(hidden)]
 pub trait FromMap: Sized {

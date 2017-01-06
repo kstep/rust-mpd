@@ -1,8 +1,8 @@
 //! This module defines MPD version type and parsing code
 
-use std::str::FromStr;
 
 use error::ParseError;
+use std::str::FromStr;
 
 // Version {{{
 /// MPD version
@@ -15,7 +15,9 @@ impl FromStr for Version {
         let mut splits = s.splitn(3, '.').map(FromStr::from_str);
         match (splits.next(), splits.next(), splits.next()) {
             (Some(Ok(a)), Some(Ok(b)), Some(Ok(c))) => Ok(Version(a, b, c)),
-            (Some(Err(e)), _, _) | (_, Some(Err(e)), _) | (_, _, Some(Err(e))) => Err(ParseError::BadInteger(e)),
+            (Some(Err(e)), _, _) |
+            (_, Some(Err(e)), _) |
+            (_, _, Some(Err(e))) => Err(ParseError::BadInteger(e)),
             _ => Err(ParseError::BadVersion),
         }
     }

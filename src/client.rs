@@ -4,26 +4,26 @@
 //!
 //! [proto]: http://www.musicpd.org/doc/protocol/
 
-use std::io::{BufRead, Lines, Read, Write};
-use std::convert::From;
-use std::fmt::Arguments;
-use std::net::{TcpStream, ToSocketAddrs};
 
 use bufstream::BufStream;
-use version::Version;
+
+use convert::*;
 use error::{Error, ProtoError, Result};
-use status::{ReplayGain, Status};
-use stats::Stats;
-use song::{Id, Song};
+use message::{Channel, Message};
+use mount::{Mount, Neighbor};
 use output::Output;
 use playlist::Playlist;
 use plugin::Plugin;
-use message::{Channel, Message};
-use search::Query;
-use mount::{Mount, Neighbor};
-
-use convert::*;
 use proto::*;
+use search::Query;
+use song::{Id, Song};
+use stats::Stats;
+use status::{ReplayGain, Status};
+use std::convert::From;
+use std::fmt::Arguments;
+use std::io::{BufRead, Lines, Read, Write};
+use std::net::{TcpStream, ToSocketAddrs};
+use version::Version;
 
 // Client {{{
 
@@ -453,7 +453,11 @@ impl<S: Read + Write> Client<S> {
 
     /// Set given output enabled state
     pub fn output<T: ToOutputId>(&mut self, id: T, state: bool) -> Result<()> {
-        if state { self.out_enable(id) } else { self.out_disable(id) }
+        if state {
+            self.out_enable(id)
+        } else {
+            self.out_disable(id)
+        }
     }
 
     /// Disable given output
@@ -490,8 +494,8 @@ impl<S: Read + Write> Client<S> {
                 self.read_pairs()
                     .filter(|r| {
                         r.as_ref()
-                         .map(|&(ref a, _)| *a == "command")
-                         .unwrap_or(true)
+                            .map(|&(ref a, _)| *a == "command")
+                            .unwrap_or(true)
                     })
                     .map(|r| r.map(|(_, b)| b))
                     .collect()
@@ -505,8 +509,8 @@ impl<S: Read + Write> Client<S> {
                 self.read_pairs()
                     .filter(|r| {
                         r.as_ref()
-                         .map(|&(ref a, _)| *a == "command")
-                         .unwrap_or(true)
+                            .map(|&(ref a, _)| *a == "command")
+                            .unwrap_or(true)
                     })
                     .map(|r| r.map(|(_, b)| b))
                     .collect()
@@ -520,8 +524,8 @@ impl<S: Read + Write> Client<S> {
                 self.read_pairs()
                     .filter(|r| {
                         r.as_ref()
-                         .map(|&(ref a, _)| *a == "handler")
-                         .unwrap_or(true)
+                            .map(|&(ref a, _)| *a == "handler")
+                            .unwrap_or(true)
                     })
                     .map(|r| r.map(|(_, b)| b))
                     .collect()
@@ -535,8 +539,8 @@ impl<S: Read + Write> Client<S> {
                 self.read_pairs()
                     .filter(|r| {
                         r.as_ref()
-                         .map(|&(ref a, _)| *a == "tagtype")
-                         .unwrap_or(true)
+                            .map(|&(ref a, _)| *a == "tagtype")
+                            .unwrap_or(true)
                     })
                     .map(|r| r.map(|(_, b)| b))
                     .collect()
@@ -583,8 +587,8 @@ impl<S: Read + Write> Client<S> {
                 self.read_pairs()
                     .filter(|r| {
                         r.as_ref()
-                         .map(|&(ref a, _)| *a == "channel")
-                         .unwrap_or(true)
+                            .map(|&(ref a, _)| *a == "channel")
+                            .unwrap_or(true)
                     })
                     .map(|r| r.map(|(_, b)| unsafe { Channel::new_unchecked(b) }))
                     .collect()
@@ -681,8 +685,8 @@ impl<S: Read + Write> Client<S> {
                 self.read_pairs()
                     .filter(|r| {
                         r.as_ref()
-                         .map(|&(ref a, _)| *a == "sticker")
-                         .unwrap_or(true)
+                            .map(|&(ref a, _)| *a == "sticker")
+                            .unwrap_or(true)
                     })
                     .map(|r| r.map(|(_, b)| b.splitn(2, "=").nth(1).map(|s| s.to_owned()).unwrap()))
                     .collect()
@@ -700,8 +704,8 @@ impl<S: Read + Write> Client<S> {
                         rmap.map(|mut map| {
                             (map.remove("file").unwrap(),
                              map.remove("sticker")
-                                .and_then(|s| s.splitn(2, "=").nth(1).map(|s| s.to_owned()))
-                                .unwrap())
+                                 .and_then(|s| s.splitn(2, "=").nth(1).map(|s| s.to_owned()))
+                                 .unwrap())
                         })
                     })
                     .collect()
@@ -716,8 +720,8 @@ impl<S: Read + Write> Client<S> {
                 self.read_pairs()
                     .filter(|r| {
                         r.as_ref()
-                         .map(|&(ref a, _)| *a == "file")
-                         .unwrap_or(true)
+                            .map(|&(ref a, _)| *a == "file")
+                            .unwrap_or(true)
                     })
                     .map(|r| r.map(|(_, b)| b))
                     .collect()

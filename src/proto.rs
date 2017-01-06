@@ -1,14 +1,14 @@
 // Hidden internal interface
 #![allow(missing_docs)]
 
-use std::io::{self, BufRead, Lines, Read, Write};
-use std::collections::BTreeMap;
-use std::fmt::Arguments;
 use bufstream::BufStream;
+use convert::FromIter;
+use error::{Error, ProtoError, Result};
 
 use reply::Reply;
-use error::{Error, ProtoError, Result};
-use convert::FromIter;
+use std::collections::BTreeMap;
+use std::fmt::Arguments;
+use std::io::{self, BufRead, Lines, Read, Write};
 
 pub struct Pairs<I>(pub I);
 
@@ -18,11 +18,12 @@ impl<I> Iterator for Pairs<I>
     type Item = Result<(String, String)>;
     fn next(&mut self) -> Option<Result<(String, String)>> {
         let reply: Option<Result<Reply>> = self.0
-                                               .next()
-                                               .map(|v| v.map_err(Error::Io).and_then(|s| s.parse::<Reply>().map_err(Error::Parse)));
+            .next()
+            .map(|v| v.map_err(Error::Io).and_then(|s| s.parse::<Reply>().map_err(Error::Parse)));
         match reply {
             Some(Ok(Reply::Pair(a, b))) => Some(Ok((a, b))),
-            None | Some(Ok(Reply::Ok)) => None,
+            None |
+            Some(Ok(Reply::Ok)) => None,
             Some(Ok(Reply::Ack(e))) => Some(Err(Error::Server(e))),
             Some(Err(e)) => Some(Err(e)),
         }
@@ -149,7 +150,11 @@ pub trait Proto {
 
     fn read_field(&mut self, field: &'static str) -> Result<String> {
         let (a, b) = try!(self.read_pair());
-        if &*a == field { Ok(b) } else { Err(Error::Proto(ProtoError::NoField(field))) }
+        if &*a == field {
+            Ok(b)
+        } else {
+            Err(Error::Proto(ProtoError::NoField(field)))
+        }
     }
 }
 // }}}

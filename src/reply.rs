@@ -3,9 +3,9 @@
 //! Also it contains most generic parser, which can handle
 //! all possible server replies.
 
-use std::str::FromStr;
 
 use error::{ParseError, ServerError};
+use std::str::FromStr;
 
 /// All possible MPD server replies
 #[derive(Debug, Clone, PartialEq)]

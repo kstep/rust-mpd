@@ -45,8 +45,8 @@ test_option!(consume, true, false);
 test_option!(single, true, false);
 test_option!(random, true, false);
 test_option!(repeat, true, false);
-//test_option!(mixrampdb, 1.0f32, 0.0f32);
-//test_option!(mixrampdelay, 1 => Some(Duration::seconds(1)), 0 => None);
+// test_option!(mixrampdb, 1.0f32, 0.0f32);
+// test_option!(mixrampdelay, 1 => Some(Duration::seconds(1)), 0 => None);
 
 #[test]
 fn volume() {
@@ -66,9 +66,9 @@ fn crossfade() {
     assert_eq!(mpd.status().unwrap().crossfade, Some(Duration::seconds(1000)));
     mpd.crossfade(0).unwrap();
     assert_eq!(mpd.status().unwrap().crossfade,
-        if mpd.version >= mpd::Version(0, 19, 0) {
-            None
-        } else {
-            Some(Duration::zero())
-        });
+               if mpd.version >= mpd::Version(0, 19, 0) {
+                   None
+               } else {
+                   Some(Duration::zero())
+               });
 }

@@ -9,10 +9,10 @@
 //! Possible, but inactive, mounts are named "neighbors" and can be
 //! listed with `neighbors()` method.
 
-use std::collections::BTreeMap;
+use convert::FromMap;
 
 use error::{Error, ProtoError};
-use convert::FromMap;
+use std::collections::BTreeMap;
 
 /// Mount point
 #[derive(Clone, Debug, PartialEq, RustcEncodable)]
@@ -27,11 +27,11 @@ impl FromMap for Mount {
     fn from_map(map: BTreeMap<String, String>) -> Result<Mount, Error> {
         Ok(Mount {
             name: try!(map.get("mount")
-                          .map(|s| s.to_owned())
-                          .ok_or(Error::Proto(ProtoError::NoField("mount")))),
+                .map(|s| s.to_owned())
+                .ok_or(Error::Proto(ProtoError::NoField("mount")))),
             storage: try!(map.get("storage")
-                             .map(|s| s.to_owned())
-                             .ok_or(Error::Proto(ProtoError::NoField("storage")))),
+                .map(|s| s.to_owned())
+                .ok_or(Error::Proto(ProtoError::NoField("storage")))),
         })
     }
 }
@@ -49,11 +49,11 @@ impl FromMap for Neighbor {
     fn from_map(map: BTreeMap<String, String>) -> Result<Neighbor, Error> {
         Ok(Neighbor {
             name: try!(map.get("name")
-                          .map(|s| s.to_owned())
-                          .ok_or(Error::Proto(ProtoError::NoField("name")))),
+                .map(|s| s.to_owned())
+                .ok_or(Error::Proto(ProtoError::NoField("name")))),
             storage: try!(map.get("neighbor")
-                             .map(|s| s.to_owned())
-                             .ok_or(Error::Proto(ProtoError::NoField("neighbor")))),
+                .map(|s| s.to_owned())
+                .ok_or(Error::Proto(ProtoError::NoField("neighbor")))),
         })
     }
 }
