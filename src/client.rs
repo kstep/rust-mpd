@@ -15,7 +15,7 @@ use output::Output;
 use playlist::Playlist;
 use plugin::Plugin;
 use proto::*;
-use search::Query;
+use search::{Query, Window};
 use song::{Id, Song};
 use stats::Stats;
 use status::{ReplayGain, Status};
@@ -421,19 +421,23 @@ impl<S: Read + Write> Client<S> {
     // TODO: searchaddpl name type what [...], readcomments
 
     /// Find songs matching Query conditions.
-    pub fn find(&mut self, query: &Query) -> Result<Vec<Song>> {
-        self.find_generic("find", query)
+    pub fn find<W>(&mut self, query: &Query, window: W) -> Result<Vec<Song>>
+        where W: Into<Window>
+    {
+        self.find_generic("find", query, window.into())
     }
 
     /// Case-insensitively search for songs matching Query conditions.
-    pub fn search(&mut self, query: &Query) -> Result<Vec<Song>> {
-        self.find_generic("search", query)
+    pub fn search<W>(&mut self, query: &Query, window: W) -> Result<Vec<Song>>
+        where W: Into<Window>
+    {
+        self.find_generic("search", query, window.into())
     }
 
-    fn find_generic(&mut self, cmd: &str, query: &Query) -> Result<Vec<Song>> {
+    fn find_generic(&mut self, cmd: &str, query: &Query, window: Window) -> Result<Vec<Song>> {
         let args = query.to_string();
 
-        self.run_command_fmt(format_args!("{} {}", cmd, args))
+        self.run_command_fmt(format_args!("{}{}{}", cmd, args, window))
             .and_then(|_| {
                 self.read_pairs()
                     .split("file")
