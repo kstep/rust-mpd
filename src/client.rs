@@ -692,7 +692,7 @@ impl<S: Read + Write> Client<S> {
                             .map(|&(ref a, _)| *a == "sticker")
                             .unwrap_or(true)
                     })
-                    .map(|r| r.map(|(_, b)| b.splitn(2, "=").nth(1).map(|s| s.to_owned()).unwrap()))
+                    .map(|r| r.map(|(_, b)| b.splitn(2, '=').nth(1).map(|s| s.to_owned()).unwrap()))
                     .collect()
             })
     }
@@ -708,7 +708,7 @@ impl<S: Read + Write> Client<S> {
                         rmap.map(|mut map| {
                             (map.remove("file").unwrap(),
                              map.remove("sticker")
-                                 .and_then(|s| s.splitn(2, "=").nth(1).map(|s| s.to_owned()))
+                                 .and_then(|s| s.splitn(2, '=').nth(1).map(|s| s.to_owned()))
                                  .unwrap())
                         })
                     })
@@ -741,7 +741,7 @@ impl<S: Read + Write> Proto for Client<S> {
     fn read_line(&mut self) -> Result<String> {
         let mut buf = String::new();
         try!(self.socket.read_line(&mut buf));
-        if buf.ends_with("\n") {
+        if buf.ends_with('\n') {
             buf.pop();
         }
         Ok(buf)
