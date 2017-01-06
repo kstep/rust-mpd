@@ -23,15 +23,13 @@ impl FromStr for Reply {
     fn from_str(s: &str) -> Result<Reply, ParseError> {
         if s == "OK" || s == "list_OK" {
             Ok(Reply::Ok)
+        } else if let Ok(ack) = s.parse::<ServerError>() {
+            Ok(Reply::Ack(ack))
         } else {
-            if let Ok(ack) = s.parse::<ServerError>() {
-                Ok(Reply::Ack(ack))
-            } else {
-                let mut splits = s.splitn(2, ':');
-                match (splits.next(), splits.next()) {
-                    (Some(a), Some(b)) => Ok(Reply::Pair(a.to_owned(), b.trim().to_owned())),
-                    _ => Err(ParseError::BadPair),
-                }
+            let mut splits = s.splitn(2, ':');
+            match (splits.next(), splits.next()) {
+                (Some(a), Some(b)) => Ok(Reply::Pair(a.to_owned(), b.trim().to_owned())),
+                _ => Err(ParseError::BadPair),
             }
         }
     }
