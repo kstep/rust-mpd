@@ -4,6 +4,7 @@
 use error::Error;
 use output::Output;
 use playlist::Playlist;
+use proto::ToArguments;
 use song::{self, Id, Song};
 use std::collections::BTreeMap;
 use std::ops::{Range, RangeFrom, RangeFull, RangeTo};
@@ -281,4 +282,35 @@ impl ToSongRange for song::Range {
         self
     }
 }
+
 // }}}
+
+pub trait ToSongPath {
+    fn to_path(&self) -> &str;
+}
+
+impl ToSongPath for Song {
+    fn to_path(&self) -> &str {
+        &self.file
+    }
+}
+
+impl<'a, T: ToSongPath> ToSongPath for &'a T {
+    fn to_path(&self) -> &str {
+        (*self).to_path()
+    }
+}
+
+impl ToSongPath for AsRef<str> {
+    fn to_path(&self) -> &str {
+        self.as_ref()
+    }
+}
+
+impl<T: ToSongPath> ToArguments for T {
+    fn to_arguments<F, E>(&self, f: &mut F) -> Result<(), E>
+        where F: FnMut(&str) -> Result<(), E>
+    {
+        self.to_path().to_arguments(f)
+    }
+}

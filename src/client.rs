@@ -237,8 +237,8 @@ impl<S: Read + Write> Client<S> {
     }
 
     /// Append a song into a queue
-    pub fn push<P: AsRef<str>>(&mut self, path: P) -> Result<Id> {
-        self.run_command("addid", path.as_ref())
+    pub fn push<P: ToSongPath>(&mut self, path: P) -> Result<Id> {
+        self.run_command("addid", path)
             .and_then(|_| self.read_field("Id"))
             .and_then(|v| {
                 self.expect_ok()
@@ -247,8 +247,8 @@ impl<S: Read + Write> Client<S> {
     }
 
     /// Insert a song into a given position in a queue
-    pub fn insert<P: AsRef<str>>(&mut self, path: P, pos: usize) -> Result<usize> {
-        self.run_command("addid", (path.as_ref(), pos))
+    pub fn insert<P: ToSongPath>(&mut self, path: P, pos: usize) -> Result<usize> {
+        self.run_command("addid", (path, pos))
             .and_then(|_| self.read_field("Id"))
             .and_then(|v| {
                 self.expect_ok()
@@ -383,8 +383,8 @@ impl<S: Read + Write> Client<S> {
     }
 
     /// Add new songs to a playlist
-    pub fn pl_push<N: ToPlaylistName, P: AsRef<str>>(&mut self, name: N, path: P) -> Result<()> {
-        self.run_command("playlistadd", (name.to_name(), path.as_ref()))
+    pub fn pl_push<N: ToPlaylistName, P: ToSongPath>(&mut self, name: N, path: P) -> Result<()> {
+        self.run_command("playlistadd", (name.to_name(), path))
             .and_then(|_| self.expect_ok())
     }
 
