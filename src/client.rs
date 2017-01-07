@@ -162,6 +162,7 @@ impl<S: Read + Write> Client<S> {
     }
 
     /// Switch to a next song in queue
+    #[cfg_attr(feature = "cargo-clippy", allow(should_implement_trait))]
     pub fn next(&mut self) -> Result<()> {
         self.run_command("next")
             .and_then(|_| self.expect_ok())
