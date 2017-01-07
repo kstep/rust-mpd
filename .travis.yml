@@ -21,8 +21,10 @@ before_script:
 script:
   - |
     travis-cargo build &&
-    travis-cargo test &&
-    travis-cargo fmt -- --write-mode diff &&
+    travis-cargo test
+  - |
+    cargo fmt -- --write-mode diff
+  - |
     travis-cargo --only stable doc
 after_success:
   - travis-cargo coveralls --no-sudo --verify
