@@ -22,7 +22,7 @@ before_script:
     export PATH=$HOME/.cargo/bin:$PATH
 script:
   - |
-    travis-cargo build &&
+    RUSTFLAGS=-Dwarnings travis-cargo build &&
     travis-cargo test
   - |
     cargo fmt -- --write-mode diff
