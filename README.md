@@ -2,7 +2,7 @@
 
 Pure Rust version of [libmpdclient](http://www.musicpd.org/libs/libmpdclient/).
 
-[Full documentation](http://kstep.me/rust-mpd/mpd/index.html)
+[Full documentation](http://docs.rs/mpd/)
 
 ## Example
 
