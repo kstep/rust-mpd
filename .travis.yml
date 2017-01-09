@@ -22,8 +22,4 @@ script:
     travis-cargo test &&
     travis-cargo --only stable doc
 after_success:
-  - travis-cargo --only stable doc-upload
   - travis-cargo coveralls --no-sudo --verify
-env:
-  global:
-    secure: KslMBdaaetRiPqcQZF6bVaWSPR5820vgMaKflFK3UgAS5S5cavInbPb4rfcg9Pf1SvnQK7/XsvTj0SZQie7varjGrCdD1YhUFYBe2TLhZ4F7U4Ku4b8M61fzwY0KbYysqCSuGn2DNU+XWyPrJYqus7a1cBDVVjyvoTldkpF7QiY=
