@@ -10,6 +10,7 @@ addons:
       - binutils-dev
 rust:
   - stable
+  - nightly
 before_script:
   - sudo apt-get update -qq
   - sudo apt-get install -y mpd
@@ -19,6 +20,7 @@ before_script:
     export PATH=$HOME/.local/bin:$PATH
   - |
     cargo install --force rustfmt
+    travis-cargo --only nightly install -- --force clippy
     export PATH=$HOME/.cargo/bin:$PATH
 script:
   - |
@@ -26,6 +28,8 @@ script:
     travis-cargo test
   - |
     cargo fmt -- --write-mode diff
+  - |
+    travis-cargo --only nightly clippy
   - |
     travis-cargo --only stable doc
 after_success:
