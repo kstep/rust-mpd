@@ -427,7 +427,7 @@ impl<S: Read + Write> Client<S> {
     // Database search {{{
     // TODO: count tag needle [...] [group] [grouptag], find type what [...] [window start:end]
     // TODO: search type what [...] [window start:end], searchadd type what [...]
-    // TODO: listallinfo [uri], listfiles [uri], lsinfo [uri]
+    // TODO: listallinfo [uri], listfiles [uri]
     // TODO: list type [filtertype] [filterwhat] [...] [group] [grouptype] [...]
     // TODO: searchaddpl name type what [...], readcomments
 
@@ -467,6 +467,12 @@ impl<S: Read + Write> Client<S> {
     pub fn findadd(&mut self, query: &Query) -> Result<()> {
         self.run_command("findadd", query)
             .and_then(|_| self.expect_ok())
+    }
+
+    /// Lists the contents of a directory.
+    pub fn lsinfo<P: ToSongPath>(&mut self, path: P) -> Result<Song> {
+        self.run_command("lsinfo", path)
+            .and_then(|_| self.read_struct())
     }
 
     // }}}
