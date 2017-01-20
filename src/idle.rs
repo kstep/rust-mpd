@@ -84,10 +84,10 @@ impl FromStr for Subsystem {
     }
 }
 
-impl fmt::Display for Subsystem {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Subsystem {
+    fn to_str(self) -> &'static str {
         use self::Subsystem::*;
-        f.write_str(match *self {
+        match self {
             Database => "database",
             Update => "update",
             Playlist => "stored_playlist",
@@ -99,10 +99,24 @@ impl fmt::Display for Subsystem {
             Sticker => "sticker",
             Subscription => "subscription",
             Message => "message",
-        })
+        }
     }
 }
 
+impl fmt::Display for Subsystem {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(self.to_str())
+    }
+}
+
+use std::result::Result as StdResult;
+impl<'a> ::proto::ToArguments for Subsystem {
+    fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
+        where F: FnMut(&str) -> StdResult<(), E>
+    {
+        f(self.to_str())
+    }
+}
 
 /// "Idle" mode guard enforcing MPD asynchronous events protocol
 pub struct IdleGuard<'a, S: 'a + Read + Write>(&'a mut Client<S>);
@@ -126,7 +140,7 @@ impl<'a, S: 'a + Read + Write> IdleGuard<'a, S> {
 
 impl<'a, S: 'a + Read + Write> Drop for IdleGuard<'a, S> {
     fn drop(&mut self) {
-        let _ = self.0.run_command("noidle").map(|_| self.0.drain());
+        let _ = self.0.run_command("noidle", ()).map(|_| self.0.drain());
     }
 }
 
@@ -164,11 +178,7 @@ pub trait Idle {
 impl<S: Read + Write> Idle for Client<S> {
     type Stream = S;
     fn idle<'a>(&'a mut self, subsystems: &[Subsystem]) -> Result<IdleGuard<'a, S>, Error> {
-        let subsystems = subsystems.iter()
-            .map(|v| v.to_string())
-            .collect::<Vec<String>>()
-            .join(" ");
-        try!(self.run_command_fmt(format_args!("idle {}", subsystems)));
+        self.run_command("idle", subsystems)?;
         Ok(IdleGuard(self))
     }
 }

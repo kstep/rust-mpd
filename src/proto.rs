@@ -7,8 +7,9 @@ use error::{Error, ProtoError, Result};
 
 use reply::Reply;
 use std::collections::BTreeMap;
-use std::fmt::Arguments;
+use std::fmt;
 use std::io::{self, Lines, Read, Write};
+use std::result::Result as StdResult;
 
 pub struct Pairs<I>(pub I);
 
@@ -101,8 +102,7 @@ pub trait Proto {
     fn read_line(&mut self) -> Result<String>;
     fn read_pairs(&mut self) -> Pairs<Lines<&mut BufStream<Self::Stream>>>;
 
-    fn run_command(&mut self, command: &str) -> Result<()>;
-    fn run_command_fmt(&mut self, command: Arguments) -> Result<()>;
+    fn run_command<I>(&mut self, command: &str, arguments: I) -> Result<()> where I: ToArguments;
 
     fn read_map(&mut self) -> Result<BTreeMap<String, String>> {
         self.read_pairs().collect()
@@ -157,4 +157,93 @@ pub trait Proto {
         }
     }
 }
+
+
+pub trait ToArguments {
+    fn to_arguments<F, E>(&self, &mut F) -> StdResult<(), E> where F: FnMut(&str) -> StdResult<(), E>;
+}
+
+impl ToArguments for () {
+    fn to_arguments<F, E>(&self, _: &mut F) -> StdResult<(), E>
+        where F: FnMut(&str) -> StdResult<(), E>
+    {
+        Ok(())
+    }
+}
+
+impl<'a> ToArguments for &'a str {
+    fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
+        where F: FnMut(&str) -> StdResult<(), E>
+    {
+        f(self)
+    }
+}
+
+macro_rules! argument_for_display {
+    ( $x:path ) => {
+        impl ToArguments for $x {
+            fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
+                where F: FnMut(&str) -> StdResult<(), E>
+                {
+                    f(&self.to_string())
+                }
+        }
+    };
+}
+argument_for_display!{i8}
+argument_for_display!{u8}
+argument_for_display!{u32}
+argument_for_display!{f32}
+argument_for_display!{f64}
+argument_for_display!{usize}
+argument_for_display!{::status::ReplayGain}
+argument_for_display!{String}
+argument_for_display!{::song::Id}
+argument_for_display!{::song::Range}
+argument_for_display!{::message::Channel}
+
+macro_rules! argument_for_tuple {
+    ( $($t:ident: $T: ident),+ ) => {
+        impl<$($T : ToArguments,)*> ToArguments for ($($T,)*) {
+            fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
+                where F: FnMut(&str) -> StdResult<(), E>
+                {
+                    let ($(ref $t,)*) = *self;
+                    $(
+                        $t.to_arguments(f)?;
+                     )*
+                    Ok(())
+                }
+        }
+    };
+}
+argument_for_tuple!{t0: T0}
+argument_for_tuple!{t0: T0, t1: T1}
+argument_for_tuple!{t0: T0, t1: T1, t2: T2}
+argument_for_tuple!{t0: T0, t1: T1, t2: T2, t3:T3}
+
+impl<'a, T: ToArguments> ToArguments for &'a [T] {
+    fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
+        where F: FnMut(&str) -> StdResult<(), E>
+    {
+        for arg in *self {
+            arg.to_arguments(f)?
+        }
+        Ok(())
+    }
+}
+
+pub struct Quoted<'a, D: fmt::Display + 'a + ?Sized>(pub &'a D);
+
+impl<'a, D: fmt::Display + 'a + ?Sized> fmt::Display for Quoted<'a, D> {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        let unquoted = format!("{}", self.0);
+        if &unquoted == "" {
+            // return Ok(());
+        }
+        let quoted = unquoted.replace('\\', r"\\").replace('"', r#"\""#);
+        formatter.write_fmt(format_args!("\"{}\"", &quoted))
+    }
+}
+
 // }}}

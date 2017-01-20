@@ -152,7 +152,7 @@ impl ToQueueRangeOrPlace for RangeFrom<u32> {
 
 impl ToQueueRange for RangeFull {
     fn to_range(self) -> String {
-        String::new()
+        ToQueueRange::to_range(0..)
     }
 }
 
