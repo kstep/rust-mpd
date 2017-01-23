@@ -13,4 +13,3 @@ fn playlists() {
         println!("{}: {:?}", pl.name, mpd.playlist(&pl.name).unwrap());
     }
 }
-

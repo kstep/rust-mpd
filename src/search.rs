@@ -1,15 +1,15 @@
 #![allow(missing_docs)]
 // TODO: unfinished functionality
 
-use std::fmt;
-use std::io::{Read, Write};
-use std::borrow::Cow;
-use std::convert::Into;
 use client::Client;
 use convert::{FromMap, ToPlaylistName};
+use error::Result;
 use proto::Proto;
 use song::Song;
-use error::Result;
+use std::borrow::Cow;
+use std::convert::Into;
+use std::fmt;
+use std::io::{Read, Write};
 
 pub enum Term<'a> {
     Any,

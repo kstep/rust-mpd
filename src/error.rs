@@ -12,14 +12,14 @@
 //!
 //! This module defines all necessary infrastructure to represent these kinds or errors.
 
-use time::ParseError as TimeParseError;
 use std::convert::From;
-use std::io::Error as IoError;
 use std::error::Error as StdError;
-use std::str::FromStr;
 use std::fmt;
+use std::io::Error as IoError;
 use std::num::{ParseFloatError, ParseIntError};
 use std::result;
+use std::str::FromStr;
+use time::ParseError as TimeParseError;
 
 // Server errors {{{
 /// Server error codes, as defined in [libmpdclient](http://www.musicpd.org/doc/libmpdclient/protocol_8h_source.html)

@@ -1,13 +1,13 @@
 //! The module defines MPD status data structures
 
-use std::str::FromStr;
-use std::fmt;
-use time::Duration;
-use rustc_serialize::{Encodable, Encoder};
+use convert::FromIter;
 
 use error::{Error, ParseError};
+use rustc_serialize::{Encodable, Encoder};
 use song::{Id, QueuePlace};
-use convert::FromIter;
+use std::fmt;
+use std::str::FromStr;
+use time::Duration;
 
 /// MPD status
 #[derive(Debug, PartialEq, Clone, Default)]
@@ -194,7 +194,8 @@ impl FromIter for Status {
                         let mut splits = line.1.splitn(2, ':').map(|v| v.parse().map_err(ParseError::BadInteger).map(Duration::seconds));
                         match (splits.next(), splits.next()) {
                             (Some(Ok(a)), Some(Ok(b))) => Ok(Some((a, b))),
-                            (Some(Err(e)), _) | (_, Some(Err(e))) => Err(e),
+                            (Some(Err(e)), _) |
+                            (_, Some(Err(e))) => Err(e),
                             _ => Ok(None),
                         }
                     })
@@ -202,9 +203,9 @@ impl FromIter for Status {
                 // TODO" => float errors don't work on stable
                 "elapsed" => {
                     result.elapsed = line.1
-                                         .parse::<f32>()
-                                         .ok()
-                                         .map(|v| Duration::milliseconds((v * 1000.0) as i64))
+                        .parse::<f32>()
+                        .ok()
+                        .map(|v| Duration::milliseconds((v * 1000.0) as i64))
                 }
                 "duration" => result.duration = Some(Duration::seconds(try!(line.1.parse()))),
                 "bitrate" => result.bitrate = Some(try!(line.1.parse())),
@@ -240,14 +241,18 @@ impl FromStr for AudioFormat {
         let mut it = s.split(':');
         Ok(AudioFormat {
             rate: try!(it.next()
-                         .ok_or(ParseError::NoRate)
-                         .and_then(|v| v.parse().map_err(ParseError::BadRate))),
+                .ok_or(ParseError::NoRate)
+                .and_then(|v| v.parse().map_err(ParseError::BadRate))),
             bits: try!(it.next()
-                         .ok_or(ParseError::NoBits)
-                         .and_then(|v| if &*v == "f" { Ok(0) } else { v.parse().map_err(ParseError::BadBits) })),
+                .ok_or(ParseError::NoBits)
+                .and_then(|v| if &*v == "f" {
+                    Ok(0)
+                } else {
+                    v.parse().map_err(ParseError::BadBits)
+                })),
             chans: try!(it.next()
-                          .ok_or(ParseError::NoChans)
-                          .and_then(|v| v.parse().map_err(ParseError::BadChans))),
+                .ok_or(ParseError::NoChans)
+                .and_then(|v| v.parse().map_err(ParseError::BadChans))),
         })
     }
 }

@@ -26,14 +26,14 @@
 //! to original `Client` struct, thus enforcing MPD contract in regards of (im)possibility
 //! to send commands while in "idle" mode.
 
-use std::fmt;
-use std::str::FromStr;
-use std::io::{Read, Write};
-use std::mem::forget;
+use client::Client;
 
 use error::{Error, ParseError};
-use client::Client;
 use proto::Proto;
+use std::fmt;
+use std::io::{Read, Write};
+use std::mem::forget;
+use std::str::FromStr;
 
 /// Subsystems for `idle` command
 #[derive(Clone, Copy, Debug, PartialEq, RustcEncodable)]
@@ -111,14 +111,14 @@ impl<'a, S: 'a + Read + Write> IdleGuard<'a, S> {
     /// Get list of subsystems with new events, interrupting idle mode in process
     pub fn get(self) -> Result<Vec<Subsystem>, Error> {
         let result = self.0
-                         .read_pairs()
-                         .filter(|r| {
-                             r.as_ref()
-                              .map(|&(ref a, _)| *a == "changed")
-                              .unwrap_or(true)
-                         })
-                         .map(|r| r.and_then(|(_, b)| b.parse().map_err(From::from)))
-                         .collect();
+            .read_pairs()
+            .filter(|r| {
+                r.as_ref()
+                    .map(|&(ref a, _)| *a == "changed")
+                    .unwrap_or(true)
+            })
+            .map(|r| r.and_then(|(_, b)| b.parse().map_err(From::from)))
+            .collect();
         forget(self);
         result
     }
@@ -165,9 +165,9 @@ impl<S: Read + Write> Idle for Client<S> {
     type Stream = S;
     fn idle<'a>(&'a mut self, subsystems: &[Subsystem]) -> Result<IdleGuard<'a, S>, Error> {
         let subsystems = subsystems.iter()
-                                   .map(|v| v.to_string())
-                                   .collect::<Vec<String>>()
-                                   .join(" ");
+            .map(|v| v.to_string())
+            .collect::<Vec<String>>()
+            .join(" ");
         try!(self.run_command_fmt(format_args!("idle {}", subsystems)));
         Ok(IdleGuard(self))
     }

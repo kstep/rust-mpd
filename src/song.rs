@@ -1,14 +1,14 @@
 //! The module defines song structs and methods.
 
-use time::{Duration, Tm, strptime};
+use convert::FromIter;
+
+use error::{Error, ParseError};
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
 use std::collections::BTreeMap;
-use std::str::FromStr;
 use std::fmt;
-
-use error::{Error, ParseError};
-use convert::FromIter;
+use std::str::FromStr;
+use time::{Duration, Tm, strptime};
 
 /// Song ID
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Default)]
@@ -117,31 +117,31 @@ impl Encodable for Song {
     fn encode<S: Encoder>(&self, e: &mut S) -> Result<(), S::Error> {
         e.emit_struct("Song", 8, |e| {
             e.emit_struct_field("file", 0, |e| self.file.encode(e))
-             .and_then(|_| e.emit_struct_field("name", 1, |e| self.name.encode(e)))
-             .and_then(|_| e.emit_struct_field("title", 2, |e| self.title.encode(e)))
-             .and_then(|_| {
-                 e.emit_struct_field("last_mod", 3, |e| {
-                     e.emit_option(|e| {
-                         self.last_mod
-                             .as_ref()
-                             .map(|m| e.emit_option_some(|e| m.to_timespec().sec.encode(e)))
-                             .unwrap_or_else(|| e.emit_option_none())
-                     })
-                 })
-             })
-             .and_then(|_| {
-                 e.emit_struct_field("duration", 4, |e| {
-                     e.emit_option(|e| {
-                         self.duration
-                             .as_ref()
-                             .map(|d| e.emit_option_some(|e| d.num_seconds().encode(e)))
-                             .unwrap_or_else(|| e.emit_option_none())
-                     })
-                 })
-             })
-             .and_then(|_| e.emit_struct_field("place", 5, |e| self.place.encode(e)))
-             .and_then(|_| e.emit_struct_field("range", 6, |e| self.range.encode(e)))
-             .and_then(|_| e.emit_struct_field("tags", 7, |e| self.tags.encode(e)))
+                .and_then(|_| e.emit_struct_field("name", 1, |e| self.name.encode(e)))
+                .and_then(|_| e.emit_struct_field("title", 2, |e| self.title.encode(e)))
+                .and_then(|_| {
+                    e.emit_struct_field("last_mod", 3, |e| {
+                        e.emit_option(|e| {
+                            self.last_mod
+                                .as_ref()
+                                .map(|m| e.emit_option_some(|e| m.to_timespec().sec.encode(e)))
+                                .unwrap_or_else(|| e.emit_option_none())
+                        })
+                    })
+                })
+                .and_then(|_| {
+                    e.emit_struct_field("duration", 4, |e| {
+                        e.emit_option(|e| {
+                            self.duration
+                                .as_ref()
+                                .map(|d| e.emit_option_some(|e| d.num_seconds().encode(e)))
+                                .unwrap_or_else(|| e.emit_option_none())
+                        })
+                    })
+                })
+                .and_then(|_| e.emit_struct_field("place", 5, |e| self.place.encode(e)))
+                .and_then(|_| e.emit_struct_field("range", 6, |e| self.range.encode(e)))
+                .and_then(|_| e.emit_struct_field("tags", 7, |e| self.tags.encode(e)))
         })
     }
 }
