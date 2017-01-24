@@ -35,36 +35,32 @@ impl<'a> Filter<'a> {
     }
 }
 
+pub struct Window(Option<(u32, u32)>);
+
+impl From<(u32, u32)> for Window {
+    fn from(window: (u32, u32)) -> Window {
+        Window(Some(window))
+    }
+}
+
+impl From<Option<(u32, u32)>> for Window {
+    fn from(window: Option<(u32, u32)>) -> Window {
+        Window(window)
+    }
+}
+
+#[derive(Default)]
 pub struct Query<'a> {
     filters: Vec<Filter<'a>>,
-    groups: Option<Vec<Cow<'a, str>>>,
-    window: Option<(u32, u32)>,
 }
 
 impl<'a> Query<'a> {
     pub fn new() -> Query<'a> {
-        Query {
-            filters: Vec::new(),
-            groups: None,
-            window: None,
-        }
+        Query { filters: Vec::new() }
     }
 
     pub fn and<'b: 'a, V: 'b + Into<Cow<'b, str>>>(&'a mut self, term: Term<'b>, value: V) -> &'a mut Query<'a> {
         self.filters.push(Filter::new(term, value));
-        self
-    }
-
-    pub fn limit(&'a mut self, offset: u32, limit: u32) -> &'a mut Query<'a> {
-        self.window = Some((offset, limit));
-        self
-    }
-
-    pub fn group<'b: 'a, G: 'b + Into<Cow<'b, str>>>(&'a mut self, group: G) -> &'a mut Query<'a> {
-        match self.groups {
-            None => self.groups = Some(vec![group.into()]),
-            Some(ref mut groups) => groups.push(group.into()),
-        };
         self
     }
 }
@@ -92,16 +88,15 @@ impl<'a> fmt::Display for Query<'a> {
         for filter in &self.filters {
             try!(filter.fmt(f));
         }
+        Ok(())
+    }
+}
 
-        if let Some(ref groups) = self.groups {
-            for group in groups {
-                try!(write!(f, " group {}", group));
-            }
+impl fmt::Display for Window {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let Some((a, b)) = self.0 {
+            write!(f, " window {}:{}", a, b)?;
         }
-
-        match self.window {
-            Some((a, b)) => write!(f, " window {}:{}", a, b),
-            None => Ok(()),
-        }
+        Ok(())
     }
 }
