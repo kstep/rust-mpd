@@ -71,8 +71,8 @@ impl Encodable for Status {
             e.emit_struct_field("nextsong", 9, |e| self.nextsong.encode(e))?;
             e.emit_struct_field("time", 10, |e| {
                     e.emit_option(|e| {
-                        self.time
-                            .map(|p| {
+                        match self.time {
+                            Some(p) => {
                                 e.emit_option_some(|e| {
                                     e.emit_tuple(2, |e| {
                                         e.emit_tuple_arg(0, |e| p.0.num_seconds().encode(e))?;
@@ -80,38 +80,37 @@ impl Encodable for Status {
                                         Ok(())
                                     })
                                 })
-                            })
-                            .unwrap_or_else(|| e.emit_option_none())
+                            }
+                            None => e.emit_option_none(),
+                        };
+                        Ok(())
                     })
                 })?;
             e.emit_struct_field("elapsed", 11, |e| {
-                    e.emit_option(|e| {
-                        self.elapsed
-                            .map(|d| e.emit_option_some(|e| d.num_seconds().encode(e)))
-                            .unwrap_or_else(|| e.emit_option_none())
+                    e.emit_option(|e| match self.elapsed {
+                        Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                        None => e.emit_option_none(),
                     })
+
                 })?;
             e.emit_struct_field("duration", 12, |e| {
-                    e.emit_option(|e| {
-                        self.duration
-                            .map(|d| e.emit_option_some(|e| d.num_seconds().encode(e)))
-                            .unwrap_or_else(|| e.emit_option_none())
+                    e.emit_option(|e| match self.duration {
+                        Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                        None => e.emit_option_none(),
                     })
                 })?;
             e.emit_struct_field("bitrate", 13, |e| self.bitrate.encode(e))?;
             e.emit_struct_field("crossfade", 14, |e| {
-                    e.emit_option(|e| {
-                        self.crossfade
-                            .map(|d| e.emit_option_some(|e| d.num_seconds().encode(e)))
-                            .unwrap_or_else(|| e.emit_option_none())
+                    e.emit_option(|e| match self.crossfade {
+                        Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                        None => e.emit_option_none(),
                     })
                 })?;
             e.emit_struct_field("mixrampdb", 15, |e| self.mixrampdb.encode(e))?;
             e.emit_struct_field("mixrampdelay", 16, |e| {
-                    e.emit_option(|e| {
-                        self.mixrampdelay
-                            .map(|d| e.emit_option_some(|e| d.num_seconds().encode(e)))
-                            .unwrap_or_else(|| e.emit_option_none())
+                    e.emit_option(|e| match self.mixrampdelay {
+                        Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                        None => e.emit_option_none(),
                     })
                 })?;
             e.emit_struct_field("audio", 17, |e| self.audio.encode(e))?;

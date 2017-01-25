@@ -50,13 +50,11 @@ pub struct Range(pub Duration, pub Option<Duration>);
 impl Encodable for Range {
     fn encode<S: Encoder>(&self, e: &mut S) -> Result<(), S::Error> {
         e.emit_tuple(2, |e| {
-            e.emit_tuple_arg(0, |e| e.emit_i64(self.0.num_seconds())).and_then(|_| {
-                e.emit_tuple_arg(1, |e| {
-                    e.emit_option(|e| {
-                        self.1
-                            .map(|d| e.emit_option_some(|e| d.num_seconds().encode(e)))
-                            .unwrap_or_else(|| e.emit_option_none())
-                    })
+            e.emit_tuple_arg(0, |e| e.emit_i64(self.0.num_seconds()))?;
+            e.emit_tuple_arg(1, |e| {
+                e.emit_option(|e| match self.1 {
+                    Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                    None => e.emit_option_none(),
                 })
             })
         })
@@ -71,11 +69,12 @@ impl Default for Range {
 
 impl fmt::Display for Range {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.0
-            .num_seconds()
-            .fmt(f)
-            .and_then(|_| f.write_str(":"))
-            .and_then(|_| self.1.map(|v| v.num_seconds().fmt(f)).unwrap_or(Ok(())))
+        self.0.num_seconds().fmt(f)?;
+        f.write_str(":")?;
+        if let Some(v) = self.1 {
+            v.num_seconds().fmt(f)?;
+        }
+        Ok(())
     }
 }
 
@@ -116,32 +115,25 @@ pub struct Song {
 impl Encodable for Song {
     fn encode<S: Encoder>(&self, e: &mut S) -> Result<(), S::Error> {
         e.emit_struct("Song", 8, |e| {
-            e.emit_struct_field("file", 0, |e| self.file.encode(e))
-                .and_then(|_| e.emit_struct_field("name", 1, |e| self.name.encode(e)))
-                .and_then(|_| e.emit_struct_field("title", 2, |e| self.title.encode(e)))
-                .and_then(|_| {
-                    e.emit_struct_field("last_mod", 3, |e| {
-                        e.emit_option(|e| {
-                            self.last_mod
-                                .as_ref()
-                                .map(|m| e.emit_option_some(|e| m.to_timespec().sec.encode(e)))
-                                .unwrap_or_else(|| e.emit_option_none())
-                        })
+            e.emit_struct_field("file", 0, |e| self.file.encode(e))?;
+            e.emit_struct_field("name", 1, |e| self.name.encode(e))?;
+            e.emit_struct_field("title", 2, |e| self.title.encode(e))?;
+            e.emit_struct_field("last_mod", 3, |e| {
+                    e.emit_option(|e| match self.last_mod {
+                        Some(m) => e.emit_option_some(|e| m.to_timespec().sec.encode(e)),
+                        None => e.emit_option_none(),
                     })
-                })
-                .and_then(|_| {
-                    e.emit_struct_field("duration", 4, |e| {
-                        e.emit_option(|e| {
-                            self.duration
-                                .as_ref()
-                                .map(|d| e.emit_option_some(|e| d.num_seconds().encode(e)))
-                                .unwrap_or_else(|| e.emit_option_none())
-                        })
+                })?;
+            e.emit_struct_field("duration", 4, |e| {
+                    e.emit_option(|e| match self.duration {
+                        Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                        None => e.emit_option_none(),
                     })
-                })
-                .and_then(|_| e.emit_struct_field("place", 5, |e| self.place.encode(e)))
-                .and_then(|_| e.emit_struct_field("range", 6, |e| self.range.encode(e)))
-                .and_then(|_| e.emit_struct_field("tags", 7, |e| self.tags.encode(e)))
+                })?;
+            e.emit_struct_field("place", 5, |e| self.place.encode(e))?;
+            e.emit_struct_field("range", 6, |e| self.range.encode(e))?;
+            e.emit_struct_field("tags", 7, |e| self.tags.encode(e))?;
+            Ok(())
         })
     }
 }
