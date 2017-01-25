@@ -11,17 +11,20 @@ addons:
 rust:
   - stable
   - nightly
+env:
+  global:
+    # override the default `--features unstable` used for the nightly branch
+    - TRAVIS_CARGO_NIGHTLY_FEATURE=""
 before_script:
   - sudo apt-get update -qq
   - sudo apt-get install -y mpd
   - /usr/bin/mpd --version
+  - export PATH=$HOME/.cargo/bin:$HOME/.local/bin:$PATH
   - |
     pip install 'travis-cargo<0.2' --user &&
-    export PATH=$HOME/.local/bin:$PATH
+    travis-cargo --only nightly install -- --force clippy
   - |
     cargo install --force rustfmt
-    travis-cargo --only nightly install -- --force clippy
-    export PATH=$HOME/.cargo/bin:$PATH
 script:
   - |
     RUSTFLAGS=-Dwarnings travis-cargo build &&
