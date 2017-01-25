@@ -45,7 +45,7 @@ impl<'a> ToPlaylistName for &'a Playlist {
 
 impl<'a> ToPlaylistName for &'a String {
     fn to_name(&self) -> &str {
-        &*self
+        self
     }
 }
 

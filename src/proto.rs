@@ -8,7 +8,7 @@ use error::{Error, ProtoError, Result};
 use reply::Reply;
 use std::collections::BTreeMap;
 use std::fmt::Arguments;
-use std::io::{self, BufRead, Lines, Read, Write};
+use std::io::{self, Lines, Read, Write};
 
 pub struct Pairs<I>(pub I);
 
