@@ -70,20 +70,17 @@ impl Encodable for Status {
             e.emit_struct_field("song", 8, |e| self.song.encode(e))?;
             e.emit_struct_field("nextsong", 9, |e| self.nextsong.encode(e))?;
             e.emit_struct_field("time", 10, |e| {
-                    e.emit_option(|e| {
-                        match self.time {
-                            Some(p) => {
-                                e.emit_option_some(|e| {
-                                    e.emit_tuple(2, |e| {
-                                        e.emit_tuple_arg(0, |e| p.0.num_seconds().encode(e))?;
-                                        e.emit_tuple_arg(1, |e| p.1.num_seconds().encode(e))?;
-                                        Ok(())
-                                    })
+                    e.emit_option(|e| match self.time {
+                        Some(p) => {
+                            e.emit_option_some(|e| {
+                                e.emit_tuple(2, |e| {
+                                    e.emit_tuple_arg(0, |e| p.0.num_seconds().encode(e))?;
+                                    e.emit_tuple_arg(1, |e| p.1.num_seconds().encode(e))?;
+                                    Ok(())
                                 })
-                            }
-                            None => e.emit_option_none(),
-                        };
-                        Ok(())
+                            })
+                        }
+                        None => e.emit_option_none(),
                     })
                 })?;
             e.emit_struct_field("elapsed", 11, |e| {

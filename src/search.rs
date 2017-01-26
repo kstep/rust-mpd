@@ -1,9 +1,11 @@
 #![allow(missing_docs)]
 // TODO: unfinished functionality
 
+use proto::ToArguments;
 use std::borrow::Cow;
 use std::convert::Into;
 use std::fmt;
+use std::result::Result as StdResult;
 
 pub enum Term<'a> {
     Any,
@@ -61,36 +63,72 @@ impl<'a> Query<'a> {
 
 impl<'a> fmt::Display for Term<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Term::Any => f.write_str("any"),
-            Term::File => f.write_str("file"),
-            Term::Base => f.write_str("base"),
-            Term::LastMod => f.write_str("modified-since"),
-            Term::Tag(ref tag) => f.write_str(&*tag),
-        }
+        f.write_str(match *self {
+            Term::Any => "any",
+            Term::File => "file",
+            Term::Base => "base",
+            Term::LastMod => "modified-since",
+            Term::Tag(ref tag) => &*tag,
+        })
     }
 }
 
-impl<'a> fmt::Display for Filter<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, " {} \"{}\"", self.typ, self.what)
+impl<'a> ToArguments for &'a Filter<'a> {
+    fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
+        where F: FnMut(&str) -> StdResult<(), E>
+    {
+        f(&self.typ.to_string())?;
+        f(&self.what)
     }
 }
 
-impl<'a> fmt::Display for Query<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl<'a> ToArguments for &'a Query<'a> {
+    fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
+        where F: FnMut(&str) -> StdResult<(), E>
+    {
         for filter in &self.filters {
-            try!(filter.fmt(f));
+            filter.to_arguments(f)?
         }
         Ok(())
     }
 }
 
-impl fmt::Display for Window {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if let Some((a, b)) = self.0 {
-            write!(f, " window {}:{}", a, b)?;
+impl ToArguments for Window {
+    fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
+        where F: FnMut(&str) -> StdResult<(), E>
+    {
+        if let Some(window) = self.0 {
+            f("window")?;
+            f(&format!{"{}:{}", window.0, window.1})?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use proto::ToArguments;
+
+    fn collect<I: ToArguments>(arguments: I) -> Vec<String> {
+        let mut output = Vec::<String>::new();
+        arguments.to_arguments::<_, ()>(&mut |arg| Ok(output.push(arg.to_string()))).unwrap();
+        output
+    }
+
+    #[test]
+    fn find_window_format() {
+        let window: Window = (0, 2).into();
+        let output = collect(window);
+        assert_eq!(output, vec!["window", "0:2"]);
+    }
+
+    #[test]
+    fn find_query_format() {
+        let mut query = Query::new();
+        let finished = query.and(Term::Tag("albumartist".into()), "Mac DeMarco")
+            .and(Term::Tag("album".into()), "Salad Days");
+        let output = collect(&*finished);
+        assert_eq!(output, vec!["albumartist", "Mac DeMarco", "album", "Salad Days"]);
     }
 }
