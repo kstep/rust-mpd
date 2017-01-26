@@ -427,7 +427,7 @@ impl<S: Read + Write> Client<S> {
     // Database search {{{
     // TODO: count tag needle [...] [group] [grouptag], find type what [...] [window start:end]
     // TODO: search type what [...] [window start:end], searchadd type what [...]
-    // TODO: findadd type what [...], listallinfo [uri], listfiles [uri], lsinfo [uri]
+    // TODO: listallinfo [uri], listfiles [uri], lsinfo [uri]
     // TODO: list type [filtertype] [filterwhat] [...] [group] [grouptype] [...]
     // TODO: searchaddpl name type what [...], readcomments
 
@@ -461,6 +461,12 @@ impl<S: Read + Write> Client<S> {
     pub fn list(&mut self, term: &Term, query: &Query) -> Result<Vec<String>> {
         self.run_command("list", (term, query))
             .and_then(|_| self.read_pairs().map(|p| p.map(|p| p.1)).collect())
+    }
+
+    /// Find all songs in the db that match query and adds them to current playlist.
+    pub fn findadd(&mut self, query: &Query) -> Result<()> {
+        self.run_command("findadd", query)
+            .and_then(|_| self.expect_ok())
     }
 
     // }}}
