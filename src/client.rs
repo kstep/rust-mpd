@@ -15,7 +15,7 @@ use output::Output;
 use playlist::Playlist;
 use plugin::Plugin;
 use proto::*;
-use search::{Query, Window};
+use search::{Query, Window, Term};
 use song::{Id, Song};
 use stats::Stats;
 use status::{ReplayGain, Status};
@@ -453,6 +453,14 @@ impl<S: Read + Write> Client<S> {
                     .map(|v| v.and_then(FromMap::from_map))
                     .collect()
             })
+    }
+
+    /// Lists unique tags values of the specified type for songs matching the given query.
+    // TODO: list type [filtertype] [filterwhat] [...] [group] [grouptype] [...]
+    // It isn't clear if or how `group` works
+    pub fn list(&mut self, term: &Term, query: &Query) -> Result<Vec<String>> {
+        self.run_command("list", (term, query))
+            .and_then(|_| self.read_pairs().map(|p| p.map(|p| p.1)).collect())
     }
 
     // }}}

@@ -73,11 +73,19 @@ impl<'a> fmt::Display for Term<'a> {
     }
 }
 
+impl<'a> ToArguments for &'a Term<'a> {
+    fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
+        where F: FnMut(&str) -> StdResult<(), E>
+    {
+        f(&self.to_string())
+    }
+}
+
 impl<'a> ToArguments for &'a Filter<'a> {
     fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
         where F: FnMut(&str) -> StdResult<(), E>
     {
-        f(&self.typ.to_string())?;
+        (&self.typ).to_arguments(f)?;
         f(&self.what)
     }
 }
