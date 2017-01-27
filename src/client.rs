@@ -240,20 +240,13 @@ impl<S: Read + Write> Client<S> {
     pub fn push<P: AsRef<str>>(&mut self, path: P) -> Result<Id> {
         self.run_command("addid", path.as_ref())
             .and_then(|_| self.read_field("Id"))
-            .and_then(|v| {
-                self.expect_ok()
-                    .and_then(|_| v.parse().map_err(From::from).map(Id))
-            })
+            .map(Id)
     }
 
     /// Insert a song into a given position in a queue
     pub fn insert<P: AsRef<str>>(&mut self, path: P, pos: usize) -> Result<usize> {
         self.run_command("addid", (path.as_ref(), pos))
             .and_then(|_| self.read_field("Id"))
-            .and_then(|v| {
-                self.expect_ok()
-                    .and_then(|_| v.parse().map_err(From::from))
-            })
     }
 
     /// Delete a song (at some position) or several songs (in a range) from a queue
@@ -407,20 +400,12 @@ impl<S: Read + Write> Client<S> {
     pub fn rescan(&mut self) -> Result<u32> {
         self.run_command("rescan", ())
             .and_then(|_| self.read_field("updating_db"))
-            .and_then(|v| {
-                self.expect_ok()
-                    .and_then(|_| v.parse().map_err(From::from))
-            })
     }
 
     /// Run database update, i.e. remove non-existing files from DB
     pub fn update(&mut self) -> Result<u32> {
         self.run_command("update", ())
             .and_then(|_| self.read_field("updating_db"))
-            .and_then(|v| {
-                self.expect_ok()
-                    .and_then(|_| v.parse().map_err(From::from))
-            })
     }
     // }}}
 
@@ -492,7 +477,6 @@ impl<S: Read + Write> Client<S> {
     pub fn music_directory(&mut self) -> Result<String> {
         self.run_command("config", ())
             .and_then(|_| self.read_field("music_directory"))
-            .and_then(|d| self.expect_ok().map(|_| d))
     }
 
     /// List all available commands
@@ -665,7 +649,6 @@ impl<S: Read + Write> Client<S> {
     pub fn sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<String> {
         self.run_command("sticker set", (typ, uri, name))
             .and_then(|_| self.read_field("sticker"))
-            .and_then(|s| self.expect_ok().map(|_| s))
     }
 
     /// Set sticker value for a given object, identified by type and uri

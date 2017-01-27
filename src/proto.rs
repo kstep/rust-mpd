@@ -3,13 +3,14 @@
 
 use bufstream::BufStream;
 use convert::{FromIter, FromMap};
-use error::{Error, ProtoError, Result};
+use error::{Error, ProtoError, Result, ParseError};
 
 use reply::Reply;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::io::{self, Lines, Read, Write};
 use std::result::Result as StdResult;
+use std::str::FromStr;
 
 pub struct Pairs<I>(pub I);
 
@@ -154,10 +155,14 @@ pub trait Proto {
         }
     }
 
-    fn read_field(&mut self, field: &'static str) -> Result<String> {
-        let (a, b) = try!(self.read_pair());
+    fn read_field<T, E>(&mut self, field: &'static str) -> Result<T>
+        where T: FromStr<Err = E>,
+              ParseError: From<E>
+    {
+        let (a, b) = self.read_pair()?;
+        self.expect_ok()?;
         if &*a == field {
-            Ok(b)
+            Ok(b.parse::<T>().map_err(Into::<ParseError>::into)?)
         } else {
             Err(Error::Proto(ProtoError::NoField(field)))
         }

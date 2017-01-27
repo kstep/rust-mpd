@@ -19,6 +19,7 @@ use std::io::Error as IoError;
 use std::num::{ParseFloatError, ParseIntError};
 use std::result;
 use std::str::FromStr;
+use std::string::ParseError as StringParseError;
 use time::ParseError as TimeParseError;
 
 // Server errors {{{
@@ -343,6 +344,12 @@ impl From<ParseIntError> for ParseError {
 impl From<ParseFloatError> for ParseError {
     fn from(e: ParseFloatError) -> ParseError {
         ParseError::BadFloat(e)
+    }
+}
+
+impl From<StringParseError> for ParseError {
+    fn from(e: StringParseError) -> ParseError {
+        match e {}
     }
 }
 // }}}
