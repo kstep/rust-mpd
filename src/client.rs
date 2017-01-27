@@ -541,33 +541,7 @@ impl<S: Read + Write> Client<S> {
 
     /// List all available decoder plugins
     pub fn decoders(&mut self) -> Result<Vec<Plugin>> {
-        try!(self.run_command("decoders", ()));
-
-        let mut result = Vec::new();
-        let mut plugin: Option<Plugin> = None;
-        for reply in self.read_pairs() {
-            let (a, b) = try!(reply);
-            match &*a {
-                "plugin" => {
-                    plugin.map(|p| result.push(p));
-
-                    plugin = Some(Plugin {
-                        name: b,
-                        suffixes: Vec::new(),
-                        mime_types: Vec::new(),
-                    });
-                }
-                "mime_type" => {
-                    plugin.as_mut().map(|p| p.mime_types.push(b));
-                }
-                "suffix" => {
-                    plugin.as_mut().map(|p| p.suffixes.push(b));
-                }
-                _ => unreachable!(),
-            }
-        }
-        plugin.map(|p| result.push(p));
-        Ok(result)
+        self.run_command("decoders", ()).and_then(|_| self.read_struct())
     }
     // }}}
 
