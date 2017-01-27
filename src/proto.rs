@@ -105,10 +105,6 @@ pub trait Proto {
 
     fn run_command<I>(&mut self, command: &str, arguments: I) -> Result<()> where I: ToArguments;
 
-    fn read_map(&mut self) -> Result<BTreeMap<String, String>> {
-        self.read_pairs().collect()
-    }
-
     fn read_structs<'a, T>(&'a mut self, key: &'static str) -> Result<Vec<T>>
         where T: 'a + FromMap
     {
