@@ -2,7 +2,7 @@
 #![allow(missing_docs)]
 
 use bufstream::BufStream;
-use convert::FromIter;
+use convert::{FromIter, FromMap};
 use error::{Error, ProtoError, Result};
 
 use reply::Reply;
@@ -106,6 +106,12 @@ pub trait Proto {
 
     fn read_map(&mut self) -> Result<BTreeMap<String, String>> {
         self.read_pairs().collect()
+    }
+
+    fn read_structs<'a, T>(&'a mut self, key: &'static str) -> Result<Vec<T>>
+        where T: 'a + FromMap
+    {
+        self.read_pairs().split(key).map(|v| v.and_then(FromMap::from_map)).collect()
     }
 
     fn read_struct<'a, T>(&'a mut self) -> Result<T>

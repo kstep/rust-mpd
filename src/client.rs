@@ -209,13 +209,13 @@ impl<S: Read + Write> Client<S> {
             "playlistinfo"
         };
         self.run_command(command, pos.to_range())
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("file"))
     }
 
     /// List all songs in a play queue
     pub fn queue(&mut self) -> Result<Vec<Song>> {
         self.run_command("playlistinfo", ())
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("file"))
     }
 
     /// Get current playing song
@@ -233,7 +233,7 @@ impl<S: Read + Write> Client<S> {
     /// List all changes in a queue since given version
     pub fn changes(&mut self, version: u32) -> Result<Vec<Song>> {
         self.run_command("plchanges", version)
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("file"))
     }
 
     /// Append a song into a queue
@@ -338,13 +338,13 @@ impl<S: Read + Write> Client<S> {
     /// List all playlists
     pub fn playlists(&mut self) -> Result<Vec<Playlist>> {
         self.run_command("listplaylists", ())
-            .and_then(|_| self.read_pairs().split("playlist").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("playlist"))
     }
 
     /// List all songs in a playlist
     pub fn playlist<N: ToPlaylistName>(&mut self, name: N) -> Result<Vec<Song>> {
         self.run_command("listplaylistinfo", name.to_name())
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("file"))
     }
 
     /// Load playlist into queue
@@ -447,12 +447,7 @@ impl<S: Read + Write> Client<S> {
 
     fn find_generic(&mut self, cmd: &str, query: &Query, window: Window) -> Result<Vec<Song>> {
         self.run_command(cmd, (query, window))
-            .and_then(|_| {
-                self.read_pairs()
-                    .split("file")
-                    .map(|v| v.and_then(FromMap::from_map))
-                    .collect()
-            })
+            .and_then(|_| self.read_structs("file"))
     }
 
     // }}}
@@ -461,7 +456,7 @@ impl<S: Read + Write> Client<S> {
     /// List all outputs
     pub fn outputs(&mut self) -> Result<Vec<Output>> {
         self.run_command("outputs", ())
-            .and_then(|_| self.read_pairs().split("outputid").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("outputid"))
     }
 
     /// Set given output enabled state
@@ -611,7 +606,7 @@ impl<S: Read + Write> Client<S> {
     /// Read queued messages from subscribed channels
     pub fn readmessages(&mut self) -> Result<Vec<Message>> {
         self.run_command("readmessages", ())
-            .and_then(|_| self.read_pairs().split("channel").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("channel"))
     }
 
     /// Send a message to a channel
@@ -639,13 +634,13 @@ impl<S: Read + Write> Client<S> {
     /// These mounts exist inside MPD process only, thus they can work without root permissions.
     pub fn mounts(&mut self) -> Result<Vec<Mount>> {
         self.run_command("listmounts", ())
-            .and_then(|_| self.read_pairs().split("mount").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("mount"))
     }
 
     /// List all network neighbors, which can be potentially mounted
     pub fn neighbors(&mut self) -> Result<Vec<Neighbor>> {
         self.run_command("listneighbors", ())
-            .and_then(|_| self.read_pairs().split("neighbor").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("neighbor"))
     }
 
     /// Mount given neighbor to a mount point
