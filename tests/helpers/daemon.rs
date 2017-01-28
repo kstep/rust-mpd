@@ -29,10 +29,9 @@ impl MpdConfig {
             sock_path: base.join("sock"),
         }
     }
-}
 
-fn write_config(config: &MpdConfig) {
-    let config_text = format!(r#"
+    fn config_text(&self) -> String {
+        format!(r#"
 db_file "{db_file}"
 log_file "/dev/null"
 music_directory "{music_directory}"
@@ -43,15 +42,19 @@ audio_output {{
     name "null"
 }}
 "#,
-db_file=config.db_file.display(),
-music_directory=config.music_directory.display(),
-playlist_directory=config.playlist_directory.display(),
-sock_path=config.sock_path.display(),
-);
-    create_dir(&config.music_directory).expect("Could not create music directory.");
-    create_dir(&config.playlist_directory).expect("Could not create playlist directory.");
-    let mut file = File::create(&config.config_path).expect("Could not create config file.");
-    file.write_all(config_text.as_bytes()).expect("Could not write config file.");
+            db_file=self.db_file.display(),
+            music_directory=self.music_directory.display(),
+            playlist_directory=self.playlist_directory.display(),
+            sock_path=self.sock_path.display(),
+        )
+    }
+
+    fn generate(&self) {
+        create_dir(&self.music_directory).expect("Could not create music directory.");
+        create_dir(&self.playlist_directory).expect("Could not create playlist directory.");
+        let mut file = File::create(&self.config_path).expect("Could not create config file.");
+        file.write_all(self.config_text().as_bytes()).expect("Could not write config file.");
+    }
 }
 
 pub struct Daemon {
@@ -79,7 +82,7 @@ impl Daemon {
     pub fn new() -> Daemon {
         let temp_dir = TempDir::new("mpd-test").unwrap();
         let config = MpdConfig::new(&temp_dir);
-        write_config(&config);
+        config.generate();
         let process = Command::new("mpd")
             .arg("--no-daemon")
             .arg(&config.config_path)
