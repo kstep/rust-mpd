@@ -482,61 +482,25 @@ impl<S: Read + Write> Client<S> {
     /// List all available commands
     pub fn commands(&mut self) -> Result<Vec<String>> {
         self.run_command("commands", ())
-            .and_then(|_| {
-                self.read_pairs()
-                    .filter(|r| {
-                        r.as_ref()
-                            .map(|&(ref a, _)| *a == "command")
-                            .unwrap_or(true)
-                    })
-                    .map(|r| r.map(|(_, b)| b))
-                    .collect()
-            })
+            .and_then(|_| self.read_list("command"))
     }
 
     /// List all forbidden commands
     pub fn notcommands(&mut self) -> Result<Vec<String>> {
         self.run_command("notcommands", ())
-            .and_then(|_| {
-                self.read_pairs()
-                    .filter(|r| {
-                        r.as_ref()
-                            .map(|&(ref a, _)| *a == "command")
-                            .unwrap_or(true)
-                    })
-                    .map(|r| r.map(|(_, b)| b))
-                    .collect()
-            })
+            .and_then(|_| self.read_list("command"))
     }
 
     /// List all available URL handlers
     pub fn urlhandlers(&mut self) -> Result<Vec<String>> {
         self.run_command("urlhandlers", ())
-            .and_then(|_| {
-                self.read_pairs()
-                    .filter(|r| {
-                        r.as_ref()
-                            .map(|&(ref a, _)| *a == "handler")
-                            .unwrap_or(true)
-                    })
-                    .map(|r| r.map(|(_, b)| b))
-                    .collect()
-            })
+            .and_then(|_| self.read_list("handler"))
     }
 
     /// List all supported tag types
     pub fn tagtypes(&mut self) -> Result<Vec<String>> {
         self.run_command("tagtypes", ())
-            .and_then(|_| {
-                self.read_pairs()
-                    .filter(|r| {
-                        r.as_ref()
-                            .map(|&(ref a, _)| *a == "tagtype")
-                            .unwrap_or(true)
-                    })
-                    .map(|r| r.map(|(_, b)| b))
-                    .collect()
-            })
+            .and_then(|_| self.read_list("tagtype"))
     }
 
     /// List all available decoder plugins
@@ -549,16 +513,8 @@ impl<S: Read + Write> Client<S> {
     /// List all channels available for current connection
     pub fn channels(&mut self) -> Result<Vec<Channel>> {
         self.run_command("channels", ())
-            .and_then(|_| {
-                self.read_pairs()
-                    .filter(|r| {
-                        r.as_ref()
-                            .map(|&(ref a, _)| *a == "channel")
-                            .unwrap_or(true)
-                    })
-                    .map(|r| r.map(|(_, b)| unsafe { Channel::new_unchecked(b) }))
-                    .collect()
-            })
+            .and_then(|_| self.read_list("channel"))
+            .map(|v| v.into_iter().map(|b| unsafe { Channel::new_unchecked(b) }).collect())
     }
 
     /// Read queued messages from subscribed channels
@@ -681,16 +637,7 @@ impl<S: Read + Write> Client<S> {
     /// with a tag set to given value
     pub fn find_sticker_eq(&mut self, typ: &str, uri: &str, name: &str, value: &str) -> Result<Vec<String>> {
         self.run_command("sticker find", (typ, uri, name, value))
-            .and_then(|_| {
-                self.read_pairs()
-                    .filter(|r| {
-                        r.as_ref()
-                            .map(|&(ref a, _)| *a == "file")
-                            .unwrap_or(true)
-                    })
-                    .map(|r| r.map(|(_, b)| b))
-                    .collect()
-            })
+            .and_then(|_| self.read_list("file"))
     }
     // }}}
 }
