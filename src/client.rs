@@ -603,16 +603,8 @@ impl<S: Read + Write> Client<S> {
     /// List all stickers from a given object, identified by type and uri
     pub fn stickers(&mut self, typ: &str, uri: &str) -> Result<Vec<String>> {
         self.run_command("sticker list", (typ, uri))
-            .and_then(|_| {
-                self.read_pairs()
-                    .filter(|r| {
-                        r.as_ref()
-                            .map(|&(ref a, _)| *a == "sticker")
-                            .unwrap_or(true)
-                    })
-                    .map(|r| r.map(|(_, b)| b.splitn(2, '=').nth(1).map(|s| s.to_owned()).unwrap()))
-                    .collect()
-            })
+            .and_then(|_| self.read_list("sticker"))
+            .map(|v| v.into_iter().map(|b| b.splitn(2, '=').nth(1).map(|s| s.to_owned()).unwrap()).collect())
     }
 
     /// List all (file, sticker) pairs for sticker name and objects of given type
