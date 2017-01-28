@@ -221,7 +221,8 @@ impl<S: Read + Write> Client<S> {
     /// Get current playing song
     pub fn currentsong(&mut self) -> Result<Option<Song>> {
         self.run_command("currentsong", ())
-            .and_then(|_| self.read_struct::<Song>().map(|s| if s.place.is_none() { None } else { Some(s) }))
+            .and_then(|_| self.read_struct::<Song>())
+            .map(|s| if s.place.is_none() { None } else { Some(s) })
     }
 
     /// Clear current queue
