@@ -78,8 +78,7 @@ fn sleep() {
 }
 
 impl Daemon {
-    #[cfg_attr(feature="cargo-clippy", allow(new_without_default))]
-    pub fn new() -> Daemon {
+    pub fn start() -> Daemon {
         let temp_dir = TempDir::new("mpd-test").unwrap();
         let config = MpdConfig::new(&temp_dir);
         config.generate();

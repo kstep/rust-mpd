@@ -7,7 +7,7 @@ use mpd::Idle;
 
 #[test]
 fn idle() {
-    let daemon = Daemon::new();
+    let daemon = Daemon::start();
     let mut mpd = daemon.connect();
     let idle = mpd.idle(&[]).unwrap();
 
