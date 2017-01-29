@@ -73,7 +73,7 @@ impl Drop for Daemon {
 
 fn sleep() {
     use std::{thread, time};
-    let ten_millis = time::Duration::from_millis(100);
+    let ten_millis = time::Duration::from_millis(10);
     thread::sleep(ten_millis);
 }
 
@@ -87,20 +87,27 @@ impl Daemon {
             .arg(&config.config_path)
             .spawn()
             .expect("Could not create mpd daemon.");
-        while !config.sock_path.exists() {}
 
-        // FIXME: Wait for mpd to finish updating the database.
-        sleep();
-
-        Daemon {
+        let daemon = Daemon {
             _temp_dir: temp_dir,
             config: config,
             process: process,
+        };
+
+        // Wait until we can connect to the daemon
+        while let Err(_) = daemon.maybe_connect() {
+            sleep()
         }
+
+        daemon
+    }
+
+    fn maybe_connect(&self) -> Result<mpd::Client<UnixStream>, mpd::error::Error> {
+        let stream = UnixStream::connect(&self.config.sock_path)?;
+        mpd::Client::new(stream)
     }
 
     pub fn connect(&self) -> mpd::Client<UnixStream> {
-        let stream = UnixStream::connect(&self.config.sock_path).unwrap();
-        mpd::Client::new(stream).unwrap()
+        self.maybe_connect().expect("Could not connect to daemon.")
     }
 }
