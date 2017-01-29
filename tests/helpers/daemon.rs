@@ -95,7 +95,15 @@ impl Daemon {
         };
 
         // Wait until we can connect to the daemon
-        while let Err(_) = daemon.maybe_connect() {
+        let mut client;
+        loop {
+            if let Ok(c) = daemon.maybe_connect() {
+                client = c;
+                break;
+            }
+            sleep()
+        }
+        while let Some(_) = client.status().expect("Couldn't get status.").updating_db {
             sleep()
         }
 
