@@ -15,7 +15,7 @@ use output::Output;
 use playlist::Playlist;
 use plugin::Plugin;
 use proto::*;
-use search::{Query, Window};
+use search::{Query, Window, Term};
 use song::{Id, Song};
 use stats::Stats;
 use status::{ReplayGain, Status};
@@ -238,15 +238,15 @@ impl<S: Read + Write> Client<S> {
     }
 
     /// Append a song into a queue
-    pub fn push<P: AsRef<str>>(&mut self, path: P) -> Result<Id> {
-        self.run_command("addid", path.as_ref())
+    pub fn push<P: ToSongPath>(&mut self, path: P) -> Result<Id> {
+        self.run_command("addid", path)
             .and_then(|_| self.read_field("Id"))
             .map(Id)
     }
 
     /// Insert a song into a given position in a queue
-    pub fn insert<P: AsRef<str>>(&mut self, path: P, pos: usize) -> Result<usize> {
-        self.run_command("addid", (path.as_ref(), pos))
+    pub fn insert<P: ToSongPath>(&mut self, path: P, pos: usize) -> Result<usize> {
+        self.run_command("addid", (path, pos))
             .and_then(|_| self.read_field("Id"))
     }
 
@@ -377,8 +377,8 @@ impl<S: Read + Write> Client<S> {
     }
 
     /// Add new songs to a playlist
-    pub fn pl_push<N: ToPlaylistName, P: AsRef<str>>(&mut self, name: N, path: P) -> Result<()> {
-        self.run_command("playlistadd", (name.to_name(), path.as_ref()))
+    pub fn pl_push<N: ToPlaylistName, P: ToSongPath>(&mut self, name: N, path: P) -> Result<()> {
+        self.run_command("playlistadd", (name.to_name(), path))
             .and_then(|_| self.expect_ok())
     }
 
@@ -413,7 +413,7 @@ impl<S: Read + Write> Client<S> {
     // Database search {{{
     // TODO: count tag needle [...] [group] [grouptag], find type what [...] [window start:end]
     // TODO: search type what [...] [window start:end], searchadd type what [...]
-    // TODO: findadd type what [...], listallinfo [uri], listfiles [uri], lsinfo [uri]
+    // TODO: listallinfo [uri], listfiles [uri]
     // TODO: list type [filtertype] [filterwhat] [...] [group] [grouptype] [...]
     // TODO: searchaddpl name type what [...], readcomments
 
@@ -434,6 +434,26 @@ impl<S: Read + Write> Client<S> {
     fn find_generic(&mut self, cmd: &str, query: &Query, window: Window) -> Result<Vec<Song>> {
         self.run_command(cmd, (query, window))
             .and_then(|_| self.read_structs("file"))
+    }
+
+    /// Lists unique tags values of the specified type for songs matching the given query.
+    // TODO: list type [filtertype] [filterwhat] [...] [group] [grouptype] [...]
+    // It isn't clear if or how `group` works
+    pub fn list(&mut self, term: &Term, query: &Query) -> Result<Vec<String>> {
+        self.run_command("list", (term, query))
+            .and_then(|_| self.read_pairs().map(|p| p.map(|p| p.1)).collect())
+    }
+
+    /// Find all songs in the db that match query and adds them to current playlist.
+    pub fn findadd(&mut self, query: &Query) -> Result<()> {
+        self.run_command("findadd", query)
+            .and_then(|_| self.expect_ok())
+    }
+
+    /// Lists the contents of a directory.
+    pub fn lsinfo<P: ToSongPath>(&mut self, path: P) -> Result<Song> {
+        self.run_command("lsinfo", path)
+            .and_then(|_| self.read_struct())
     }
 
     // }}}
