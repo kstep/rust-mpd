@@ -2,14 +2,15 @@
 #![allow(missing_docs)]
 
 use bufstream::BufStream;
-use convert::FromIter;
-use error::{Error, ProtoError, Result};
+use convert::{FromIter, FromMap};
+use error::{Error, ProtoError, Result, ParseError};
 
 use reply::Reply;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::io::{self, Lines, Read, Write};
 use std::result::Result as StdResult;
+use std::str::FromStr;
 
 pub struct Pairs<I>(pub I);
 
@@ -104,8 +105,21 @@ pub trait Proto {
 
     fn run_command<I>(&mut self, command: &str, arguments: I) -> Result<()> where I: ToArguments;
 
-    fn read_map(&mut self) -> Result<BTreeMap<String, String>> {
-        self.read_pairs().collect()
+    fn read_structs<'a, T>(&'a mut self, key: &'static str) -> Result<Vec<T>>
+        where T: 'a + FromMap
+    {
+        self.read_pairs().split(key).map(|v| v.and_then(FromMap::from_map)).collect()
+    }
+
+    fn read_list(&mut self, key: &'static str) -> Result<Vec<String>> {
+        self.read_pairs()
+            .filter(|r| {
+                r.as_ref()
+                    .map(|&(ref a, _)| *a == key)
+                    .unwrap_or(true)
+            })
+            .map(|r| r.map(|(_, b)| b))
+            .collect()
     }
 
     fn read_struct<'a, T>(&'a mut self) -> Result<T>
@@ -148,10 +162,14 @@ pub trait Proto {
         }
     }
 
-    fn read_field(&mut self, field: &'static str) -> Result<String> {
-        let (a, b) = try!(self.read_pair());
+    fn read_field<T, E>(&mut self, field: &'static str) -> Result<T>
+        where T: FromStr<Err = E>,
+              ParseError: From<E>
+    {
+        let (a, b) = self.read_pair()?;
+        self.expect_ok()?;
         if &*a == field {
-            Ok(b)
+            Ok(b.parse::<T>().map_err(Into::<ParseError>::into)?)
         } else {
             Err(Error::Proto(ProtoError::NoField(field)))
         }

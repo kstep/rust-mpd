@@ -125,14 +125,8 @@ impl<'a, S: 'a + Read + Write> IdleGuard<'a, S> {
     /// Get list of subsystems with new events, interrupting idle mode in process
     pub fn get(self) -> Result<Vec<Subsystem>, Error> {
         let result = self.0
-            .read_pairs()
-            .filter(|r| {
-                r.as_ref()
-                    .map(|&(ref a, _)| *a == "changed")
-                    .unwrap_or(true)
-            })
-            .map(|r| r.and_then(|(_, b)| b.parse().map_err(From::from)))
-            .collect();
+            .read_list("changed")
+            .and_then(|v| v.into_iter().map(|b| b.parse().map_err(From::from)).collect());
         forget(self);
         result
     }

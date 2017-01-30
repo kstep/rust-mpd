@@ -209,19 +209,20 @@ impl<S: Read + Write> Client<S> {
             "playlistinfo"
         };
         self.run_command(command, pos.to_range())
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("file"))
     }
 
     /// List all songs in a play queue
     pub fn queue(&mut self) -> Result<Vec<Song>> {
         self.run_command("playlistinfo", ())
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("file"))
     }
 
     /// Get current playing song
     pub fn currentsong(&mut self) -> Result<Option<Song>> {
         self.run_command("currentsong", ())
-            .and_then(|_| self.read_struct::<Song>().map(|s| if s.place.is_none() { None } else { Some(s) }))
+            .and_then(|_| self.read_struct::<Song>())
+            .map(|s| if s.place.is_none() { None } else { Some(s) })
     }
 
     /// Clear current queue
@@ -233,27 +234,20 @@ impl<S: Read + Write> Client<S> {
     /// List all changes in a queue since given version
     pub fn changes(&mut self, version: u32) -> Result<Vec<Song>> {
         self.run_command("plchanges", version)
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("file"))
     }
 
     /// Append a song into a queue
     pub fn push<P: AsRef<str>>(&mut self, path: P) -> Result<Id> {
         self.run_command("addid", path.as_ref())
             .and_then(|_| self.read_field("Id"))
-            .and_then(|v| {
-                self.expect_ok()
-                    .and_then(|_| v.parse().map_err(From::from).map(Id))
-            })
+            .map(Id)
     }
 
     /// Insert a song into a given position in a queue
     pub fn insert<P: AsRef<str>>(&mut self, path: P, pos: usize) -> Result<usize> {
         self.run_command("addid", (path.as_ref(), pos))
             .and_then(|_| self.read_field("Id"))
-            .and_then(|v| {
-                self.expect_ok()
-                    .and_then(|_| v.parse().map_err(From::from))
-            })
     }
 
     /// Delete a song (at some position) or several songs (in a range) from a queue
@@ -338,13 +332,13 @@ impl<S: Read + Write> Client<S> {
     /// List all playlists
     pub fn playlists(&mut self) -> Result<Vec<Playlist>> {
         self.run_command("listplaylists", ())
-            .and_then(|_| self.read_pairs().split("playlist").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("playlist"))
     }
 
     /// List all songs in a playlist
     pub fn playlist<N: ToPlaylistName>(&mut self, name: N) -> Result<Vec<Song>> {
         self.run_command("listplaylistinfo", name.to_name())
-            .and_then(|_| self.read_pairs().split("file").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("file"))
     }
 
     /// Load playlist into queue
@@ -407,20 +401,12 @@ impl<S: Read + Write> Client<S> {
     pub fn rescan(&mut self) -> Result<u32> {
         self.run_command("rescan", ())
             .and_then(|_| self.read_field("updating_db"))
-            .and_then(|v| {
-                self.expect_ok()
-                    .and_then(|_| v.parse().map_err(From::from))
-            })
     }
 
     /// Run database update, i.e. remove non-existing files from DB
     pub fn update(&mut self) -> Result<u32> {
         self.run_command("update", ())
             .and_then(|_| self.read_field("updating_db"))
-            .and_then(|v| {
-                self.expect_ok()
-                    .and_then(|_| v.parse().map_err(From::from))
-            })
     }
     // }}}
 
@@ -447,12 +433,7 @@ impl<S: Read + Write> Client<S> {
 
     fn find_generic(&mut self, cmd: &str, query: &Query, window: Window) -> Result<Vec<Song>> {
         self.run_command(cmd, (query, window))
-            .and_then(|_| {
-                self.read_pairs()
-                    .split("file")
-                    .map(|v| v.and_then(FromMap::from_map))
-                    .collect()
-            })
+            .and_then(|_| self.read_structs("file"))
     }
 
     // }}}
@@ -461,7 +442,7 @@ impl<S: Read + Write> Client<S> {
     /// List all outputs
     pub fn outputs(&mut self) -> Result<Vec<Output>> {
         self.run_command("outputs", ())
-            .and_then(|_| self.read_pairs().split("outputid").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("outputid"))
     }
 
     /// Set given output enabled state
@@ -497,98 +478,35 @@ impl<S: Read + Write> Client<S> {
     pub fn music_directory(&mut self) -> Result<String> {
         self.run_command("config", ())
             .and_then(|_| self.read_field("music_directory"))
-            .and_then(|d| self.expect_ok().map(|_| d))
     }
 
     /// List all available commands
     pub fn commands(&mut self) -> Result<Vec<String>> {
         self.run_command("commands", ())
-            .and_then(|_| {
-                self.read_pairs()
-                    .filter(|r| {
-                        r.as_ref()
-                            .map(|&(ref a, _)| *a == "command")
-                            .unwrap_or(true)
-                    })
-                    .map(|r| r.map(|(_, b)| b))
-                    .collect()
-            })
+            .and_then(|_| self.read_list("command"))
     }
 
     /// List all forbidden commands
     pub fn notcommands(&mut self) -> Result<Vec<String>> {
         self.run_command("notcommands", ())
-            .and_then(|_| {
-                self.read_pairs()
-                    .filter(|r| {
-                        r.as_ref()
-                            .map(|&(ref a, _)| *a == "command")
-                            .unwrap_or(true)
-                    })
-                    .map(|r| r.map(|(_, b)| b))
-                    .collect()
-            })
+            .and_then(|_| self.read_list("command"))
     }
 
     /// List all available URL handlers
     pub fn urlhandlers(&mut self) -> Result<Vec<String>> {
         self.run_command("urlhandlers", ())
-            .and_then(|_| {
-                self.read_pairs()
-                    .filter(|r| {
-                        r.as_ref()
-                            .map(|&(ref a, _)| *a == "handler")
-                            .unwrap_or(true)
-                    })
-                    .map(|r| r.map(|(_, b)| b))
-                    .collect()
-            })
+            .and_then(|_| self.read_list("handler"))
     }
 
     /// List all supported tag types
     pub fn tagtypes(&mut self) -> Result<Vec<String>> {
         self.run_command("tagtypes", ())
-            .and_then(|_| {
-                self.read_pairs()
-                    .filter(|r| {
-                        r.as_ref()
-                            .map(|&(ref a, _)| *a == "tagtype")
-                            .unwrap_or(true)
-                    })
-                    .map(|r| r.map(|(_, b)| b))
-                    .collect()
-            })
+            .and_then(|_| self.read_list("tagtype"))
     }
 
     /// List all available decoder plugins
     pub fn decoders(&mut self) -> Result<Vec<Plugin>> {
-        try!(self.run_command("decoders", ()));
-
-        let mut result = Vec::new();
-        let mut plugin: Option<Plugin> = None;
-        for reply in self.read_pairs() {
-            let (a, b) = try!(reply);
-            match &*a {
-                "plugin" => {
-                    plugin.map(|p| result.push(p));
-
-                    plugin = Some(Plugin {
-                        name: b,
-                        suffixes: Vec::new(),
-                        mime_types: Vec::new(),
-                    });
-                }
-                "mime_type" => {
-                    plugin.as_mut().map(|p| p.mime_types.push(b));
-                }
-                "suffix" => {
-                    plugin.as_mut().map(|p| p.suffixes.push(b));
-                }
-                _ => unreachable!(),
-            }
-        }
-        plugin.map(|p| result.push(p));
-        Ok(result)
+        self.run_command("decoders", ()).and_then(|_| self.read_struct())
     }
     // }}}
 
@@ -596,22 +514,14 @@ impl<S: Read + Write> Client<S> {
     /// List all channels available for current connection
     pub fn channels(&mut self) -> Result<Vec<Channel>> {
         self.run_command("channels", ())
-            .and_then(|_| {
-                self.read_pairs()
-                    .filter(|r| {
-                        r.as_ref()
-                            .map(|&(ref a, _)| *a == "channel")
-                            .unwrap_or(true)
-                    })
-                    .map(|r| r.map(|(_, b)| unsafe { Channel::new_unchecked(b) }))
-                    .collect()
-            })
+            .and_then(|_| self.read_list("channel"))
+            .map(|v| v.into_iter().map(|b| unsafe { Channel::new_unchecked(b) }).collect())
     }
 
     /// Read queued messages from subscribed channels
     pub fn readmessages(&mut self) -> Result<Vec<Message>> {
         self.run_command("readmessages", ())
-            .and_then(|_| self.read_pairs().split("channel").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("channel"))
     }
 
     /// Send a message to a channel
@@ -639,13 +549,13 @@ impl<S: Read + Write> Client<S> {
     /// These mounts exist inside MPD process only, thus they can work without root permissions.
     pub fn mounts(&mut self) -> Result<Vec<Mount>> {
         self.run_command("listmounts", ())
-            .and_then(|_| self.read_pairs().split("mount").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("mount"))
     }
 
     /// List all network neighbors, which can be potentially mounted
     pub fn neighbors(&mut self) -> Result<Vec<Neighbor>> {
         self.run_command("listneighbors", ())
-            .and_then(|_| self.read_pairs().split("neighbor").map(|v| v.and_then(FromMap::from_map)).collect())
+            .and_then(|_| self.read_structs("neighbor"))
     }
 
     /// Mount given neighbor to a mount point
@@ -670,7 +580,6 @@ impl<S: Read + Write> Client<S> {
     pub fn sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<String> {
         self.run_command("sticker set", (typ, uri, name))
             .and_then(|_| self.read_field("sticker"))
-            .and_then(|s| self.expect_ok().map(|_| s))
     }
 
     /// Set sticker value for a given object, identified by type and uri
@@ -694,16 +603,8 @@ impl<S: Read + Write> Client<S> {
     /// List all stickers from a given object, identified by type and uri
     pub fn stickers(&mut self, typ: &str, uri: &str) -> Result<Vec<String>> {
         self.run_command("sticker list", (typ, uri))
-            .and_then(|_| {
-                self.read_pairs()
-                    .filter(|r| {
-                        r.as_ref()
-                            .map(|&(ref a, _)| *a == "sticker")
-                            .unwrap_or(true)
-                    })
-                    .map(|r| r.map(|(_, b)| b.splitn(2, '=').nth(1).map(|s| s.to_owned()).unwrap()))
-                    .collect()
-            })
+            .and_then(|_| self.read_list("sticker"))
+            .map(|v| v.into_iter().map(|b| b.splitn(2, '=').nth(1).map(|s| s.to_owned()).unwrap()).collect())
     }
 
     /// List all (file, sticker) pairs for sticker name and objects of given type
@@ -729,16 +630,7 @@ impl<S: Read + Write> Client<S> {
     /// with a tag set to given value
     pub fn find_sticker_eq(&mut self, typ: &str, uri: &str, name: &str, value: &str) -> Result<Vec<String>> {
         self.run_command("sticker find", (typ, uri, name, value))
-            .and_then(|_| {
-                self.read_pairs()
-                    .filter(|r| {
-                        r.as_ref()
-                            .map(|&(ref a, _)| *a == "file")
-                            .unwrap_or(true)
-                    })
-                    .map(|r| r.map(|(_, b)| b))
-                    .collect()
-            })
+            .and_then(|_| self.read_list("file"))
     }
     // }}}
 }
