@@ -3,10 +3,10 @@ extern crate tempdir;
 use self::tempdir::TempDir;
 use super::mpd;
 use std::fs::{File, create_dir};
-use std::io::Write;
+use std::io::{Write, Read};
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Child};
+use std::process::{Command, Child, Stdio};
 
 struct MpdConfig {
     db_file: PathBuf,
@@ -68,6 +68,12 @@ impl Drop for Daemon {
     fn drop(&mut self) {
         self.process.kill().expect("Could not kill mpd daemon.");
         self.process.wait().expect("Could not wait for mpd daemon to shutdown.");
+        if let Some(ref mut stderr) = self.process.stderr {
+            let mut output = String::new();
+            stderr.read_to_string(&mut output).expect("Could not collect output from mpd.");
+            println!{"Output from mpd:"}
+            println!{"{}", output};
+        }
     }
 }
 
@@ -85,6 +91,9 @@ impl Daemon {
         let process = Command::new("mpd")
             .arg("--no-daemon")
             .arg(&config.config_path)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
             .spawn()
             .expect("Could not create mpd daemon.");
 
