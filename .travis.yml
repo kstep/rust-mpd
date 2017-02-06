@@ -18,6 +18,8 @@ env:
 before_script:
   - sudo apt-get update -qq
   - sudo apt-get install -y mpd
+    # Stop mpd service to ensure we use the test-started ones.
+  - sudo /etc/init.d/mpd stop
   - /usr/bin/mpd --version
   - export PATH=$HOME/.cargo/bin:$HOME/.local/bin:$PATH
   - |
