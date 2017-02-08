@@ -12,6 +12,7 @@ struct MpdConfig {
     db_file: PathBuf,
     music_directory: PathBuf,
     playlist_directory: PathBuf,
+    sticker_file: PathBuf,
     config_path: PathBuf,
     sock_path: PathBuf,
 }
@@ -25,6 +26,7 @@ impl MpdConfig {
             db_file: base.join("db"),
             music_directory: base.join("music"),
             playlist_directory: base.join("playlists"),
+            sticker_file: base.join("sticker_file"),
             config_path: base.join("config"),
             sock_path: base.join("sock"),
         }
@@ -36,6 +38,7 @@ db_file "{db_file}"
 log_file "/dev/null"
 music_directory "{music_directory}"
 playlist_directory "{playlist_directory}"
+sticker_file "{sticker_file}"
 bind_to_address "{sock_path}"
 audio_output {{
     type "null"
@@ -45,6 +48,7 @@ audio_output {{
             db_file=self.db_file.display(),
             music_directory=self.music_directory.display(),
             playlist_directory=self.playlist_directory.display(),
+            sticker_file=self.sticker_file.display(),
             sock_path=self.sock_path.display(),
         )
     }
@@ -83,11 +87,19 @@ fn sleep() {
     thread::sleep(ten_millis);
 }
 
+static EMPTY_FLAC_BYTES: &'static [u8] = include_bytes!("../data/empty.flac");
+
 impl Daemon {
     pub fn start() -> Daemon {
         let temp_dir = TempDir::new("mpd-test").unwrap();
         let config = MpdConfig::new(&temp_dir);
         config.generate();
+
+        File::create(config.music_directory.join("empty.flac"))
+            .unwrap()
+            .write_all(EMPTY_FLAC_BYTES)
+            .unwrap();
+
         let process = Command::new("mpd")
             .arg("--no-daemon")
             .arg(&config.config_path)
