@@ -95,6 +95,7 @@ impl Daemon {
         let config = MpdConfig::new(&temp_dir);
         config.generate();
 
+        // TODO: Factor out putting files in the music directory.
         File::create(config.music_directory.join("empty.flac"))
             .unwrap()
             .write_all(EMPTY_FLAC_BYTES)
