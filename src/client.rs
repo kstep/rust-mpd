@@ -598,8 +598,10 @@ impl<S: Read + Write> Client<S> {
     // Sticker methods {{{
     /// Show sticker value for a given object, identified by type and uri
     pub fn sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<String> {
-        self.run_command("sticker set", (typ, uri, name))
-            .and_then(|_| self.read_field("sticker"))
+        self.run_command("sticker get", (typ, uri, name))
+            // TODO: This should parse to a `Sticker` type.
+            .and_then(|_| self.read_field::<String>("sticker"))
+            .and_then(|s| s.splitn(2, '=').nth(1).map(str::to_owned).ok_or_else(|| Error::Proto(ProtoError::BadSticker)))
     }
 
     /// Set sticker value for a given object, identified by type and uri

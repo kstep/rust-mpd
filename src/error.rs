@@ -370,6 +370,8 @@ pub enum ProtoError {
     BadBanner,
     /// expected some field, but it was missing
     NoField(&'static str),
+    /// expected sticker value, but didn't find it
+    BadSticker,
 }
 
 impl fmt::Display for ProtoError {
@@ -385,6 +387,7 @@ impl StdError for ProtoError {
             ProtoError::NotPair => "pair expected",
             ProtoError::BadBanner => "banner error",
             ProtoError::NoField(_) => "missing field",
+            ProtoError::BadSticker => "sticker error",
         }
     }
 }
