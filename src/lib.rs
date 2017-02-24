@@ -51,6 +51,7 @@ pub mod search;
 pub mod message;
 pub mod idle;
 pub mod mount;
+mod sticker;
 
 mod proto;
 pub mod client;
