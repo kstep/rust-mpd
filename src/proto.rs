@@ -162,9 +162,8 @@ pub trait Proto {
         }
     }
 
-    fn read_field<T, E>(&mut self, field: &'static str) -> Result<T>
-        where T: FromStr<Err = E>,
-              ParseError: From<E>
+    fn read_field<T: FromStr>(&mut self, field: &'static str) -> Result<T>
+        where ParseError: From<T::Err>
     {
         let (a, b) = self.read_pair()?;
         self.expect_ok()?;

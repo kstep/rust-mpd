@@ -22,6 +22,7 @@ use status::{ReplayGain, Status};
 use std::convert::From;
 use std::io::{BufRead, Lines, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
+use sticker::Sticker;
 use version::Version;
 
 // Client {{{
@@ -598,8 +599,10 @@ impl<S: Read + Write> Client<S> {
     // Sticker methods {{{
     /// Show sticker value for a given object, identified by type and uri
     pub fn sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<String> {
-        self.run_command("sticker set", (typ, uri, name))
-            .and_then(|_| self.read_field("sticker"))
+        self.run_command("sticker get", (typ, uri, name))
+            // TODO: This should parse to a `Sticker` type.
+            .and_then(|_| self.read_field::<Sticker>("sticker"))
+            .map(|s| s.value)
     }
 
     /// Set sticker value for a given object, identified by type and uri
