@@ -203,7 +203,12 @@ impl FromIter for Status {
                         .ok()
                         .map(|v| Duration::milliseconds((v * 1000.0) as i64))
                 }
-                "duration" => result.duration = Some(Duration::seconds(try!(line.1.parse()))),
+                "duration" => {
+                    result.duration = line.1
+                        .parse::<f32>()
+                        .ok()
+                        .map(|v| Duration::milliseconds((v * 1000.0) as i64))
+                }
                 "bitrate" => result.bitrate = Some(try!(line.1.parse())),
                 "xfade" => result.crossfade = Some(Duration::seconds(try!(line.1.parse()))),
                 // "mixrampdb" => 0.0, //get_field!(map, "mixrampdb"),
