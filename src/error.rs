@@ -142,11 +142,11 @@ impl FromStr for ServerError {
                             let command = s[left_brace + 1..right_brace].to_string();
                             let detail = s[right_brace + 1..].trim().to_string();
                             Ok(ServerError {
-                                code: code,
-                                pos: pos,
-                                command: command,
-                                detail: detail,
-                            })
+                                   code: code,
+                                   pos: pos,
+                                   command: command,
+                                   detail: detail,
+                               })
                         } else {
                             Err(ParseError::NoMessage)
                         }

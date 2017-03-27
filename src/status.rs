@@ -71,44 +71,44 @@ impl Encodable for Status {
             e.emit_struct_field("nextsong", 9, |e| self.nextsong.encode(e))?;
             e.emit_struct_field("time", 10, |e| {
                     e.emit_option(|e| match self.time {
-                        Some(p) => {
-                            e.emit_option_some(|e| {
-                                e.emit_tuple(2, |e| {
-                                    e.emit_tuple_arg(0, |e| p.0.num_seconds().encode(e))?;
-                                    e.emit_tuple_arg(1, |e| p.1.num_seconds().encode(e))?;
-                                    Ok(())
-                                })
-                            })
-                        }
-                        None => e.emit_option_none(),
+                                      Some(p) => {
+                                          e.emit_option_some(|e| {
+                        e.emit_tuple(2, |e| {
+                            e.emit_tuple_arg(0, |e| p.0.num_seconds().encode(e))?;
+                            e.emit_tuple_arg(1, |e| p.1.num_seconds().encode(e))?;
+                            Ok(())
+                        })
                     })
+                                      }
+                                      None => e.emit_option_none(),
+                                  })
                 })?;
             e.emit_struct_field("elapsed", 11, |e| {
                     e.emit_option(|e| match self.elapsed {
-                        Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
-                        None => e.emit_option_none(),
-                    })
+                                      Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                                      None => e.emit_option_none(),
+                                  })
 
                 })?;
             e.emit_struct_field("duration", 12, |e| {
                     e.emit_option(|e| match self.duration {
-                        Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
-                        None => e.emit_option_none(),
-                    })
+                                      Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                                      None => e.emit_option_none(),
+                                  })
                 })?;
             e.emit_struct_field("bitrate", 13, |e| self.bitrate.encode(e))?;
             e.emit_struct_field("crossfade", 14, |e| {
                     e.emit_option(|e| match self.crossfade {
-                        Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
-                        None => e.emit_option_none(),
-                    })
+                                      Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                                      None => e.emit_option_none(),
+                                  })
                 })?;
             e.emit_struct_field("mixrampdb", 15, |e| self.mixrampdb.encode(e))?;
             e.emit_struct_field("mixrampdelay", 16, |e| {
                     e.emit_option(|e| match self.mixrampdelay {
-                        Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
-                        None => e.emit_option_none(),
-                    })
+                                      Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                                      None => e.emit_option_none(),
+                                  })
                 })?;
             e.emit_struct_field("audio", 17, |e| self.audio.encode(e))?;
             e.emit_struct_field("updating_db", 18, |e| self.updating_db.encode(e))?;
@@ -141,10 +141,10 @@ impl FromIter for Status {
                     match result.song {
                         None => {
                             result.song = Some(QueuePlace {
-                                id: Id(try!(line.1.parse())),
-                                pos: 0,
-                                prio: 0,
-                            })
+                                                   id: Id(try!(line.1.parse())),
+                                                   pos: 0,
+                                                   prio: 0,
+                                               })
                         }
                         Some(ref mut place) => place.id = Id(try!(line.1.parse())),
                     }
@@ -153,10 +153,10 @@ impl FromIter for Status {
                     match result.song {
                         None => {
                             result.song = Some(QueuePlace {
-                                pos: try!(line.1.parse()),
-                                id: Id(0),
-                                prio: 0,
-                            })
+                                                   pos: try!(line.1.parse()),
+                                                   id: Id(0),
+                                                   prio: 0,
+                                               })
                         }
                         Some(ref mut place) => place.pos = try!(line.1.parse()),
                     }
@@ -165,10 +165,10 @@ impl FromIter for Status {
                     match result.nextsong {
                         None => {
                             result.nextsong = Some(QueuePlace {
-                                id: Id(try!(line.1.parse())),
-                                pos: 0,
-                                prio: 0,
-                            })
+                                                       id: Id(try!(line.1.parse())),
+                                                       pos: 0,
+                                                       prio: 0,
+                                                   })
                         }
                         Some(ref mut place) => place.id = Id(try!(line.1.parse())),
                     }
@@ -177,24 +177,24 @@ impl FromIter for Status {
                     match result.nextsong {
                         None => {
                             result.nextsong = Some(QueuePlace {
-                                pos: try!(line.1.parse()),
-                                id: Id(0),
-                                prio: 0,
-                            })
+                                                       pos: try!(line.1.parse()),
+                                                       id: Id(0),
+                                                       prio: 0,
+                                                   })
                         }
                         Some(ref mut place) => place.pos = try!(line.1.parse()),
                     }
                 }
                 "time" => {
+                    let mut splits = line.1.splitn(2, ':').map(|v| v.parse().map_err(ParseError::BadInteger).map(Duration::seconds));
                     result.time = try!({
-                        let mut splits = line.1.splitn(2, ':').map(|v| v.parse().map_err(ParseError::BadInteger).map(Duration::seconds));
-                        match (splits.next(), splits.next()) {
-                            (Some(Ok(a)), Some(Ok(b))) => Ok(Some((a, b))),
-                            (Some(Err(e)), _) |
-                            (_, Some(Err(e))) => Err(e),
-                            _ => Ok(None),
-                        }
-                    })
+                                           match (splits.next(), splits.next()) {
+                                               (Some(Ok(a)), Some(Ok(b))) => Ok(Some((a, b))),
+                                               (Some(Err(e)), _) |
+                                               (_, Some(Err(e))) => Err(e),
+                                               _ => Ok(None),
+                                           }
+                                       })
                 }
                 // TODO" => float errors don't work on stable
                 "elapsed" => {
@@ -241,20 +241,14 @@ impl FromStr for AudioFormat {
     fn from_str(s: &str) -> Result<AudioFormat, ParseError> {
         let mut it = s.split(':');
         Ok(AudioFormat {
-            rate: try!(it.next()
-                .ok_or(ParseError::NoRate)
-                .and_then(|v| v.parse().map_err(ParseError::BadRate))),
-            bits: try!(it.next()
-                .ok_or(ParseError::NoBits)
-                .and_then(|v| if &*v == "f" {
-                    Ok(0)
-                } else {
-                    v.parse().map_err(ParseError::BadBits)
-                })),
-            chans: try!(it.next()
-                .ok_or(ParseError::NoChans)
-                .and_then(|v| v.parse().map_err(ParseError::BadChans))),
-        })
+               rate: try!(it.next().ok_or(ParseError::NoRate).and_then(|v| v.parse().map_err(ParseError::BadRate))),
+               bits: try!(it.next().ok_or(ParseError::NoBits).and_then(|v| if &*v == "f" {
+                                                                           Ok(0)
+                                                                       } else {
+                                                                           v.parse().map_err(ParseError::BadBits)
+                                                                       })),
+               chans: try!(it.next().ok_or(ParseError::NoChans).and_then(|v| v.parse().map_err(ParseError::BadChans))),
+           })
     }
 }
 
@@ -318,10 +312,10 @@ impl fmt::Display for ReplayGain {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::ReplayGain::*;
         f.write_str(match *self {
-            Off => "off",
-            Track => "track",
-            Album => "album",
-            Auto => "auto",
-        })
+                        Off => "off",
+                        Track => "track",
+                        Album => "album",
+                        Auto => "auto",
+                    })
     }
 }

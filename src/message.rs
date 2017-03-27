@@ -27,13 +27,9 @@ pub struct Message {
 impl FromMap for Message {
     fn from_map(map: BTreeMap<String, String>) -> Result<Message, Error> {
         Ok(Message {
-            channel: Channel(try!(map.get("channel")
-                .map(|v| v.to_owned())
-                .ok_or(Error::Proto(ProtoError::NoField("channel"))))),
-            message: try!(map.get("message")
-                .map(|v| v.to_owned())
-                .ok_or(Error::Proto(ProtoError::NoField("message")))),
-        })
+               channel: Channel(try!(map.get("channel").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("channel"))))),
+               message: try!(map.get("message").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("message")))),
+           })
     }
 }
 
@@ -70,8 +66,8 @@ impl Channel {
     /// numbers (`0`-`9`), underscore, forward slash, dot and colon (`_`, `/`, `.`, `:`)
     pub fn is_valid_name(name: &str) -> bool {
         name.bytes().all(|b| {
-            (0x61 <= b && b <= 0x7a) || (0x41 <= b && b <= 0x5a) || (0x30 <= b && b <= 0x39) ||
-            (b == 0x5f || b == 0x2f || b == 0x2e || b == 0x3a)
-        })
+                             (0x61 <= b && b <= 0x7a) || (0x41 <= b && b <= 0x5a) || (0x30 <= b && b <= 0x39) ||
+                             (b == 0x5f || b == 0x2f || b == 0x2e || b == 0x3a)
+                         })
     }
 }

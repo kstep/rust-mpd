@@ -19,9 +19,8 @@ impl<I> Iterator for Pairs<I>
 {
     type Item = Result<(String, String)>;
     fn next(&mut self) -> Option<Result<(String, String)>> {
-        let reply: Option<Result<Reply>> = self.0
-            .next()
-            .map(|v| v.map_err(Error::Io).and_then(|s| s.parse::<Reply>().map_err(Error::Parse)));
+        let reply: Option<Result<Reply>> =
+            self.0.next().map(|v| v.map_err(Error::Io).and_then(|s| s.parse::<Reply>().map_err(Error::Parse)));
         match reply {
             Some(Ok(Reply::Pair(a, b))) => Some(Ok((a, b))),
             None |
@@ -108,16 +107,15 @@ pub trait Proto {
     fn read_structs<'a, T>(&'a mut self, key: &'static str) -> Result<Vec<T>>
         where T: 'a + FromMap
     {
-        self.read_pairs().split(key).map(|v| v.and_then(FromMap::from_map)).collect()
+        self.read_pairs()
+            .split(key)
+            .map(|v| v.and_then(FromMap::from_map))
+            .collect()
     }
 
     fn read_list(&mut self, key: &'static str) -> Result<Vec<String>> {
         self.read_pairs()
-            .filter(|r| {
-                r.as_ref()
-                    .map(|&(ref a, _)| *a == key)
-                    .unwrap_or(true)
-            })
+            .filter(|r| r.as_ref().map(|&(ref a, _)| *a == key).unwrap_or(true))
             .map(|r| r.map(|(_, b)| b))
             .collect()
     }
