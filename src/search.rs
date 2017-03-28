@@ -64,12 +64,12 @@ impl<'a> Query<'a> {
 impl<'a> fmt::Display for Term<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(match *self {
-            Term::Any => "any",
-            Term::File => "file",
-            Term::Base => "base",
-            Term::LastMod => "modified-since",
-            Term::Tag(ref tag) => &*tag,
-        })
+                        Term::Any => "any",
+                        Term::File => "file",
+                        Term::Base => "base",
+                        Term::LastMod => "modified-since",
+                        Term::Tag(ref tag) => &*tag,
+                    })
     }
 }
 
@@ -134,8 +134,7 @@ mod test {
     #[test]
     fn find_query_format() {
         let mut query = Query::new();
-        let finished = query.and(Term::Tag("albumartist".into()), "Mac DeMarco")
-            .and(Term::Tag("album".into()), "Salad Days");
+        let finished = query.and(Term::Tag("albumartist".into()), "Mac DeMarco").and(Term::Tag("album".into()), "Salad Days");
         let output = collect(&*finished);
         assert_eq!(output, vec!["albumartist", "Mac DeMarco", "album", "Salad Days"]);
     }

@@ -96,10 +96,7 @@ impl Daemon {
         config.generate();
 
         // TODO: Factor out putting files in the music directory.
-        File::create(config.music_directory.join("empty.flac"))
-            .unwrap()
-            .write_all(EMPTY_FLAC_BYTES)
-            .unwrap();
+        File::create(config.music_directory.join("empty.flac")).unwrap().write_all(EMPTY_FLAC_BYTES).unwrap();
 
         let process = Command::new("mpd")
             .arg("--no-daemon")

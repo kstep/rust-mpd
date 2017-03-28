@@ -53,9 +53,9 @@ impl Encodable for Range {
             e.emit_tuple_arg(0, |e| e.emit_i64(self.0.num_seconds()))?;
             e.emit_tuple_arg(1, |e| {
                 e.emit_option(|e| match self.1 {
-                    Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
-                    None => e.emit_option_none(),
-                })
+                                  Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                                  None => e.emit_option_none(),
+                              })
             })
         })
     }
@@ -69,7 +69,9 @@ impl Default for Range {
 
 impl fmt::Display for Range {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.0.num_seconds().fmt(f)?;
+        self.0
+            .num_seconds()
+            .fmt(f)?;
         f.write_str(":")?;
         if let Some(v) = self.1 {
             v.num_seconds().fmt(f)?;
@@ -120,15 +122,15 @@ impl Encodable for Song {
             e.emit_struct_field("title", 2, |e| self.title.encode(e))?;
             e.emit_struct_field("last_mod", 3, |e| {
                     e.emit_option(|e| match self.last_mod {
-                        Some(m) => e.emit_option_some(|e| m.to_timespec().sec.encode(e)),
-                        None => e.emit_option_none(),
-                    })
+                                      Some(m) => e.emit_option_some(|e| m.to_timespec().sec.encode(e)),
+                                      None => e.emit_option_none(),
+                                  })
                 })?;
             e.emit_struct_field("duration", 4, |e| {
                     e.emit_option(|e| match self.duration {
-                        Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
-                        None => e.emit_option_none(),
-                    })
+                                      Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                                      None => e.emit_option_none(),
+                                  })
                 })?;
             e.emit_struct_field("place", 5, |e| self.place.encode(e))?;
             e.emit_struct_field("range", 6, |e| self.range.encode(e))?;
@@ -148,11 +150,7 @@ impl FromIter for Song {
             match &*line.0 {
                 "file" => result.file = line.1.to_owned(),
                 "Title" => result.title = Some(line.1.to_owned()),
-                "Last-Modified" => {
-                    result.last_mod = try!(strptime(&*line.1, "%Y-%m-%dT%H:%M:%S%Z")
-                        .map_err(ParseError::BadTime)
-                        .map(Some))
-                }
+                "Last-Modified" => result.last_mod = try!(strptime(&*line.1, "%Y-%m-%dT%H:%M:%S%Z").map_err(ParseError::BadTime).map(Some)),
                 "Name" => result.name = Some(line.1.to_owned()),
                 "Time" => result.duration = Some(Duration::seconds(try!(line.1.parse()))),
                 "Range" => result.range = Some(try!(line.1.parse())),
@@ -160,10 +158,10 @@ impl FromIter for Song {
                     match result.place {
                         None => {
                             result.place = Some(QueuePlace {
-                                id: Id(try!(line.1.parse())),
-                                pos: 0,
-                                prio: 0,
-                            })
+                                                    id: Id(try!(line.1.parse())),
+                                                    pos: 0,
+                                                    prio: 0,
+                                                })
                         }
                         Some(ref mut place) => place.id = Id(try!(line.1.parse())),
                     }
@@ -172,10 +170,10 @@ impl FromIter for Song {
                     match result.place {
                         None => {
                             result.place = Some(QueuePlace {
-                                pos: try!(line.1.parse()),
-                                id: Id(0),
-                                prio: 0,
-                            })
+                                                    pos: try!(line.1.parse()),
+                                                    id: Id(0),
+                                                    prio: 0,
+                                                })
                         }
                         Some(ref mut place) => place.pos = try!(line.1.parse()),
                     }
@@ -184,10 +182,10 @@ impl FromIter for Song {
                     match result.place {
                         None => {
                             result.place = Some(QueuePlace {
-                                prio: try!(line.1.parse()),
-                                id: Id(0),
-                                pos: 0,
-                            })
+                                                    prio: try!(line.1.parse()),
+                                                    id: Id(0),
+                                                    pos: 0,
+                                                })
                         }
                         Some(ref mut place) => place.prio = try!(line.1.parse()),
                     }
