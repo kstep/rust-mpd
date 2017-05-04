@@ -166,6 +166,11 @@ impl<S: Read + Write> Client<S> {
         self.run_command("stop", ()).and_then(|_| self.expect_ok())
     }
 
+    /// Toggle pause state
+    pub fn toggle_pause(&mut self) -> Result<()> {
+        self.run_command("pause", ()).and_then(|_| self.expect_ok())
+    }
+
     /// Set pause state
     pub fn pause(&mut self, value: bool) -> Result<()> {
         self.run_command("pause", value as u8).and_then(|_| self.expect_ok())
