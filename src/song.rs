@@ -69,9 +69,7 @@ impl Default for Range {
 
 impl fmt::Display for Range {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.0
-            .num_seconds()
-            .fmt(f)?;
+        self.0.num_seconds().fmt(f)?;
         f.write_str(":")?;
         if let Some(v) = self.1 {
             v.num_seconds().fmt(f)?;

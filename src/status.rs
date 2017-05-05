@@ -73,12 +73,12 @@ impl Encodable for Status {
                     e.emit_option(|e| match self.time {
                                       Some(p) => {
                                           e.emit_option_some(|e| {
-                        e.emit_tuple(2, |e| {
+                                                                 e.emit_tuple(2, |e| {
                             e.emit_tuple_arg(0, |e| p.0.num_seconds().encode(e))?;
                             e.emit_tuple_arg(1, |e| p.1.num_seconds().encode(e))?;
                             Ok(())
                         })
-                    })
+                                                             })
                                       }
                                       None => e.emit_option_none(),
                                   })
@@ -197,18 +197,8 @@ impl FromIter for Status {
                                        })
                 }
                 // TODO" => float errors don't work on stable
-                "elapsed" => {
-                    result.elapsed = line.1
-                        .parse::<f32>()
-                        .ok()
-                        .map(|v| Duration::milliseconds((v * 1000.0) as i64))
-                }
-                "duration" => {
-                    result.duration = line.1
-                        .parse::<f32>()
-                        .ok()
-                        .map(|v| Duration::milliseconds((v * 1000.0) as i64))
-                }
+                "elapsed" => result.elapsed = line.1.parse::<f32>().ok().map(|v| Duration::milliseconds((v * 1000.0) as i64)),
+                "duration" => result.duration = line.1.parse::<f32>().ok().map(|v| Duration::milliseconds((v * 1000.0) as i64)),
                 "bitrate" => result.bitrate = Some(try!(line.1.parse())),
                 "xfade" => result.crossfade = Some(Duration::seconds(try!(line.1.parse()))),
                 // "mixrampdb" => 0.0, //get_field!(map, "mixrampdb"),
@@ -242,11 +232,13 @@ impl FromStr for AudioFormat {
         let mut it = s.split(':');
         Ok(AudioFormat {
                rate: try!(it.next().ok_or(ParseError::NoRate).and_then(|v| v.parse().map_err(ParseError::BadRate))),
-               bits: try!(it.next().ok_or(ParseError::NoBits).and_then(|v| if &*v == "f" {
-                                                                           Ok(0)
-                                                                       } else {
-                                                                           v.parse().map_err(ParseError::BadBits)
-                                                                       })),
+               bits: try!(it.next()
+                              .ok_or(ParseError::NoBits)
+                              .and_then(|v| if &*v == "f" {
+                                            Ok(0)
+                                        } else {
+                                            v.parse().map_err(ParseError::BadBits)
+                                        })),
                chans: try!(it.next().ok_or(ParseError::NoChans).and_then(|v| v.parse().map_err(ParseError::BadChans))),
            })
     }

@@ -479,8 +479,12 @@ impl<S: Read + Write> Client<S> {
     /// List all channels available for current connection
     pub fn channels(&mut self) -> Result<Vec<Channel>> {
         self.run_command("channels", ()).and_then(|_| self.read_list("channel")).map(|v| {
-            v.into_iter().map(|b| unsafe { Channel::new_unchecked(b) }).collect()
-        })
+                                                                                         v.into_iter()
+                                                                                             .map(|b| unsafe {
+                                                                                                      Channel::new_unchecked(b)
+                                                                                                  })
+                                                                                             .collect()
+                                                                                     })
     }
 
     /// Read queued messages from subscribed channels
@@ -558,32 +562,26 @@ impl<S: Read + Write> Client<S> {
 
     /// List all stickers from a given object, identified by type and uri
     pub fn stickers(&mut self, typ: &str, uri: &str) -> Result<Vec<String>> {
-        self.run_command("sticker list", (typ, uri)).and_then(|_| self.read_list("sticker")).map(|v| {
-            v.into_iter()
-                .map(|b| {
-                         b.splitn(2, '=')
-                             .nth(1)
-                             .map(|s| s.to_owned())
-                             .unwrap()
-                     })
-                .collect()
-        })
+        self.run_command("sticker list", (typ, uri))
+            .and_then(|_| self.read_list("sticker"))
+            .map(|v| v.into_iter().map(|b| b.splitn(2, '=').nth(1).map(|s| s.to_owned()).unwrap()).collect())
     }
 
     /// List all (file, sticker) pairs for sticker name and objects of given type
     /// from given directory (identified by uri)
     pub fn find_sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<Vec<(String, String)>> {
-        self.run_command("sticker find", (typ, uri, name)).and_then(|_| {
-            self.read_pairs()
-                .split("file")
-                .map(|rmap| {
-                         rmap.map(|mut map| {
-                                      (map.remove("file").unwrap(),
-                                       map.remove("sticker").and_then(|s| s.splitn(2, '=').nth(1).map(|s| s.to_owned())).unwrap())
-                                  })
-                     })
-                .collect()
-        })
+        self.run_command("sticker find", (typ, uri, name))
+            .and_then(|_| {
+                self.read_pairs()
+                    .split("file")
+                    .map(|rmap| {
+                             rmap.map(|mut map| {
+                                          (map.remove("file").unwrap(),
+                                           map.remove("sticker").and_then(|s| s.splitn(2, '=').nth(1).map(|s| s.to_owned())).unwrap())
+                                      })
+                         })
+                    .collect()
+            })
     }
 
     /// List all files of a given type under given directory (identified by uri)
