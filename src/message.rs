@@ -65,9 +65,10 @@ impl Channel {
     /// Valid channel name can contain only English letters (`A`-`Z`, `a`-`z`),
     /// numbers (`0`-`9`), underscore, forward slash, dot and colon (`_`, `/`, `.`, `:`)
     pub fn is_valid_name(name: &str) -> bool {
-        name.bytes().all(|b| {
-                             (0x61 <= b && b <= 0x7a) || (0x41 <= b && b <= 0x5a) || (0x30 <= b && b <= 0x39) ||
-                             (b == 0x5f || b == 0x2f || b == 0x2e || b == 0x3a)
-                         })
+        name.bytes()
+            .all(|b| {
+                     (0x61 <= b && b <= 0x7a) || (0x41 <= b && b <= 0x5a) || (0x30 <= b && b <= 0x39) ||
+                     (b == 0x5f || b == 0x2f || b == 0x2e || b == 0x3a)
+                 })
     }
 }

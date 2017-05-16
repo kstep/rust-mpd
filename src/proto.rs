@@ -107,17 +107,11 @@ pub trait Proto {
     fn read_structs<'a, T>(&'a mut self, key: &'static str) -> Result<Vec<T>>
         where T: 'a + FromMap
     {
-        self.read_pairs()
-            .split(key)
-            .map(|v| v.and_then(FromMap::from_map))
-            .collect()
+        self.read_pairs().split(key).map(|v| v.and_then(FromMap::from_map)).collect()
     }
 
     fn read_list(&mut self, key: &'static str) -> Result<Vec<String>> {
-        self.read_pairs()
-            .filter(|r| r.as_ref().map(|&(ref a, _)| *a == key).unwrap_or(true))
-            .map(|r| r.map(|(_, b)| b))
-            .collect()
+        self.read_pairs().filter(|r| r.as_ref().map(|&(ref a, _)| *a == key).unwrap_or(true)).map(|r| r.map(|(_, b)| b)).collect()
     }
 
     fn read_struct<'a, T>(&'a mut self) -> Result<T>
