@@ -102,6 +102,8 @@ pub struct Song {
     pub title: Option<String>,
     /// last modification time
     pub last_mod: Option<Tm>,
+    /// artist
+    pub artist: Option<String>,
     /// duration (in seconds resolution)
     pub duration: Option<Duration>,
     /// place in the queue (if queued for playback)
@@ -124,15 +126,16 @@ impl Encodable for Song {
                                       None => e.emit_option_none(),
                                   })
                 })?;
-            e.emit_struct_field("duration", 4, |e| {
+            e.emit_struct_field("artist", 4, |e| self.artist.encode(e))?;
+            e.emit_struct_field("duration", 5, |e| {
                     e.emit_option(|e| match self.duration {
                                       Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
                                       None => e.emit_option_none(),
                                   })
                 })?;
-            e.emit_struct_field("place", 5, |e| self.place.encode(e))?;
-            e.emit_struct_field("range", 6, |e| self.range.encode(e))?;
-            e.emit_struct_field("tags", 7, |e| self.tags.encode(e))?;
+            e.emit_struct_field("place", 6, |e| self.place.encode(e))?;
+            e.emit_struct_field("range", 7, |e| self.range.encode(e))?;
+            e.emit_struct_field("tags", 8, |e| self.tags.encode(e))?;
             Ok(())
         })
     }
@@ -149,6 +152,7 @@ impl FromIter for Song {
                 "file" => result.file = line.1.to_owned(),
                 "Title" => result.title = Some(line.1.to_owned()),
                 "Last-Modified" => result.last_mod = try!(strptime(&*line.1, "%Y-%m-%dT%H:%M:%S%Z").map_err(ParseError::BadTime).map(Some)),
+                "Artist" => result.artist = Some(line.1.to_owned()),
                 "Name" => result.name = Some(line.1.to_owned()),
                 "Time" => result.duration = Some(Duration::seconds(try!(line.1.parse()))),
                 "Range" => result.range = Some(try!(line.1.parse())),
