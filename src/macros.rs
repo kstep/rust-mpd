@@ -20,8 +20,10 @@ macro_rules! get_field {
     ($map:expr, $name:expr) => { get_field_impl!(get, $map, $name) }
 }
 
-macro_rules! pop_field {
-    ($map:expr, bool $name:expr) => { get_field_impl!(remove, $map, bool $name) };
-    ($map:expr, opt $name:expr) => { get_field_impl!(remove, $map, opt $name) };
-    ($map:expr, $name:expr) => { get_field_impl!(remove, $map, $name) }
-}
+// Commenting out, since this is causing most recent build (v.0.0.12) to fail Travis Builds
+// Macro isn't used anywhere either, so commenting instead of removing in case we ever need it back
+//macro_rules! pop_field {
+    //($map:expr, bool $name:expr) => { get_field_impl!(remove, $map, bool $name) };
+    //($map:expr, opt $name:expr) => { get_field_impl!(remove, $map, opt $name) };
+    //($map:expr, $name:expr) => { get_field_impl!(remove, $map, $name) }
+//}
