@@ -22,6 +22,7 @@ use status::{ReplayGain, Status};
 use std::convert::From;
 use std::io::{BufRead, Lines, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
+use std::collections::HashMap;
 use sticker::Sticker;
 use version::Version;
 
@@ -565,6 +566,17 @@ impl<S: Read + Write> Client<S> {
         self.run_command("sticker list", (typ, uri))
             .and_then(|_| self.read_list("sticker"))
             .map(|v| v.into_iter().map(|b| b.splitn(2, '=').nth(1).map(|s| s.to_owned()).unwrap()).collect())
+    }
+
+    /// List all stickers from a given object in a map, identified by type and uri
+    pub fn stickers_map(&mut self, typ: &str, uri: &str) -> Result<HashMap<String, String>> {
+        self.run_command("sticker list", (typ, uri))
+            .and_then(|_| self.read_list("sticker"))
+            .map(|v| v.into_iter().map(|b| {
+                let mut iter = b.splitn(2, '=');
+
+                (iter.next().unwrap().to_owned(), iter.next().unwrap().to_owned())
+            }).collect())
     }
 
     /// List all (file, sticker) pairs for sticker name and objects of given type
