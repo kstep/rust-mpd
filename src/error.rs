@@ -182,7 +182,7 @@ pub enum Error {
 pub type Result<T> = result::Result<T, Error>;
 
 impl StdError for Error {
-    fn cause(&self) -> Option<&StdError> {
+    fn cause(&self) -> Option<&dyn StdError> {
         match *self {
             Error::Io(ref err) => Some(err),
             Error::Parse(ref err) => Some(err),

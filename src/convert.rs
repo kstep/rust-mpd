@@ -301,7 +301,7 @@ impl<'a, T: ToSongPath> ToSongPath for &'a T {
     }
 }
 
-impl ToSongPath for AsRef<str> {
+impl ToSongPath for dyn AsRef<str> {
     fn to_path(&self) -> &str {
         self.as_ref()
     }
