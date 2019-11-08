@@ -60,15 +60,15 @@ impl FromIter for Stats {
         let mut result = Stats::default();
 
         for res in iter {
-            let line = try!(res);
+            let line = res?;
             match &*line.0 {
-                "artists" => result.artists = try!(line.1.parse()),
-                "albums" => result.albums = try!(line.1.parse()),
-                "songs" => result.songs = try!(line.1.parse()),
-                "uptime" => result.uptime = Duration::seconds(try!(line.1.parse())),
-                "playtime" => result.playtime = Duration::seconds(try!(line.1.parse())),
-                "db_playtime" => result.db_playtime = Duration::seconds(try!(line.1.parse())),
-                "db_update" => result.db_update = Timespec::new(try!(line.1.parse()), 0),
+                "artists" => result.artists = line.1.parse()?,
+                "albums" => result.albums = line.1.parse()?,
+                "songs" => result.songs = line.1.parse()?,
+                "uptime" => result.uptime = Duration::seconds(line.1.parse()?),
+                "playtime" => result.playtime = Duration::seconds(line.1.parse()?),
+                "db_playtime" => result.db_playtime = Duration::seconds(line.1.parse()?),
+                "db_update" => result.db_update = Timespec::new(line.1.parse()?, 0),
                 _ => (),
             }
         }

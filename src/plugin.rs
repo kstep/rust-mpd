@@ -19,7 +19,7 @@ impl FromIter for Vec<Plugin> {
         let mut result = Vec::new();
         let mut plugin: Option<Plugin> = None;
         for reply in iter {
-            let (a, b) = try!(reply);
+            let (a, b) = reply?;
             match &*a {
                 "plugin" => {
                     plugin.map(|p| result.push(p));

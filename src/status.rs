@@ -125,88 +125,86 @@ impl FromIter for Status {
         let mut result = Status::default();
 
         for res in iter {
-            let line = try!(res);
+            let line = res?;
             match &*line.0 {
-                "volume" => result.volume = try!(line.1.parse()),
+                "volume" => result.volume = line.1.parse()?,
 
                 "repeat" => result.repeat = &*line.1 == "1",
                 "random" => result.random = &*line.1 == "1",
                 "single" => result.single = &*line.1 == "1",
                 "consume" => result.consume = &*line.1 == "1",
 
-                "playlist" => result.queue_version = try!(line.1.parse()),
-                "playlistlength" => result.queue_len = try!(line.1.parse()),
-                "state" => result.state = try!(line.1.parse()),
+                "playlist" => result.queue_version = line.1.parse()?,
+                "playlistlength" => result.queue_len = line.1.parse()?,
+                "state" => result.state = line.1.parse()?,
                 "songid" => {
                     match result.song {
                         None => {
                             result.song = Some(QueuePlace {
-                                                   id: Id(try!(line.1.parse())),
+                                                   id: Id(line.1.parse()?),
                                                    pos: 0,
                                                    prio: 0,
                                                })
                         }
-                        Some(ref mut place) => place.id = Id(try!(line.1.parse())),
+                        Some(ref mut place) => place.id = Id(line.1.parse()?),
                     }
                 }
                 "song" => {
                     match result.song {
                         None => {
                             result.song = Some(QueuePlace {
-                                                   pos: try!(line.1.parse()),
+                                                   pos: line.1.parse()?,
                                                    id: Id(0),
                                                    prio: 0,
                                                })
                         }
-                        Some(ref mut place) => place.pos = try!(line.1.parse()),
+                        Some(ref mut place) => place.pos = line.1.parse()?,
                     }
                 }
                 "nextsongid" => {
                     match result.nextsong {
                         None => {
                             result.nextsong = Some(QueuePlace {
-                                                       id: Id(try!(line.1.parse())),
+                                                       id: Id(line.1.parse()?),
                                                        pos: 0,
                                                        prio: 0,
                                                    })
                         }
-                        Some(ref mut place) => place.id = Id(try!(line.1.parse())),
+                        Some(ref mut place) => place.id = Id(line.1.parse()?),
                     }
                 }
                 "nextsong" => {
                     match result.nextsong {
                         None => {
                             result.nextsong = Some(QueuePlace {
-                                                       pos: try!(line.1.parse()),
+                                                       pos: line.1.parse()?,
                                                        id: Id(0),
                                                        prio: 0,
                                                    })
                         }
-                        Some(ref mut place) => place.pos = try!(line.1.parse()),
+                        Some(ref mut place) => place.pos = line.1.parse()?,
                     }
                 }
                 "time" => {
                     let mut splits = line.1.splitn(2, ':').map(|v| v.parse().map_err(ParseError::BadInteger).map(Duration::seconds));
-                    result.time = try!({
-                                           match (splits.next(), splits.next()) {
-                                               (Some(Ok(a)), Some(Ok(b))) => Ok(Some((a, b))),
-                                               (Some(Err(e)), _) |
-                                               (_, Some(Err(e))) => Err(e),
-                                               _ => Ok(None),
-                                           }
-                                       })
+                    result.time = match (splits.next(), splits.next()) {
+                                         (Some(Ok(a)), Some(Ok(b))) => Ok(Some((a, b))),
+                                         (Some(Err(e)), _) |
+                                         (_, Some(Err(e))) => Err(e),
+                                         _ => Ok(None),
+                                  }?;
                 }
                 // TODO" => float errors don't work on stable
                 "elapsed" => result.elapsed = line.1.parse::<f32>().ok().map(|v| Duration::milliseconds((v * 1000.0) as i64)),
                 "duration" => result.duration = line.1.parse::<f32>().ok().map(|v| Duration::milliseconds((v * 1000.0) as i64)),
-                "bitrate" => result.bitrate = Some(try!(line.1.parse())),
-                "xfade" => result.crossfade = Some(Duration::seconds(try!(line.1.parse()))),
+                "bitrate" => result.bitrate = Some(line.1.parse()?),
+                "xfade" => result.crossfade = Some(Duration::seconds(line.1.parse()?)),
                 // "mixrampdb" => 0.0, //get_field!(map, "mixrampdb"),
                 // "mixrampdelay" => None, //get_field!(map, opt "mixrampdelay").map(|v: f64| Duration::milliseconds((v * 1000.0) as i64)),
-                "audio" => result.audio = Some(try!(line.1.parse())),
-                "updating_db" => result.updating_db = Some(try!(line.1.parse())),
+                "audio" => result.audio = Some(line.1.parse()?),
+                "updating_db" => result.updating_db = Some(line.1.parse()?),
                 "error" => result.error = Some(line.1.to_owned()),
-                "replay_gain_mode" => result.replaygain = Some(try!(line.1.parse())),
+                "replay_gain_mode" => result.replaygain = Some(line.1.parse()?),
                 _ => (),
             }
         }
@@ -231,15 +229,14 @@ impl FromStr for AudioFormat {
     fn from_str(s: &str) -> Result<AudioFormat, ParseError> {
         let mut it = s.split(':');
         Ok(AudioFormat {
-               rate: try!(it.next().ok_or(ParseError::NoRate).and_then(|v| v.parse().map_err(ParseError::BadRate))),
-               bits: try!(it.next()
-                              .ok_or(ParseError::NoBits)
+               rate: it.next().ok_or(ParseError::NoRate).and_then(|v| v.parse().map_err(ParseError::BadRate))?,
+               bits: it.next().ok_or(ParseError::NoBits)
                               .and_then(|v| if &*v == "f" {
                                             Ok(0)
                                         } else {
                                             v.parse().map_err(ParseError::BadBits)
-                                        })),
-               chans: try!(it.next().ok_or(ParseError::NoChans).and_then(|v| v.parse().map_err(ParseError::BadChans))),
+                                        })?,
+               chans: it.next().ok_or(ParseError::NoChans).and_then(|v| v.parse().map_err(ParseError::BadChans))?,
            })
     }
 }

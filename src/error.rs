@@ -56,7 +56,7 @@ impl FromStr for ErrorCode {
     type Err = ParseError;
     fn from_str(s: &str) -> result::Result<ErrorCode, ParseError> {
         use self::ErrorCode::*;
-        match try!(s.parse()) {
+        match s.parse()? {
             1 => Ok(NotList),
             2 => Ok(Argument),
             3 => Ok(Password),

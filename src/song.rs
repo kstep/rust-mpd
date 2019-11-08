@@ -147,49 +147,49 @@ impl FromIter for Song {
         let mut result = Song::default();
 
         for res in iter {
-            let line = try!(res);
+            let line = res?;
             match &*line.0 {
                 "file" => result.file = line.1.to_owned(),
                 "Title" => result.title = Some(line.1.to_owned()),
-                "Last-Modified" => result.last_mod = try!(strptime(&*line.1, "%Y-%m-%dT%H:%M:%S%Z").map_err(ParseError::BadTime).map(Some)),
+                "Last-Modified" => result.last_mod = strptime(&*line.1, "%Y-%m-%dT%H:%M:%S%Z").map_err(ParseError::BadTime).map(Some)?,
                 "Artist" => result.artist = Some(line.1.to_owned()),
                 "Name" => result.name = Some(line.1.to_owned()),
-                "Time" => result.duration = Some(Duration::seconds(try!(line.1.parse()))),
-                "Range" => result.range = Some(try!(line.1.parse())),
+                "Time" => result.duration = Some(Duration::seconds(line.1.parse()?)),
+                "Range" => result.range = Some(line.1.parse()?),
                 "Id" => {
                     match result.place {
                         None => {
                             result.place = Some(QueuePlace {
-                                                    id: Id(try!(line.1.parse())),
+                                                    id: Id(line.1.parse()?),
                                                     pos: 0,
                                                     prio: 0,
                                                 })
                         }
-                        Some(ref mut place) => place.id = Id(try!(line.1.parse())),
+                        Some(ref mut place) => place.id = Id(line.1.parse()?),
                     }
                 }
                 "Pos" => {
                     match result.place {
                         None => {
                             result.place = Some(QueuePlace {
-                                                    pos: try!(line.1.parse()),
+                                                    pos: line.1.parse()?,
                                                     id: Id(0),
                                                     prio: 0,
                                                 })
                         }
-                        Some(ref mut place) => place.pos = try!(line.1.parse()),
+                        Some(ref mut place) => place.pos = line.1.parse()?,
                     }
                 }
                 "Prio" => {
                     match result.place {
                         None => {
                             result.place = Some(QueuePlace {
-                                                    prio: try!(line.1.parse()),
+                                                    prio: line.1.parse()?,
                                                     id: Id(0),
                                                     pos: 0,
                                                 })
                         }
-                        Some(ref mut place) => place.prio = try!(line.1.parse()),
+                        Some(ref mut place) => place.prio = line.1.parse()?,
                     }
                 }
                 _ => {

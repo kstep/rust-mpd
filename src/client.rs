@@ -58,13 +58,13 @@ impl<S: Read + Write> Client<S> {
         let mut socket = BufStream::new(socket);
 
         let mut banner = String::new();
-        try!(socket.read_line(&mut banner));
+        socket.read_line(&mut banner)?;
 
         if !banner.starts_with("OK MPD ") {
             return Err(From::from(ProtoError::BadBanner));
         }
 
-        let version = try!(banner[7..].trim().parse::<Version>());
+        let version = banner[7..].trim().parse::<Version>()?;
 
         Ok(Client {
                socket: socket,
@@ -610,7 +610,7 @@ impl<S: Read + Write> Proto for Client<S> {
 
     fn read_line(&mut self) -> Result<String> {
         let mut buf = String::new();
-        try!(self.socket.read_line(&mut buf));
+        self.socket.read_line(&mut buf)?;
         if buf.ends_with('\n') {
             buf.pop();
         }

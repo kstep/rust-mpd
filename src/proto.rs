@@ -123,7 +123,7 @@ pub trait Proto {
 
     fn drain(&mut self) -> Result<()> {
         loop {
-            let reply = try!(self.read_line());
+            let reply = self.read_line()?;
             match &*reply {
                 "OK" | "list_OK" => break,
                 _ => (),
@@ -133,7 +133,7 @@ pub trait Proto {
     }
 
     fn expect_ok(&mut self) -> Result<()> {
-        let line = try!(self.read_line());
+        let line = self.read_line()?;
 
         match line.parse::<Reply>() {
             Ok(Reply::Ok) => Ok(()),
@@ -144,7 +144,7 @@ pub trait Proto {
     }
 
     fn read_pair(&mut self) -> Result<(String, String)> {
-        let line = try!(self.read_line());
+        let line = self.read_line()?;
 
         match line.parse::<Reply>() {
             Ok(Reply::Pair(a, b)) => Ok((a, b)),
