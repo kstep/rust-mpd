@@ -1,11 +1,11 @@
 #![allow(missing_docs)]
 //! These are inner traits to support methods overloading for the `Client`
 
-use error::Error;
-use output::Output;
-use playlist::Playlist;
-use proto::ToArguments;
-use song::{self, Id, Song};
+use crate::error::Error;
+use crate::output::Output;
+use crate::playlist::Playlist;
+use crate::proto::ToArguments;
+use crate::song::{self, Id, Song};
 use std::collections::BTreeMap;
 use std::ops::{Range, RangeFrom, RangeFull, RangeTo};
 

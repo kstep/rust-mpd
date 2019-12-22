@@ -1,7 +1,7 @@
 //! The module defines decoder plugin data structures
 
-use convert::FromIter;
-use error::Error;
+use crate::convert::FromIter;
+use crate::error::Error;
 
 /// Decoder plugin
 #[derive(Clone, Debug, PartialEq, RustcEncodable)]

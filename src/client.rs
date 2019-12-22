@@ -7,24 +7,25 @@
 
 use bufstream::BufStream;
 
-use convert::*;
-use error::{Error, ProtoError, Result};
-use message::{Channel, Message};
-use mount::{Mount, Neighbor};
-use output::Output;
-use playlist::Playlist;
-use plugin::Plugin;
-use proto::*;
-use search::{Query, Window, Term};
-use song::{Id, Song};
-use stats::Stats;
-use status::{ReplayGain, Status};
+use crate::convert::*;
+use crate::error::{Error, ProtoError, Result};
+use crate::message::{Channel, Message};
+use crate::mount::{Mount, Neighbor};
+use crate::output::Output;
+use crate::playlist::Playlist;
+use crate::plugin::Plugin;
+use crate::proto::*;
+use crate::search::{Query, Window, Term};
+use crate::song::{Id, Song};
+use crate::stats::Stats;
+use crate::status::{ReplayGain, Status};
+use crate::sticker::Sticker;
+use crate::version::Version;
+
 use std::convert::From;
 use std::io::{BufRead, Lines, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::collections::HashMap;
-use sticker::Sticker;
-use version::Version;
 
 // Client {{{
 

@@ -4,7 +4,7 @@
 //! all possible server replies.
 
 
-use error::{ParseError, ServerError};
+use crate::error::{ParseError, ServerError};
 use std::str::FromStr;
 
 /// All possible MPD server replies

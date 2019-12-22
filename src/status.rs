@@ -1,10 +1,10 @@
 //! The module defines MPD status data structures
 
-use convert::FromIter;
+use crate::convert::FromIter;
+use crate::error::{Error, ParseError};
+use crate::song::{Id, QueuePlace};
 
-use error::{Error, ParseError};
 use rustc_serialize::{Encodable, Encoder};
-use song::{Id, QueuePlace};
 use std::fmt;
 use std::str::FromStr;
 use time::Duration;

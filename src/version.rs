@@ -1,7 +1,7 @@
 //! This module defines MPD version type and parsing code
 
 
-use error::ParseError;
+use crate::error::ParseError;
 use std::str::FromStr;
 
 // Version {{{

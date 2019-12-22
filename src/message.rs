@@ -8,9 +8,8 @@
 //! Also client can get asynchronous notifications about new messages from subscribed
 //! channels with `idle` command, by waiting for `message` subsystem events.
 
-use convert::FromMap;
-
-use error::{Error, ProtoError};
+use crate::convert::FromMap;
+use crate::error::{Error, ProtoError};
 
 use std::collections::BTreeMap;
 use std::fmt;

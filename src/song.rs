@@ -1,8 +1,8 @@
 //! The module defines song structs and methods.
 
-use convert::FromIter;
+use crate::convert::FromIter;
+use crate::error::{Error, ParseError};
 
-use error::{Error, ParseError};
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
 use std::collections::BTreeMap;

@@ -1,8 +1,8 @@
 //! The module describes DB and playback statistics
 
-use convert::FromIter;
+use crate::convert::FromIter;
+use crate::error::Error;
 
-use error::Error;
 use rustc_serialize::{Encodable, Encoder};
 use time::{Duration, Timespec};
 

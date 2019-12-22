@@ -1,7 +1,7 @@
 #![allow(missing_docs)]
 // TODO: unfinished functionality
 
-use proto::ToArguments;
+use crate::proto::ToArguments;
 use std::borrow::Cow;
 use std::convert::Into;
 use std::fmt;
@@ -116,7 +116,7 @@ impl ToArguments for Window {
 #[cfg(test)]
 mod test {
     use super::*;
-    use proto::ToArguments;
+    use crate::proto::ToArguments;
 
     fn collect<I: ToArguments>(arguments: I) -> Vec<String> {
         let mut output = Vec::<String>::new();

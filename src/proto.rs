@@ -2,10 +2,11 @@
 #![allow(missing_docs)]
 
 use bufstream::BufStream;
-use convert::{FromIter, FromMap};
-use error::{Error, ProtoError, Result, ParseError};
 
-use reply::Reply;
+use crate::convert::{FromIter, FromMap};
+use crate::error::{Error, ProtoError, Result, ParseError};
+use crate::reply::Reply;
+
 use std::collections::BTreeMap;
 use std::fmt;
 use std::io::{self, Lines, Read, Write};
@@ -169,7 +170,7 @@ pub trait Proto {
 
 
 pub trait ToArguments {
-    fn to_arguments<F, E>(&self, &mut F) -> StdResult<(), E> where F: FnMut(&str) -> StdResult<(), E>;
+    fn to_arguments<F, E>(&self, _: &mut F) -> StdResult<(), E> where F: FnMut(&str) -> StdResult<(), E>;
 }
 
 impl ToArguments for () {
@@ -205,11 +206,11 @@ argument_for_display!{u32}
 argument_for_display!{f32}
 argument_for_display!{f64}
 argument_for_display!{usize}
-argument_for_display!{::status::ReplayGain}
+argument_for_display!{crate::status::ReplayGain}
 argument_for_display!{String}
-argument_for_display!{::song::Id}
-argument_for_display!{::song::Range}
-argument_for_display!{::message::Channel}
+argument_for_display!{crate::song::Id}
+argument_for_display!{crate::song::Range}
+argument_for_display!{crate::message::Channel}
 
 macro_rules! argument_for_tuple {
     ( $($t:ident: $T: ident),+ ) => {

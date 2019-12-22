@@ -9,9 +9,9 @@
 //! Possible, but inactive, mounts are named "neighbors" and can be
 //! listed with `neighbors()` method.
 
-use convert::FromMap;
+use crate::convert::FromMap;
+use crate::error::{Error, ProtoError};
 
-use error::{Error, ProtoError};
 use std::collections::BTreeMap;
 
 /// Mount point

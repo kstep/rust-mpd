@@ -1,8 +1,8 @@
 //! The module describes output
 
 
-use convert::FromMap;
-use error::{Error, ProtoError};
+use crate::convert::FromMap;
+use crate::error::{Error, ProtoError};
 use std::collections::BTreeMap;
 use std::convert::From;
 
