@@ -76,10 +76,13 @@ impl FromStr for ErrorCode {
     }
 }
 
-impl StdError for ErrorCode {
-    fn description(&self) -> &str {
+impl StdError for ErrorCode { }
+
+impl fmt::Display for ErrorCode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::ErrorCode::*;
-        match *self {
+
+        let desc = match *self {
             NotList => "not a list",
             Argument => "invalid argument",
             Password => "invalid password",
@@ -93,13 +96,9 @@ impl StdError for ErrorCode {
             UpdateAlready => "already updating",
             PlayerSync => "player syncing",
             Exist => "already exists",
-        }
-    }
-}
+        };
 
-impl fmt::Display for ErrorCode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(self.description())
+        f.write_str(desc)
     }
 }
 
@@ -116,15 +115,11 @@ pub struct ServerError {
     pub detail: String,
 }
 
+impl StdError for ServerError { }
+
 impl fmt::Display for ServerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} error (`{}') at {}", self.code, self.detail, self.pos)
-    }
-}
-
-impl StdError for ServerError {
-    fn description(&self) -> &str {
-        self.code.description()
     }
 }
 
@@ -182,20 +177,12 @@ pub enum Error {
 pub type Result<T> = result::Result<T, Error>;
 
 impl StdError for Error {
-    fn cause(&self) -> Option<&dyn StdError> {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match *self {
             Error::Io(ref err) => Some(err),
             Error::Parse(ref err) => Some(err),
             Error::Proto(ref err) => Some(err),
             Error::Server(ref err) => Some(err),
-        }
-    }
-    fn description(&self) -> &str {
-        match *self {
-            Error::Io(ref err) => err.description(),
-            Error::Parse(ref err) => err.description(),
-            Error::Proto(ref err) => err.description(),
-            Error::Server(ref err) => err.description(),
         }
     }
 }
@@ -296,16 +283,13 @@ pub enum ParseError {
     BadErrorCode(usize),
 }
 
+impl StdError for ParseError { }
+
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.description())
-    }
-}
-
-impl StdError for ParseError {
-    fn description(&self) -> &str {
         use self::ParseError::*;
-        match *self {
+
+        let desc = match *self {
             BadInteger(_) => "invalid integer",
             BadFloat(_) => "invalid float",
             BadValue(_) => "invalid value",
@@ -325,7 +309,9 @@ impl StdError for ParseError {
             BadChans(_) => "invalid audio format channels",
             BadState(_) => "invalid playing state",
             BadErrorCode(_) => "unknown error code",
-        }
+        };
+
+        write!(f, "{}", desc)
     }
 }
 
@@ -374,21 +360,19 @@ pub enum ProtoError {
     BadSticker,
 }
 
+impl StdError for ProtoError { }
+
 impl fmt::Display for ProtoError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.description())
-    }
-}
-
-impl StdError for ProtoError {
-    fn description(&self) -> &str {
-        match *self {
+        let desc = match *self {
             ProtoError::NotOk => "OK expected",
             ProtoError::NotPair => "pair expected",
             ProtoError::BadBanner => "banner error",
             ProtoError::NoField(_) => "missing field",
             ProtoError::BadSticker => "sticker error",
-        }
+        };
+
+        write!(f, "{}", desc)
     }
 }
 // }}}
