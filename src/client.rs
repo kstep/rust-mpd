@@ -407,8 +407,8 @@ impl<S: Read + Write> Client<S> {
     }
 
     /// Lists the contents of a directory.
-    pub fn lsinfo<P: ToSongPath>(&mut self, path: P) -> Result<Song> {
-        self.run_command("lsinfo", path).and_then(|_| self.read_struct())
+    pub fn lsinfo<P: ToSongPath>(&mut self, path: P) -> Result<Vec<Song>> {
+        self.run_command("lsinfo", path).and_then(|_| self.read_structs("file"))
     }
 
     // }}}
