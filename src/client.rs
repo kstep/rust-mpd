@@ -377,8 +377,8 @@ impl<S: Read + Write> Client<S> {
     // TODO: searchaddpl name type what [...], readcomments
 
     /// List all songs/directories in directory
-    pub fn listfiles(&mut self, &str: path) -> Result<Vec<String>> {
-        self.run_command(cmd, path).and_then(|_| self.read_structs("file"))
+    pub fn listfiles(&mut self, song_path: &str) -> Result<Vec<(String, String)>> {
+        self.run_command("listfiles", song_path).and_then(|_| self.read_pairs().collect())
     }
 
     /// Find songs matching Query conditions.
