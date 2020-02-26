@@ -4,7 +4,6 @@ use crate::convert::FromIter;
 use crate::error::Error;
 
 use rustc_serialize::{Encodable, Encoder};
-use time::Timespec;
 use std::time::Duration;
 
 /// DB and playback statistics
@@ -22,8 +21,8 @@ pub struct Stats {
     pub playtime: Duration,
     /// total playback time for all songs in DB, seconds resolution
     pub db_playtime: Duration,
-    /// last DB update timestamp, seconds resolution
-    pub db_update: Timespec,
+    /// last DB update timestamp in seconds since Epoch, seconds resolution
+    pub db_update: Duration,
 }
 
 impl Encodable for Stats {
@@ -35,7 +34,7 @@ impl Encodable for Stats {
             e.emit_struct_field("uptime", 3, |e| self.uptime.as_secs().encode(e))?;
             e.emit_struct_field("playtime", 4, |e| self.playtime.as_secs().encode(e))?;
             e.emit_struct_field("db_playtime", 5, |e| self.db_playtime.as_secs().encode(e))?;
-            e.emit_struct_field("db_update", 6, |e| self.db_update.sec.encode(e))?;
+            e.emit_struct_field("db_update", 6, |e| self.db_update.as_secs().encode(e))?;
             Ok(())
         })
     }
@@ -50,7 +49,7 @@ impl Default for Stats {
             uptime: Duration::from_secs(0),
             playtime: Duration::from_secs(0),
             db_playtime: Duration::from_secs(0),
-            db_update: Timespec::new(0, 0),
+            db_update: Duration::from_secs(0),
         }
     }
 }
@@ -69,7 +68,7 @@ impl FromIter for Stats {
                 "uptime" => result.uptime = Duration::from_secs(line.1.parse()?),
                 "playtime" => result.playtime = Duration::from_secs(line.1.parse()?),
                 "db_playtime" => result.db_playtime = Duration::from_secs(line.1.parse()?),
-                "db_update" => result.db_update = Timespec::new(line.1.parse()?, 0),
+                "db_update" => result.db_update = Duration::from_secs(line.1.parse()?),
                 _ => (),
             }
         }

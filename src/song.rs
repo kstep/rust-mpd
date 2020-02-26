@@ -8,8 +8,8 @@ use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use std::collections::BTreeMap;
 use std::fmt;
 use std::str::FromStr;
-use time::{Tm, strptime};
 use std::time::Duration;
+use std::convert::TryFrom;
 
 /// Song ID
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Default)]
@@ -102,7 +102,7 @@ pub struct Song {
     /// title
     pub title: Option<String>,
     /// last modification time
-    pub last_mod: Option<Tm>,
+    pub last_mod: Option<Duration>,
     /// artist
     pub artist: Option<String>,
     /// duration (in seconds resolution)
@@ -123,7 +123,7 @@ impl Encodable for Song {
             e.emit_struct_field("title", 2, |e| self.title.encode(e))?;
             e.emit_struct_field("last_mod", 3, |e| {
                     e.emit_option(|e| match self.last_mod {
-                                      Some(m) => e.emit_option_some(|e| m.to_timespec().sec.encode(e)),
+                                      Some(m) => e.emit_option_some(|e| m.as_secs().encode(e)),
                                       None => e.emit_option_none(),
                                   })
                 })?;
@@ -152,7 +152,13 @@ impl FromIter for Song {
             match &*line.0 {
                 "file" => result.file = line.1.to_owned(),
                 "Title" => result.title = Some(line.1.to_owned()),
-                "Last-Modified" => result.last_mod = strptime(&*line.1, "%Y-%m-%dT%H:%M:%S%Z").map_err(ParseError::BadTime).map(Some)?,
+                "Last-Modified" => {
+                    let parsed: time::Date = time::parse(&*line.1, "%Y-%m-%dT%H:%M:%SZ")
+                        .map_err(ParseError::BadTime)?;
+                    let stamp = std::time::Duration::try_from(parsed - time::date!(1970-01-01))?;
+                    
+                    result.last_mod = Some(stamp);
+                },
                 "Artist" => result.artist = Some(line.1.to_owned()),
                 "Name" => result.name = Some(line.1.to_owned()),
                 "Time" => result.duration = Some(Duration::from_secs(line.1.parse()?)),
