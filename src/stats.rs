@@ -4,7 +4,8 @@ use crate::convert::FromIter;
 use crate::error::Error;
 
 use rustc_serialize::{Encodable, Encoder};
-use time::{Duration, Timespec};
+use time::Timespec;
+use std::time::Duration;
 
 /// DB and playback statistics
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -31,9 +32,9 @@ impl Encodable for Stats {
             e.emit_struct_field("artists", 0, |e| self.artists.encode(e))?;
             e.emit_struct_field("albums", 1, |e| self.albums.encode(e))?;
             e.emit_struct_field("songs", 2, |e| self.songs.encode(e))?;
-            e.emit_struct_field("uptime", 3, |e| self.uptime.num_seconds().encode(e))?;
-            e.emit_struct_field("playtime", 4, |e| self.playtime.num_seconds().encode(e))?;
-            e.emit_struct_field("db_playtime", 5, |e| self.db_playtime.num_seconds().encode(e))?;
+            e.emit_struct_field("uptime", 3, |e| self.uptime.as_secs().encode(e))?;
+            e.emit_struct_field("playtime", 4, |e| self.playtime.as_secs().encode(e))?;
+            e.emit_struct_field("db_playtime", 5, |e| self.db_playtime.as_secs().encode(e))?;
             e.emit_struct_field("db_update", 6, |e| self.db_update.sec.encode(e))?;
             Ok(())
         })
@@ -46,9 +47,9 @@ impl Default for Stats {
             artists: 0,
             albums: 0,
             songs: 0,
-            uptime: Duration::seconds(0),
-            playtime: Duration::seconds(0),
-            db_playtime: Duration::seconds(0),
+            uptime: Duration::from_secs(0),
+            playtime: Duration::from_secs(0),
+            db_playtime: Duration::from_secs(0),
             db_update: Timespec::new(0, 0),
         }
     }
@@ -65,9 +66,9 @@ impl FromIter for Stats {
                 "artists" => result.artists = line.1.parse()?,
                 "albums" => result.albums = line.1.parse()?,
                 "songs" => result.songs = line.1.parse()?,
-                "uptime" => result.uptime = Duration::seconds(line.1.parse()?),
-                "playtime" => result.playtime = Duration::seconds(line.1.parse()?),
-                "db_playtime" => result.db_playtime = Duration::seconds(line.1.parse()?),
+                "uptime" => result.uptime = Duration::from_secs(line.1.parse()?),
+                "playtime" => result.playtime = Duration::from_secs(line.1.parse()?),
+                "db_playtime" => result.db_playtime = Duration::from_secs(line.1.parse()?),
                 "db_update" => result.db_update = Timespec::new(line.1.parse()?, 0),
                 _ => (),
             }

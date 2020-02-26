@@ -7,7 +7,7 @@ use crate::song::{Id, QueuePlace};
 use rustc_serialize::{Encodable, Encoder};
 use std::fmt;
 use std::str::FromStr;
-use time::Duration;
+use std::time::Duration;
 
 /// MPD status
 #[derive(Debug, PartialEq, Clone, Default)]
@@ -74,8 +74,8 @@ impl Encodable for Status {
                                       Some(p) => {
                                           e.emit_option_some(|e| {
                                                                  e.emit_tuple(2, |e| {
-                            e.emit_tuple_arg(0, |e| p.0.num_seconds().encode(e))?;
-                            e.emit_tuple_arg(1, |e| p.1.num_seconds().encode(e))?;
+                            e.emit_tuple_arg(0, |e| p.0.as_secs().encode(e))?;
+                            e.emit_tuple_arg(1, |e| p.1.as_secs().encode(e))?;
                             Ok(())
                         })
                                                              })
@@ -85,28 +85,28 @@ impl Encodable for Status {
                 })?;
             e.emit_struct_field("elapsed", 11, |e| {
                     e.emit_option(|e| match self.elapsed {
-                                      Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                                      Some(d) => e.emit_option_some(|e| d.as_secs().encode(e)),
                                       None => e.emit_option_none(),
                                   })
 
                 })?;
             e.emit_struct_field("duration", 12, |e| {
                     e.emit_option(|e| match self.duration {
-                                      Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                                      Some(d) => e.emit_option_some(|e| d.as_secs().encode(e)),
                                       None => e.emit_option_none(),
                                   })
                 })?;
             e.emit_struct_field("bitrate", 13, |e| self.bitrate.encode(e))?;
             e.emit_struct_field("crossfade", 14, |e| {
                     e.emit_option(|e| match self.crossfade {
-                                      Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                                      Some(d) => e.emit_option_some(|e| d.as_secs().encode(e)),
                                       None => e.emit_option_none(),
                                   })
                 })?;
             e.emit_struct_field("mixrampdb", 15, |e| self.mixrampdb.encode(e))?;
             e.emit_struct_field("mixrampdelay", 16, |e| {
                     e.emit_option(|e| match self.mixrampdelay {
-                                      Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                                      Some(d) => e.emit_option_some(|e| d.as_secs().encode(e)),
                                       None => e.emit_option_none(),
                                   })
                 })?;
@@ -186,7 +186,7 @@ impl FromIter for Status {
                     }
                 }
                 "time" => {
-                    let mut splits = line.1.splitn(2, ':').map(|v| v.parse().map_err(ParseError::BadInteger).map(Duration::seconds));
+                    let mut splits = line.1.splitn(2, ':').map(|v| v.parse().map_err(ParseError::BadInteger).map(Duration::from_secs));
                     result.time = match (splits.next(), splits.next()) {
                                          (Some(Ok(a)), Some(Ok(b))) => Ok(Some((a, b))),
                                          (Some(Err(e)), _) |
@@ -195,10 +195,10 @@ impl FromIter for Status {
                                   }?;
                 }
                 // TODO" => float errors don't work on stable
-                "elapsed" => result.elapsed = line.1.parse::<f32>().ok().map(|v| Duration::milliseconds((v * 1000.0) as i64)),
-                "duration" => result.duration = line.1.parse::<f32>().ok().map(|v| Duration::milliseconds((v * 1000.0) as i64)),
+                "elapsed" => result.elapsed = line.1.parse::<f32>().ok().map(|v| Duration::from_millis((v * 1000.0) as u64)),
+                "duration" => result.duration = line.1.parse::<f32>().ok().map(|v| Duration::from_millis((v * 1000.0) as u64)),
                 "bitrate" => result.bitrate = Some(line.1.parse()?),
-                "xfade" => result.crossfade = Some(Duration::seconds(line.1.parse()?)),
+                "xfade" => result.crossfade = Some(Duration::from_secs(line.1.parse()?)),
                 // "mixrampdb" => 0.0, //get_field!(map, "mixrampdb"),
                 // "mixrampdelay" => None, //get_field!(map, opt "mixrampdelay").map(|v: f64| Duration::milliseconds((v * 1000.0) as i64)),
                 "audio" => result.audio = Some(line.1.parse()?),

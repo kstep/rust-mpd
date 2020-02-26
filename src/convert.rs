@@ -9,7 +9,7 @@ use crate::song::{self, Id, Song};
 use std::collections::BTreeMap;
 use std::ops::{Range, RangeFrom, RangeFull, RangeTo};
 
-use time::Duration;
+use std::time::Duration;
 
 #[doc(hidden)]
 pub trait FromMap: Sized {
@@ -88,7 +88,7 @@ impl ToSeconds for f64 {
 
 impl ToSeconds for Duration {
     fn to_seconds(self) -> f64 {
-        self.num_milliseconds() as f64 / 1000.0
+        self.as_secs_f64()
     }
 }
 // }}}
@@ -243,7 +243,7 @@ impl ToSongRange for Range<Duration> {
 
 impl ToSongRange for Range<u32> {
     fn to_range(self) -> song::Range {
-        song::Range(Duration::seconds(self.start as i64), Some(Duration::seconds(self.end as i64)))
+        song::Range(Duration::from_secs(self.start as u64), Some(Duration::from_secs(self.end as u64)))
     }
 }
 
@@ -255,25 +255,25 @@ impl ToSongRange for RangeFrom<Duration> {
 
 impl ToSongRange for RangeFrom<u32> {
     fn to_range(self) -> song::Range {
-        song::Range(Duration::seconds(self.start as i64), None)
+        song::Range(Duration::from_secs(self.start as u64), None)
     }
 }
 
 impl ToSongRange for RangeTo<Duration> {
     fn to_range(self) -> song::Range {
-        song::Range(Duration::zero(), Some(self.end))
+        song::Range(Duration::from_secs(0), Some(self.end))
     }
 }
 
 impl ToSongRange for RangeTo<u32> {
     fn to_range(self) -> song::Range {
-        song::Range(Duration::zero(), Some(Duration::seconds(self.end as i64)))
+        song::Range(Duration::from_secs(0), Some(Duration::from_secs(self.end as u64)))
     }
 }
 
 impl ToSongRange for RangeFull {
     fn to_range(self) -> song::Range {
-        song::Range(Duration::zero(), None)
+        song::Range(Duration::from_secs(0), None)
     }
 }
 

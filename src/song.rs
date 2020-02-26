@@ -8,7 +8,8 @@ use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use std::collections::BTreeMap;
 use std::fmt;
 use std::str::FromStr;
-use time::{Duration, Tm, strptime};
+use time::{Tm, strptime};
+use std::time::Duration;
 
 /// Song ID
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Default)]
@@ -50,10 +51,10 @@ pub struct Range(pub Duration, pub Option<Duration>);
 impl Encodable for Range {
     fn encode<S: Encoder>(&self, e: &mut S) -> Result<(), S::Error> {
         e.emit_tuple(2, |e| {
-            e.emit_tuple_arg(0, |e| e.emit_i64(self.0.num_seconds()))?;
+            e.emit_tuple_arg(0, |e| e.emit_u64(self.0.as_secs()))?;
             e.emit_tuple_arg(1, |e| {
                 e.emit_option(|e| match self.1 {
-                                  Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                                  Some(d) => e.emit_option_some(|e| d.as_secs().encode(e)),
                                   None => e.emit_option_none(),
                               })
             })
@@ -63,16 +64,16 @@ impl Encodable for Range {
 
 impl Default for Range {
     fn default() -> Range {
-        Range(Duration::seconds(0), None)
+        Range(Duration::from_secs(0), None)
     }
 }
 
 impl fmt::Display for Range {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.0.num_seconds().fmt(f)?;
+        self.0.as_secs().fmt(f)?;
         f.write_str(":")?;
         if let Some(v) = self.1 {
-            v.num_seconds().fmt(f)?;
+            v.as_secs().fmt(f)?;
         }
         Ok(())
     }
@@ -83,10 +84,10 @@ impl FromStr for Range {
     fn from_str(s: &str) -> Result<Range, ParseError> {
         let mut splits = s.split('-').flat_map(|v| v.parse().into_iter());
         match (splits.next(), splits.next()) {
-            (Some(s), Some(e)) => Ok(Range(Duration::seconds(s), Some(Duration::seconds(e)))),
-            (None, Some(e)) => Ok(Range(Duration::zero(), Some(Duration::seconds(e)))),
-            (Some(s), None) => Ok(Range(Duration::seconds(s), None)),
-            (None, None) => Ok(Range(Duration::zero(), None)),
+            (Some(s), Some(e)) => Ok(Range(Duration::from_secs(s), Some(Duration::from_secs(e)))),
+            (None, Some(e)) => Ok(Range(Duration::from_secs(0), Some(Duration::from_secs(e)))),
+            (Some(s), None) => Ok(Range(Duration::from_secs(s), None)),
+            (None, None) => Ok(Range(Duration::from_secs(0), None)),
         }
     }
 }
@@ -129,7 +130,7 @@ impl Encodable for Song {
             e.emit_struct_field("artist", 4, |e| self.artist.encode(e))?;
             e.emit_struct_field("duration", 5, |e| {
                     e.emit_option(|e| match self.duration {
-                                      Some(d) => e.emit_option_some(|e| d.num_seconds().encode(e)),
+                                      Some(d) => e.emit_option_some(|e| d.as_secs().encode(e)),
                                       None => e.emit_option_none(),
                                   })
                 })?;
@@ -154,7 +155,7 @@ impl FromIter for Song {
                 "Last-Modified" => result.last_mod = strptime(&*line.1, "%Y-%m-%dT%H:%M:%S%Z").map_err(ParseError::BadTime).map(Some)?,
                 "Artist" => result.artist = Some(line.1.to_owned()),
                 "Name" => result.name = Some(line.1.to_owned()),
-                "Time" => result.duration = Some(Duration::seconds(line.1.parse()?)),
+                "Time" => result.duration = Some(Duration::from_secs(line.1.parse()?)),
                 "Range" => result.range = Some(line.1.parse()?),
                 "Id" => {
                     match result.place {
