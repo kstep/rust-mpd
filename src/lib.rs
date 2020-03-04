@@ -32,10 +32,6 @@
 //! # }
 //! ```
 
-extern crate rustc_serialize;
-extern crate time;
-extern crate bufstream;
-
 mod macros;
 mod convert;
 pub mod error;

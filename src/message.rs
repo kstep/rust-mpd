@@ -8,9 +8,8 @@
 //! Also client can get asynchronous notifications about new messages from subscribed
 //! channels with `idle` command, by waiting for `message` subsystem events.
 
-use convert::FromMap;
-
-use error::{Error, ProtoError};
+use crate::convert::FromMap;
+use crate::error::{Error, ProtoError};
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -27,8 +26,8 @@ pub struct Message {
 impl FromMap for Message {
     fn from_map(map: BTreeMap<String, String>) -> Result<Message, Error> {
         Ok(Message {
-               channel: Channel(try!(map.get("channel").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("channel"))))),
-               message: try!(map.get("message").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("message")))),
+               channel: Channel(map.get("channel").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("channel")))?),
+               message: map.get("message").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("message")))?,
            })
     }
 }

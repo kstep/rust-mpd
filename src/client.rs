@@ -7,24 +7,25 @@
 
 use bufstream::BufStream;
 
-use convert::*;
-use error::{Error, ProtoError, Result};
-use message::{Channel, Message};
-use mount::{Mount, Neighbor};
-use output::Output;
-use playlist::Playlist;
-use plugin::Plugin;
-use proto::*;
-use search::{Query, Window, Term};
-use song::{Id, Song};
-use stats::Stats;
-use status::{ReplayGain, Status};
+use crate::convert::*;
+use crate::error::{Error, ProtoError, Result};
+use crate::message::{Channel, Message};
+use crate::mount::{Mount, Neighbor};
+use crate::output::Output;
+use crate::playlist::Playlist;
+use crate::plugin::Plugin;
+use crate::proto::*;
+use crate::search::{Query, Window, Term};
+use crate::song::{Id, Song};
+use crate::stats::Stats;
+use crate::status::{ReplayGain, Status};
+use crate::sticker::Sticker;
+use crate::version::Version;
+
 use std::convert::From;
 use std::io::{BufRead, Lines, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::collections::HashMap;
-use sticker::Sticker;
-use version::Version;
 
 // Client {{{
 
@@ -58,13 +59,13 @@ impl<S: Read + Write> Client<S> {
         let mut socket = BufStream::new(socket);
 
         let mut banner = String::new();
-        try!(socket.read_line(&mut banner));
+        socket.read_line(&mut banner)?;
 
         if !banner.starts_with("OK MPD ") {
             return Err(From::from(ProtoError::BadBanner));
         }
 
-        let version = try!(banner[7..].trim().parse::<Version>());
+        let version = banner[7..].trim().parse::<Version>()?;
 
         Ok(Client {
                socket: socket,
@@ -610,7 +611,7 @@ impl<S: Read + Write> Proto for Client<S> {
 
     fn read_line(&mut self) -> Result<String> {
         let mut buf = String::new();
-        try!(self.socket.read_line(&mut buf));
+        self.socket.read_line(&mut buf)?;
         if buf.ends_with('\n') {
             buf.pop();
         }

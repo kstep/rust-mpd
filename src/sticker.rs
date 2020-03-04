@@ -1,4 +1,4 @@
-use error::ParseError;
+use crate::error::ParseError;
 use std::str::FromStr;
 
 pub struct Sticker {
