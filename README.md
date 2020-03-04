@@ -19,7 +19,6 @@ Then just use:
 extern crate mpd;
 
 use mpd::Client;
-use std::net::TcpStream;
 
 let mut conn = Client::connect("127.0.0.1:6600").unwrap();
 conn.volume(100).unwrap();
