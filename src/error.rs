@@ -20,8 +20,6 @@ use std::num::{ParseFloatError, ParseIntError};
 use std::result;
 use std::str::FromStr;
 use std::string::ParseError as StringParseError;
-use time::ParseError as TimeParseError;
-use time::ConversionRangeError as TimeConversionRangeError;
 
 // Server errors {{{
 /// Server error codes, as defined in [libmpdclient](http://www.musicpd.org/doc/libmpdclient/protocol_8h_source.html)
@@ -77,7 +75,7 @@ impl FromStr for ErrorCode {
     }
 }
 
-impl StdError for ErrorCode { }
+impl StdError for ErrorCode {}
 
 impl fmt::Display for ErrorCode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -116,7 +114,7 @@ pub struct ServerError {
     pub detail: String,
 }
 
-impl StdError for ServerError { }
+impl StdError for ServerError {}
 
 impl fmt::Display for ServerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -138,11 +136,11 @@ impl FromStr for ServerError {
                             let command = s[left_brace + 1..right_brace].to_string();
                             let detail = s[right_brace + 1..].trim().to_string();
                             Ok(ServerError {
-                                   code: code,
-                                   pos: pos,
-                                   command: command,
-                                   detail: detail,
-                               })
+                                code: code,
+                                pos: pos,
+                                command: command,
+                                detail: detail,
+                            })
                         } else {
                             Err(ParseError::NoMessage)
                         }
@@ -224,23 +222,12 @@ impl From<ParseFloatError> for Error {
         Error::Parse(ParseError::BadFloat(e))
     }
 }
-impl From<TimeParseError> for Error {
-    fn from(e: TimeParseError) -> Error {
-        Error::Parse(ParseError::BadTime(e))
-    }
-}
-
 impl From<ServerError> for Error {
     fn from(e: ServerError) -> Error {
         Error::Server(e)
     }
 }
 
-impl From<TimeConversionRangeError> for Error {
-    fn from(e: TimeConversionRangeError) -> Error {
-        Error::Parse(ParseError::BadTimeConversion(e))
-    }
-}
 // }}}
 
 // Parse errors {{{
@@ -253,10 +240,6 @@ pub enum ParseError {
     BadFloat(ParseFloatError),
     /// some other invalid value
     BadValue(String),
-    /// date/time parsing error
-    BadTime(TimeParseError),
-    /// date/time to duration (Unix time) conversion error
-    BadTimeConversion(TimeConversionRangeError),
     /// invalid version format (should be x.y.z)
     BadVersion,
     /// the response is not an `ACK` (not an error)
@@ -292,7 +275,7 @@ pub enum ParseError {
     BadErrorCode(usize),
 }
 
-impl StdError for ParseError { }
+impl StdError for ParseError {}
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -302,8 +285,6 @@ impl fmt::Display for ParseError {
             BadInteger(_) => "invalid integer",
             BadFloat(_) => "invalid float",
             BadValue(_) => "invalid value",
-            BadTime(_) => "invalid date/time",
-            BadTimeConversion(_) => "invalid date/time conversion",
             BadVersion => "invalid version",
             NotAck => "not an ACK",
             BadPair => "invalid pair",
@@ -322,18 +303,6 @@ impl fmt::Display for ParseError {
         };
 
         write!(f, "{}", desc)
-    }
-}
-
-impl From<TimeParseError> for ParseError {
-    fn from(e: TimeParseError) -> ParseError {
-        ParseError::BadTime(e)
-    }
-}
-
-impl From<TimeConversionRangeError> for ParseError {
-    fn from(e: TimeConversionRangeError) -> ParseError {
-        ParseError::BadTimeConversion(e)
     }
 }
 
@@ -376,7 +345,7 @@ pub enum ProtoError {
     BadSticker,
 }
 
-impl StdError for ProtoError { }
+impl StdError for ProtoError {}
 
 impl fmt::Display for ProtoError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

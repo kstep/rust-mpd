@@ -4,7 +4,7 @@ use crate::convert::FromIter;
 use crate::error::Error;
 
 /// Decoder plugin
-#[derive(Clone, Debug, PartialEq, RustcEncodable)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Plugin {
     /// name
     pub name: String,
