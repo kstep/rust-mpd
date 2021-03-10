@@ -28,7 +28,7 @@ macro_rules! test_options_impl {
             mpd.$name($val2).unwrap();
             assert_eq!(mpd.status().unwrap().$name, $tval2);
         }
-    }
+    };
 }
 
 macro_rules! test_option {
@@ -64,10 +64,12 @@ fn crossfade() {
     mpd.crossfade(1000).unwrap();
     assert_eq!(mpd.status().unwrap().crossfade, Some(Duration::from_secs(1000)));
     mpd.crossfade(0).unwrap();
-    assert_eq!(mpd.status().unwrap().crossfade,
-               if mpd.version >= mpd::Version(0, 19, 0) {
-                   None
-               } else {
-                   Some(Duration::from_secs(0))
-               });
+    assert_eq!(
+        mpd.status().unwrap().crossfade,
+        if mpd.version >= mpd::Version(0, 19, 0) {
+            None
+        } else {
+            Some(Duration::from_secs(0))
+        }
+    );
 }

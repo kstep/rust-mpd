@@ -2,11 +2,11 @@ extern crate tempdir;
 
 use self::tempdir::TempDir;
 use super::mpd;
-use std::fs::{File, create_dir};
-use std::io::{Write, Read};
+use std::fs::{create_dir, File};
+use std::io::{Read, Write};
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Child, Stdio};
+use std::process::{Child, Command, Stdio};
 
 struct MpdConfig {
     db_file: PathBuf,
@@ -19,7 +19,8 @@ struct MpdConfig {
 
 impl MpdConfig {
     pub fn new<P>(base: P) -> MpdConfig
-        where P: AsRef<Path>
+    where
+        P: AsRef<Path>,
     {
         let base = base.as_ref();
         MpdConfig {
@@ -33,7 +34,8 @@ impl MpdConfig {
     }
 
     fn config_text(&self) -> String {
-        format!(r#"
+        format!(
+            r#"
 db_file "{db_file}"
 log_file "/dev/null"
 music_directory "{music_directory}"
@@ -45,11 +47,11 @@ audio_output {{
     name "null"
 }}
 "#,
-            db_file=self.db_file.display(),
-            music_directory=self.music_directory.display(),
-            playlist_directory=self.playlist_directory.display(),
-            sticker_file=self.sticker_file.display(),
-            sock_path=self.sock_path.display(),
+            db_file = self.db_file.display(),
+            music_directory = self.music_directory.display(),
+            playlist_directory = self.playlist_directory.display(),
+            sticker_file = self.sticker_file.display(),
+            sock_path = self.sock_path.display(),
         )
     }
 
@@ -75,8 +77,8 @@ impl Drop for Daemon {
         if let Some(ref mut stderr) = self.process.stderr {
             let mut output = String::new();
             stderr.read_to_string(&mut output).expect("Could not collect output from mpd.");
-            println!{"Output from mpd:"}
-            println!{"{}", output};
+            println! {"Output from mpd:"}
+            println! {"{}", output};
         }
     }
 }
@@ -96,7 +98,10 @@ impl Daemon {
         config.generate();
 
         // TODO: Factor out putting files in the music directory.
-        File::create(config.music_directory.join("empty.flac")).unwrap().write_all(EMPTY_FLAC_BYTES).unwrap();
+        File::create(config.music_directory.join("empty.flac"))
+            .unwrap()
+            .write_all(EMPTY_FLAC_BYTES)
+            .unwrap();
 
         let process = Command::new("mpd")
             .arg("--no-daemon")

@@ -32,25 +32,25 @@
 //! # }
 //! ```
 
-mod macros;
 mod convert;
 pub mod error;
-pub mod version;
-pub mod reply;
-pub mod status;
-pub mod song;
+pub mod idle;
+mod macros;
+pub mod message;
+pub mod mount;
 pub mod output;
 pub mod playlist;
 pub mod plugin;
-pub mod stats;
+pub mod reply;
 pub mod search;
-pub mod message;
-pub mod idle;
-pub mod mount;
+pub mod song;
+pub mod stats;
+pub mod status;
 mod sticker;
+pub mod version;
 
-mod proto;
 pub mod client;
+mod proto;
 
 pub use client::Client;
 pub use idle::{Idle, Subsystem};

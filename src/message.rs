@@ -26,9 +26,16 @@ pub struct Message {
 impl FromMap for Message {
     fn from_map(map: BTreeMap<String, String>) -> Result<Message, Error> {
         Ok(Message {
-               channel: Channel(map.get("channel").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("channel")))?),
-               message: map.get("message").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("message")))?,
-           })
+            channel: Channel(
+                map.get("channel")
+                    .map(|v| v.to_owned())
+                    .ok_or(Error::Proto(ProtoError::NoField("channel")))?,
+            ),
+            message: map
+                .get("message")
+                .map(|v| v.to_owned())
+                .ok_or(Error::Proto(ProtoError::NoField("message")))?,
+        })
     }
 }
 
@@ -55,6 +62,10 @@ impl Channel {
     /// Create channel with arbitrary name, bypassing name validity checks
     ///
     /// Not recommened! Use `new()` method above instead.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee that `name` is a valid channel name.
     pub unsafe fn new_unchecked(name: String) -> Channel {
         Channel(name)
     }
@@ -64,10 +75,11 @@ impl Channel {
     /// Valid channel name can contain only English letters (`A`-`Z`, `a`-`z`),
     /// numbers (`0`-`9`), underscore, forward slash, dot and colon (`_`, `/`, `.`, `:`)
     pub fn is_valid_name(name: &str) -> bool {
-        name.bytes()
-            .all(|b| {
-                     (0x61 <= b && b <= 0x7a) || (0x41 <= b && b <= 0x5a) || (0x30 <= b && b <= 0x39) ||
-                     (b == 0x5f || b == 0x2f || b == 0x2e || b == 0x3a)
-                 })
+        name.bytes().all(|b| {
+            (0x61..=0x7a).contains(&b)
+                || (0x41..=0x5a).contains(&b)
+                || (0x30..=0x39).contains(&b)
+                || (b == 0x5f || b == 0x2f || b == 0x2e || b == 0x3a)
+        })
     }
 }

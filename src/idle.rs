@@ -112,7 +112,8 @@ impl fmt::Display for Subsystem {
 use std::result::Result as StdResult;
 impl<'a> crate::proto::ToArguments for Subsystem {
     fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
-        where F: FnMut(&str) -> StdResult<(), E>
+    where
+        F: FnMut(&str) -> StdResult<(), E>,
     {
         f(self.to_str())
     }
@@ -124,7 +125,10 @@ pub struct IdleGuard<'a, S: 'a + Read + Write>(&'a mut Client<S>);
 impl<'a, S: 'a + Read + Write> IdleGuard<'a, S> {
     /// Get list of subsystems with new events, interrupting idle mode in process
     pub fn get(self) -> Result<Vec<Subsystem>, Error> {
-        let result = self.0.read_list("changed").and_then(|v| v.into_iter().map(|b| b.parse().map_err(From::from)).collect());
+        let result = self
+            .0
+            .read_list("changed")
+            .and_then(|v| v.into_iter().map(|b| b.parse().map_err(From::from)).collect());
         forget(self);
         result
     }

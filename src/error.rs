@@ -20,8 +20,8 @@ use std::num::{ParseFloatError, ParseIntError};
 use std::result;
 use std::str::FromStr;
 use std::string::ParseError as StringParseError;
-use time::ParseError as TimeParseError;
 use time::ConversionRangeError as TimeConversionRangeError;
+use time::ParseError as TimeParseError;
 
 // Server errors {{{
 /// Server error codes, as defined in [libmpdclient](http://www.musicpd.org/doc/libmpdclient/protocol_8h_source.html)
@@ -77,7 +77,7 @@ impl FromStr for ErrorCode {
     }
 }
 
-impl StdError for ErrorCode { }
+impl StdError for ErrorCode {}
 
 impl fmt::Display for ErrorCode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -116,7 +116,7 @@ pub struct ServerError {
     pub detail: String,
 }
 
-impl StdError for ServerError { }
+impl StdError for ServerError {}
 
 impl fmt::Display for ServerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -128,8 +128,7 @@ impl FromStr for ServerError {
     type Err = ParseError;
     fn from_str(s: &str) -> result::Result<ServerError, ParseError> {
         // ACK [<code>@<index>] {<command>} <description>
-        if s.starts_with("ACK [") {
-            let s = &s[5..];
+        if let Some(s) = s.strip_prefix("ACK [") {
             if let (Some(atsign), Some(right_bracket)) = (s.find('@'), s.find(']')) {
                 match (s[..atsign].parse(), s[atsign + 1..right_bracket].parse()) {
                     (Ok(code), Ok(pos)) => {
@@ -138,11 +137,11 @@ impl FromStr for ServerError {
                             let command = s[left_brace + 1..right_brace].to_string();
                             let detail = s[right_brace + 1..].trim().to_string();
                             Ok(ServerError {
-                                   code: code,
-                                   pos: pos,
-                                   command: command,
-                                   detail: detail,
-                               })
+                                code,
+                                pos,
+                                command,
+                                detail,
+                            })
                         } else {
                             Err(ParseError::NoMessage)
                         }
@@ -292,7 +291,7 @@ pub enum ParseError {
     BadErrorCode(usize),
 }
 
-impl StdError for ParseError { }
+impl StdError for ParseError {}
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -376,7 +375,7 @@ pub enum ProtoError {
     BadSticker,
 }
 
-impl StdError for ProtoError { }
+impl StdError for ProtoError {}
 
 impl fmt::Display for ProtoError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

@@ -3,7 +3,6 @@
 //! Also it contains most generic parser, which can handle
 //! all possible server replies.
 
-
 use crate::error::{ParseError, ServerError};
 use std::str::FromStr;
 

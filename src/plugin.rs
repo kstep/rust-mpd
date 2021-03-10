@@ -22,24 +22,33 @@ impl FromIter for Vec<Plugin> {
             let (a, b) = reply?;
             match &*a {
                 "plugin" => {
-                    plugin.map(|p| result.push(p));
+                    if let Some(p) = plugin {
+                        result.push(p);
+                    }
 
                     plugin = Some(Plugin {
-                                      name: b,
-                                      suffixes: Vec::new(),
-                                      mime_types: Vec::new(),
-                                  });
+                        name: b,
+                        suffixes: Vec::new(),
+                        mime_types: Vec::new(),
+                    });
                 }
                 "mime_type" => {
-                    plugin.as_mut().map(|p| p.mime_types.push(b));
+                    if let Some(p) = plugin.as_mut() {
+                        p.mime_types.push(b);
+                    }
                 }
                 "suffix" => {
-                    plugin.as_mut().map(|p| p.suffixes.push(b));
+                    if let Some(p) = plugin.as_mut() {
+                        p.suffixes.push(b);
+                    }
                 }
                 _ => unreachable!(),
             }
         }
-        plugin.map(|p| result.push(p));
+        if let Some(p) = plugin {
+            result.push(p);
+        }
+
         Ok(result)
     }
 }
