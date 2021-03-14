@@ -375,7 +375,7 @@ impl<S: Read + Write> Client<S> {
     // TODO: search type what [...] [window start:end], searchadd type what [...]
     // TODO: listallinfo [uri], listfiles [uri]
     // TODO: list type [filtertype] [filterwhat] [...] [group] [grouptype] [...]
-    // TODO: searchaddpl name type what [...], readcomments
+    // TODO: searchaddpl name type what [...]
 
     /// Find songs matching Query conditions.
     pub fn find<W>(&mut self, query: &Query, window: W) -> Result<Vec<Song>>
@@ -410,6 +410,12 @@ impl<S: Read + Write> Client<S> {
     /// Lists the contents of a directory.
     pub fn lsinfo<P: ToSongPath>(&mut self, path: P) -> Result<Song> {
         self.run_command("lsinfo", path).and_then(|_| self.read_struct())
+    }
+
+    /// Returns raw metadata for file
+    pub fn readcomments<'a, P: ToSongPath>(&'a mut self, path: P) -> Result<impl Iterator<Item = Result<(String, String)>> + 'a> {
+        self.run_command("readcomments", path)?;
+        Ok(self.read_pairs())
     }
 
     // }}}
