@@ -4,7 +4,6 @@
 //!
 //! [proto]: http://www.musicpd.org/doc/protocol/
 
-
 use bufstream::BufStream;
 
 use crate::convert::*;
@@ -15,24 +14,25 @@ use crate::output::Output;
 use crate::playlist::Playlist;
 use crate::plugin::Plugin;
 use crate::proto::*;
-use crate::search::{Query, Window, Term};
+use crate::search::{Query, Term, Window};
 use crate::song::{Id, Song};
 use crate::stats::Stats;
 use crate::status::{ReplayGain, Status};
 use crate::sticker::Sticker;
 use crate::version::Version;
 
+use std::collections::HashMap;
 use std::convert::From;
 use std::io::{BufRead, Lines, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
-use std::collections::HashMap;
 
 // Client {{{
 
 /// Client connection
 #[derive(Debug)]
 pub struct Client<S = TcpStream>
-    where S: Read + Write
+where
+    S: Read + Write,
 {
     socket: BufStream<S>,
     /// MPD version
@@ -67,10 +67,7 @@ impl<S: Read + Write> Client<S> {
 
         let version = banner[7..].trim().parse::<Version>()?;
 
-        Ok(Client {
-               socket: socket,
-               version: version,
-           })
+        Ok(Client { socket, version })
     }
     // }}}
 
@@ -153,7 +150,7 @@ impl<S: Read + Write> Client<S> {
     }
 
     /// Switch to a next song in queue
-    #[cfg_attr(feature = "cargo-clippy", allow(should_implement_trait))]
+    #[cfg_attr(feature = "cargo-clippy", allow(clippy::should_implement_trait))]
     pub fn next(&mut self) -> Result<()> {
         self.run_command("next", ()).and_then(|_| self.expect_ok())
     }
@@ -181,7 +178,8 @@ impl<S: Read + Write> Client<S> {
     /// Seek to a given place (in seconds) in a given song
     pub fn seek<T: ToSeconds, P: ToQueuePlace>(&mut self, place: P, pos: T) -> Result<()> {
         let command = if P::is_id() { "seekid" } else { "seek" };
-        self.run_command(command, (place.to_place(), pos.to_seconds())).and_then(|_| self.expect_ok())
+        self.run_command(command, (place.to_place(), pos.to_seconds()))
+            .and_then(|_| self.expect_ok())
     }
 
     /// Seek to a given place (in seconds) in the current song
@@ -193,11 +191,7 @@ impl<S: Read + Write> Client<S> {
     // Queue control {{{
     /// List given song or range of songs in a play queue
     pub fn songs<T: ToQueueRangeOrPlace>(&mut self, pos: T) -> Result<Vec<Song>> {
-        let command = if T::is_id() {
-            "playlistid"
-        } else {
-            "playlistinfo"
-        };
+        let command = if T::is_id() { "playlistid" } else { "playlistinfo" };
         self.run_command(command, pos.to_range()).and_then(|_| self.read_structs("file"))
     }
 
@@ -208,7 +202,9 @@ impl<S: Read + Write> Client<S> {
 
     /// Get current playing song
     pub fn currentsong(&mut self) -> Result<Option<Song>> {
-        self.run_command("currentsong", ()).and_then(|_| self.read_struct::<Song>()).map(|s| if s.place.is_none() { None } else { Some(s) })
+        self.run_command("currentsong", ())
+            .and_then(|_| self.read_struct::<Song>())
+            .map(|s| if s.place.is_none() { None } else { Some(s) })
     }
 
     /// Clear current queue
@@ -246,7 +242,8 @@ impl<S: Read + Write> Client<S> {
     /// Swap to songs in a queue
     pub fn swap<T: ToQueuePlace>(&mut self, one: T, two: T) -> Result<()> {
         let command = if T::is_id() { "swapid" } else { "swap" };
-        self.run_command(command, (one.to_place(), two.to_place())).and_then(|_| self.expect_ok())
+        self.run_command(command, (one.to_place(), two.to_place()))
+            .and_then(|_| self.expect_ok())
     }
 
     /// Shuffle queue in a given range (use `..` to shuffle full queue)
@@ -264,17 +261,20 @@ impl<S: Read + Write> Client<S> {
     ///
     /// Doesn't work for currently playing song.
     pub fn range<T: ToSongId, R: ToSongRange>(&mut self, song: T, range: R) -> Result<()> {
-        self.run_command("rangeid", (song.to_song_id(), range.to_range())).and_then(|_| self.expect_ok())
+        self.run_command("rangeid", (song.to_song_id(), range.to_range()))
+            .and_then(|_| self.expect_ok())
     }
 
     /// Add tag to a song
     pub fn tag<T: ToSongId>(&mut self, song: T, tag: &str, value: &str) -> Result<()> {
-        self.run_command("addtagid", (song.to_song_id(), tag, value)).and_then(|_| self.expect_ok())
+        self.run_command("addtagid", (song.to_song_id(), tag, value))
+            .and_then(|_| self.expect_ok())
     }
 
     /// Delete tag from a song
     pub fn untag<T: ToSongId>(&mut self, song: T, tag: &str) -> Result<()> {
-        self.run_command("cleartagid", (song.to_song_id(), tag)).and_then(|_| self.expect_ok())
+        self.run_command("cleartagid", (song.to_song_id(), tag))
+            .and_then(|_| self.expect_ok())
     }
     // }}}
 
@@ -308,7 +308,8 @@ impl<S: Read + Write> Client<S> {
 
     /// List all songs in a playlist
     pub fn playlist<N: ToPlaylistName>(&mut self, name: N) -> Result<Vec<Song>> {
-        self.run_command("listplaylistinfo", name.to_name()).and_then(|_| self.read_structs("file"))
+        self.run_command("listplaylistinfo", name.to_name())
+            .and_then(|_| self.read_structs("file"))
     }
 
     /// Load playlist into queue
@@ -316,7 +317,8 @@ impl<S: Read + Write> Client<S> {
     /// You can give either full range (`..`) to load all songs in a playlist,
     /// or some partial range to load only part of playlist.
     pub fn load<T: ToQueueRange, N: ToPlaylistName>(&mut self, name: N, range: T) -> Result<()> {
-        self.run_command("load", (name.to_name(), range.to_range())).and_then(|_| self.expect_ok())
+        self.run_command("load", (name.to_name(), range.to_range()))
+            .and_then(|_| self.expect_ok())
     }
 
     /// Save current queue into playlist
@@ -343,17 +345,20 @@ impl<S: Read + Write> Client<S> {
 
     /// Add new songs to a playlist
     pub fn pl_push<N: ToPlaylistName, P: ToSongPath>(&mut self, name: N, path: P) -> Result<()> {
-        self.run_command("playlistadd", (name.to_name(), path)).and_then(|_| self.expect_ok())
+        self.run_command("playlistadd", (name.to_name(), path))
+            .and_then(|_| self.expect_ok())
     }
 
     /// Delete a song at a given position in a playlist
     pub fn pl_delete<N: ToPlaylistName>(&mut self, name: N, pos: u32) -> Result<()> {
-        self.run_command("playlistdelete", (name.to_name(), pos)).and_then(|_| self.expect_ok())
+        self.run_command("playlistdelete", (name.to_name(), pos))
+            .and_then(|_| self.expect_ok())
     }
 
     /// Move song in a playlist from one position into another
     pub fn pl_shift<N: ToPlaylistName>(&mut self, name: N, from: u32, to: u32) -> Result<()> {
-        self.run_command("playlistmove", (name.to_name(), from, to)).and_then(|_| self.expect_ok())
+        self.run_command("playlistmove", (name.to_name(), from, to))
+            .and_then(|_| self.expect_ok())
     }
     // }}}
 
@@ -379,14 +384,16 @@ impl<S: Read + Write> Client<S> {
 
     /// Find songs matching Query conditions.
     pub fn find<W>(&mut self, query: &Query, window: W) -> Result<Vec<Song>>
-        where W: Into<Window>
+    where
+        W: Into<Window>,
     {
         self.find_generic("find", query, window.into())
     }
 
     /// Case-insensitively search for songs matching Query conditions.
     pub fn search<W>(&mut self, query: &Query, window: W) -> Result<Vec<Song>>
-        where W: Into<Window>
+    where
+        W: Into<Window>,
     {
         self.find_generic("search", query, window.into())
     }
@@ -399,7 +406,8 @@ impl<S: Read + Write> Client<S> {
     // TODO: list type [filtertype] [filterwhat] [...] [group] [grouptype] [...]
     // It isn't clear if or how `group` works
     pub fn list(&mut self, term: &Term, query: &Query) -> Result<Vec<String>> {
-        self.run_command("list", (term, query)).and_then(|_| self.read_pairs().map(|p| p.map(|p| p.1)).collect())
+        self.run_command("list", (term, query))
+            .and_then(|_| self.read_pairs().map(|p| p.map(|p| p.1)).collect())
     }
 
     /// Find all songs in the db that match query and adds them to current playlist.
@@ -480,13 +488,9 @@ impl<S: Read + Write> Client<S> {
     // Messaging {{{
     /// List all channels available for current connection
     pub fn channels(&mut self) -> Result<Vec<Channel>> {
-        self.run_command("channels", ()).and_then(|_| self.read_list("channel")).map(|v| {
-                                                                                         v.into_iter()
-                                                                                             .map(|b| unsafe {
-                                                                                                      Channel::new_unchecked(b)
-                                                                                                  })
-                                                                                             .collect()
-                                                                                     })
+        self.run_command("channels", ())
+            .and_then(|_| self.read_list("channel"))
+            .map(|v| v.into_iter().map(|b| unsafe { Channel::new_unchecked(b) }).collect())
     }
 
     /// Read queued messages from subscribed channels
@@ -549,7 +553,8 @@ impl<S: Read + Write> Client<S> {
 
     /// Set sticker value for a given object, identified by type and uri
     pub fn set_sticker(&mut self, typ: &str, uri: &str, name: &str, value: &str) -> Result<()> {
-        self.run_command("sticker set", (typ, uri, name, value)).and_then(|_| self.expect_ok())
+        self.run_command("sticker set", (typ, uri, name, value))
+            .and_then(|_| self.expect_ok())
     }
 
     /// Delete sticker from a given object, identified by type and uri
@@ -566,41 +571,53 @@ impl<S: Read + Write> Client<S> {
     pub fn stickers(&mut self, typ: &str, uri: &str) -> Result<Vec<String>> {
         self.run_command("sticker list", (typ, uri))
             .and_then(|_| self.read_list("sticker"))
-            .map(|v| v.into_iter().map(|b| b.splitn(2, '=').nth(1).map(|s| s.to_owned()).unwrap()).collect())
+            .map(|v| {
+                v.into_iter()
+                    .map(|b| b.splitn(2, '=').nth(1).map(|s| s.to_owned()).unwrap())
+                    .collect()
+            })
     }
 
     /// List all stickers from a given object in a map, identified by type and uri
     pub fn stickers_map(&mut self, typ: &str, uri: &str) -> Result<HashMap<String, String>> {
         self.run_command("sticker list", (typ, uri))
             .and_then(|_| self.read_list("sticker"))
-            .map(|v| v.into_iter().map(|b| {
-                let mut iter = b.splitn(2, '=');
+            .map(|v| {
+                v.into_iter()
+                    .map(|b| {
+                        let mut iter = b.splitn(2, '=');
 
-                (iter.next().unwrap().to_owned(), iter.next().unwrap().to_owned())
-            }).collect())
+                        (iter.next().unwrap().to_owned(), iter.next().unwrap().to_owned())
+                    })
+                    .collect()
+            })
     }
 
     /// List all (file, sticker) pairs for sticker name and objects of given type
     /// from given directory (identified by uri)
     pub fn find_sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<Vec<(String, String)>> {
-        self.run_command("sticker find", (typ, uri, name))
-            .and_then(|_| {
-                self.read_pairs()
-                    .split("file")
-                    .map(|rmap| {
-                             rmap.map(|mut map| {
-                                          (map.remove("file").unwrap(),
-                                           map.remove("sticker").and_then(|s| s.splitn(2, '=').nth(1).map(|s| s.to_owned())).unwrap())
-                                      })
-                         })
-                    .collect()
-            })
+        self.run_command("sticker find", (typ, uri, name)).and_then(|_| {
+            self.read_pairs()
+                .split("file")
+                .map(|rmap| {
+                    rmap.map(|mut map| {
+                        (
+                            map.remove("file").unwrap(),
+                            map.remove("sticker")
+                                .and_then(|s| s.splitn(2, '=').nth(1).map(|s| s.to_owned()))
+                                .unwrap(),
+                        )
+                    })
+                })
+                .collect()
+        })
     }
 
     /// List all files of a given type under given directory (identified by uri)
     /// with a tag set to given value
     pub fn find_sticker_eq(&mut self, typ: &str, uri: &str, name: &str, value: &str) -> Result<Vec<String>> {
-        self.run_command("sticker find", (typ, uri, name, value)).and_then(|_| self.read_list("file"))
+        self.run_command("sticker find", (typ, uri, name, value))
+            .and_then(|_| self.read_list("file"))
     }
     // }}}
 }
@@ -623,7 +640,8 @@ impl<S: Read + Write> Proto for Client<S> {
     }
 
     fn run_command<I>(&mut self, command: &str, arguments: I) -> Result<()>
-        where I: ToArguments
+    where
+        I: ToArguments,
     {
         self.socket
             .write_all(command.as_bytes())

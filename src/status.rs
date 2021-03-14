@@ -70,53 +70,49 @@ impl Encodable for Status {
             e.emit_struct_field("song", 8, |e| self.song.encode(e))?;
             e.emit_struct_field("nextsong", 9, |e| self.nextsong.encode(e))?;
             e.emit_struct_field("time", 10, |e| {
-                    e.emit_option(|e| match self.time {
-                                      Some(p) => {
-                                          e.emit_option_some(|e| {
-                                                                 e.emit_tuple(2, |e| {
+                e.emit_option(|e| match self.time {
+                    Some(p) => e.emit_option_some(|e| {
+                        e.emit_tuple(2, |e| {
                             e.emit_tuple_arg(0, |e| p.0.as_secs().encode(e))?;
                             e.emit_tuple_arg(1, |e| p.1.as_secs().encode(e))?;
                             Ok(())
                         })
-                                                             })
-                                      }
-                                      None => e.emit_option_none(),
-                                  })
-                })?;
+                    }),
+                    None => e.emit_option_none(),
+                })
+            })?;
             e.emit_struct_field("elapsed", 11, |e| {
-                    e.emit_option(|e| match self.elapsed {
-                                      Some(d) => e.emit_option_some(|e| d.as_secs().encode(e)),
-                                      None => e.emit_option_none(),
-                                  })
-
-                })?;
+                e.emit_option(|e| match self.elapsed {
+                    Some(d) => e.emit_option_some(|e| d.as_secs().encode(e)),
+                    None => e.emit_option_none(),
+                })
+            })?;
             e.emit_struct_field("duration", 12, |e| {
-                    e.emit_option(|e| match self.duration {
-                                      Some(d) => e.emit_option_some(|e| d.as_secs().encode(e)),
-                                      None => e.emit_option_none(),
-                                  })
-                })?;
+                e.emit_option(|e| match self.duration {
+                    Some(d) => e.emit_option_some(|e| d.as_secs().encode(e)),
+                    None => e.emit_option_none(),
+                })
+            })?;
             e.emit_struct_field("bitrate", 13, |e| self.bitrate.encode(e))?;
             e.emit_struct_field("crossfade", 14, |e| {
-                    e.emit_option(|e| match self.crossfade {
-                                      Some(d) => e.emit_option_some(|e| d.as_secs().encode(e)),
-                                      None => e.emit_option_none(),
-                                  })
-                })?;
+                e.emit_option(|e| match self.crossfade {
+                    Some(d) => e.emit_option_some(|e| d.as_secs().encode(e)),
+                    None => e.emit_option_none(),
+                })
+            })?;
             e.emit_struct_field("mixrampdb", 15, |e| self.mixrampdb.encode(e))?;
             e.emit_struct_field("mixrampdelay", 16, |e| {
-                    e.emit_option(|e| match self.mixrampdelay {
-                                      Some(d) => e.emit_option_some(|e| d.as_secs().encode(e)),
-                                      None => e.emit_option_none(),
-                                  })
-                })?;
+                e.emit_option(|e| match self.mixrampdelay {
+                    Some(d) => e.emit_option_some(|e| d.as_secs().encode(e)),
+                    None => e.emit_option_none(),
+                })
+            })?;
             e.emit_struct_field("audio", 17, |e| self.audio.encode(e))?;
             e.emit_struct_field("updating_db", 18, |e| self.updating_db.encode(e))?;
             e.emit_struct_field("error", 19, |e| self.error.encode(e))?;
             e.emit_struct_field("replaygain", 20, |e| self.replaygain.encode(e))?;
             Ok(())
         })
-
     }
 }
 
@@ -137,62 +133,56 @@ impl FromIter for Status {
                 "playlist" => result.queue_version = line.1.parse()?,
                 "playlistlength" => result.queue_len = line.1.parse()?,
                 "state" => result.state = line.1.parse()?,
-                "songid" => {
-                    match result.song {
-                        None => {
-                            result.song = Some(QueuePlace {
-                                                   id: Id(line.1.parse()?),
-                                                   pos: 0,
-                                                   prio: 0,
-                                               })
-                        }
-                        Some(ref mut place) => place.id = Id(line.1.parse()?),
+                "songid" => match result.song {
+                    None => {
+                        result.song = Some(QueuePlace {
+                            id: Id(line.1.parse()?),
+                            pos: 0,
+                            prio: 0,
+                        })
                     }
-                }
-                "song" => {
-                    match result.song {
-                        None => {
-                            result.song = Some(QueuePlace {
-                                                   pos: line.1.parse()?,
-                                                   id: Id(0),
-                                                   prio: 0,
-                                               })
-                        }
-                        Some(ref mut place) => place.pos = line.1.parse()?,
+                    Some(ref mut place) => place.id = Id(line.1.parse()?),
+                },
+                "song" => match result.song {
+                    None => {
+                        result.song = Some(QueuePlace {
+                            pos: line.1.parse()?,
+                            id: Id(0),
+                            prio: 0,
+                        })
                     }
-                }
-                "nextsongid" => {
-                    match result.nextsong {
-                        None => {
-                            result.nextsong = Some(QueuePlace {
-                                                       id: Id(line.1.parse()?),
-                                                       pos: 0,
-                                                       prio: 0,
-                                                   })
-                        }
-                        Some(ref mut place) => place.id = Id(line.1.parse()?),
+                    Some(ref mut place) => place.pos = line.1.parse()?,
+                },
+                "nextsongid" => match result.nextsong {
+                    None => {
+                        result.nextsong = Some(QueuePlace {
+                            id: Id(line.1.parse()?),
+                            pos: 0,
+                            prio: 0,
+                        })
                     }
-                }
-                "nextsong" => {
-                    match result.nextsong {
-                        None => {
-                            result.nextsong = Some(QueuePlace {
-                                                       pos: line.1.parse()?,
-                                                       id: Id(0),
-                                                       prio: 0,
-                                                   })
-                        }
-                        Some(ref mut place) => place.pos = line.1.parse()?,
+                    Some(ref mut place) => place.id = Id(line.1.parse()?),
+                },
+                "nextsong" => match result.nextsong {
+                    None => {
+                        result.nextsong = Some(QueuePlace {
+                            pos: line.1.parse()?,
+                            id: Id(0),
+                            prio: 0,
+                        })
                     }
-                }
+                    Some(ref mut place) => place.pos = line.1.parse()?,
+                },
                 "time" => {
-                    let mut splits = line.1.splitn(2, ':').map(|v| v.parse().map_err(ParseError::BadInteger).map(Duration::from_secs));
+                    let mut splits = line
+                        .1
+                        .splitn(2, ':')
+                        .map(|v| v.parse().map_err(ParseError::BadInteger).map(Duration::from_secs));
                     result.time = match (splits.next(), splits.next()) {
-                                         (Some(Ok(a)), Some(Ok(b))) => Ok(Some((a, b))),
-                                         (Some(Err(e)), _) |
-                                         (_, Some(Err(e))) => Err(e),
-                                         _ => Ok(None),
-                                  }?;
+                        (Some(Ok(a)), Some(Ok(b))) => Ok(Some((a, b))),
+                        (Some(Err(e)), _) | (_, Some(Err(e))) => Err(e),
+                        _ => Ok(None),
+                    }?;
                 }
                 // TODO" => float errors don't work on stable
                 "elapsed" => result.elapsed = line.1.parse::<f32>().ok().map(|v| Duration::from_millis((v * 1000.0) as u64)),
@@ -229,15 +219,22 @@ impl FromStr for AudioFormat {
     fn from_str(s: &str) -> Result<AudioFormat, ParseError> {
         let mut it = s.split(':');
         Ok(AudioFormat {
-               rate: it.next().ok_or(ParseError::NoRate).and_then(|v| v.parse().map_err(ParseError::BadRate))?,
-               bits: it.next().ok_or(ParseError::NoBits)
-                              .and_then(|v| if &*v == "f" {
-                                            Ok(0)
-                                        } else {
-                                            v.parse().map_err(ParseError::BadBits)
-                                        })?,
-               chans: it.next().ok_or(ParseError::NoChans).and_then(|v| v.parse().map_err(ParseError::BadChans))?,
-           })
+            rate: it
+                .next()
+                .ok_or(ParseError::NoRate)
+                .and_then(|v| v.parse().map_err(ParseError::BadRate))?,
+            bits: it.next().ok_or(ParseError::NoBits).and_then(|v| {
+                if &*v == "f" {
+                    Ok(0)
+                } else {
+                    v.parse().map_err(ParseError::BadBits)
+                }
+            })?,
+            chans: it
+                .next()
+                .ok_or(ParseError::NoChans)
+                .and_then(|v| v.parse().map_err(ParseError::BadChans))?,
+        })
     }
 }
 
@@ -301,10 +298,10 @@ impl fmt::Display for ReplayGain {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::ReplayGain::*;
         f.write_str(match *self {
-                        Off => "off",
-                        Track => "track",
-                        Album => "album",
-                        Auto => "auto",
-                    })
+            Off => "off",
+            Track => "track",
+            Album => "album",
+            Auto => "auto",
+        })
     }
 }

@@ -71,23 +71,23 @@ impl ToPlaylistName for String {
 
 // Seconds polymorphisms {{{
 pub trait ToSeconds {
-    fn to_seconds(self) -> f64;
+    fn to_seconds(&self) -> f64;
 }
 
 impl ToSeconds for i64 {
-    fn to_seconds(self) -> f64 {
-        self as f64
+    fn to_seconds(&self) -> f64 {
+        *self as f64
     }
 }
 
 impl ToSeconds for f64 {
-    fn to_seconds(self) -> f64 {
-        self
+    fn to_seconds(&self) -> f64 {
+        *self
     }
 }
 
 impl ToSeconds for Duration {
-    fn to_seconds(self) -> f64 {
+    fn to_seconds(&self) -> f64 {
         self.as_secs_f64()
     }
 }
@@ -102,80 +102,80 @@ pub trait IsId {
 }
 
 pub trait ToQueueRangeOrPlace: IsId {
-    fn to_range(self) -> String;
+    fn to_range(&self) -> String;
 }
 
 pub trait ToQueueRange {
-    fn to_range(self) -> String;
+    fn to_range(&self) -> String;
 }
 
 impl<T: ToQueuePlace> ToQueueRangeOrPlace for T {
-    fn to_range(self) -> String {
+    fn to_range(&self) -> String {
         format!("{}", self.to_place())
     }
 }
 
 impl ToQueueRange for Range<u32> {
-    fn to_range(self) -> String {
+    fn to_range(&self) -> String {
         format!("{}:{}", self.start, self.end)
     }
 }
 
 impl ToQueueRangeOrPlace for Range<u32> {
-    fn to_range(self) -> String {
+    fn to_range(&self) -> String {
         ToQueueRange::to_range(self)
     }
 }
 
 impl ToQueueRange for RangeTo<u32> {
-    fn to_range(self) -> String {
+    fn to_range(&self) -> String {
         format!(":{}", self.end)
     }
 }
 
 impl ToQueueRangeOrPlace for RangeTo<u32> {
-    fn to_range(self) -> String {
+    fn to_range(&self) -> String {
         ToQueueRange::to_range(self)
     }
 }
 
 impl ToQueueRange for RangeFrom<u32> {
-    fn to_range(self) -> String {
+    fn to_range(&self) -> String {
         format!("{}:", self.start)
     }
 }
 
 impl ToQueueRangeOrPlace for RangeFrom<u32> {
-    fn to_range(self) -> String {
+    fn to_range(&self) -> String {
         ToQueueRange::to_range(self)
     }
 }
 
 impl ToQueueRange for RangeFull {
-    fn to_range(self) -> String {
-        ToQueueRange::to_range(0..)
+    fn to_range(&self) -> String {
+        ToQueueRange::to_range(&(0..))
     }
 }
 
 impl ToQueueRangeOrPlace for RangeFull {
-    fn to_range(self) -> String {
+    fn to_range(&self) -> String {
         ToQueueRange::to_range(self)
     }
 }
 
 pub trait ToQueuePlace: IsId {
-    fn to_place(self) -> u32;
+    fn to_place(&self) -> u32;
 }
 
 impl ToQueuePlace for Id {
-    fn to_place(self) -> u32 {
+    fn to_place(&self) -> u32 {
         self.0
     }
 }
 
 impl ToQueuePlace for u32 {
-    fn to_place(self) -> u32 {
-        self
+    fn to_place(&self) -> u32 {
+        *self
     }
 }
 
@@ -215,16 +215,16 @@ impl ToSongId for Id {
 
 // Output id polymorphisms {{{
 pub trait ToOutputId {
-    fn to_output_id(self) -> u32;
+    fn to_output_id(&self) -> u32;
 }
 
 impl ToOutputId for u32 {
-    fn to_output_id(self) -> u32 {
-        self
+    fn to_output_id(&self) -> u32 {
+        *self
     }
 }
 impl ToOutputId for Output {
-    fn to_output_id(self) -> u32 {
+    fn to_output_id(&self) -> u32 {
         self.id
     }
 }
@@ -232,54 +232,54 @@ impl ToOutputId for Output {
 
 // Song play range polymorphisms {{{
 pub trait ToSongRange {
-    fn to_range(self) -> song::Range;
+    fn to_range(&self) -> song::Range;
 }
 
 impl ToSongRange for Range<Duration> {
-    fn to_range(self) -> song::Range {
+    fn to_range(&self) -> song::Range {
         song::Range(self.start, Some(self.end))
     }
 }
 
 impl ToSongRange for Range<u32> {
-    fn to_range(self) -> song::Range {
+    fn to_range(&self) -> song::Range {
         song::Range(Duration::from_secs(self.start as u64), Some(Duration::from_secs(self.end as u64)))
     }
 }
 
 impl ToSongRange for RangeFrom<Duration> {
-    fn to_range(self) -> song::Range {
+    fn to_range(&self) -> song::Range {
         song::Range(self.start, None)
     }
 }
 
 impl ToSongRange for RangeFrom<u32> {
-    fn to_range(self) -> song::Range {
+    fn to_range(&self) -> song::Range {
         song::Range(Duration::from_secs(self.start as u64), None)
     }
 }
 
 impl ToSongRange for RangeTo<Duration> {
-    fn to_range(self) -> song::Range {
+    fn to_range(&self) -> song::Range {
         song::Range(Duration::from_secs(0), Some(self.end))
     }
 }
 
 impl ToSongRange for RangeTo<u32> {
-    fn to_range(self) -> song::Range {
+    fn to_range(&self) -> song::Range {
         song::Range(Duration::from_secs(0), Some(Duration::from_secs(self.end as u64)))
     }
 }
 
 impl ToSongRange for RangeFull {
-    fn to_range(self) -> song::Range {
+    fn to_range(&self) -> song::Range {
         song::Range(Duration::from_secs(0), None)
     }
 }
 
 impl ToSongRange for song::Range {
-    fn to_range(self) -> song::Range {
-        self
+    fn to_range(&self) -> song::Range {
+        *self
     }
 }
 
@@ -309,7 +309,8 @@ impl ToSongPath for dyn AsRef<str> {
 
 impl<T: ToSongPath> ToArguments for T {
     fn to_arguments<F, E>(&self, f: &mut F) -> Result<(), E>
-        where F: FnMut(&str) -> Result<(), E>
+    where
+        F: FnMut(&str) -> Result<(), E>,
     {
         self.to_path().to_arguments(f)
     }
