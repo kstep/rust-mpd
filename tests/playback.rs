@@ -1,5 +1,4 @@
 extern crate mpd;
-extern crate time;
 
 mod helpers;
 

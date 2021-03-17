@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 use std::convert::From;
 
 /// Sound output
-#[derive(Clone, Debug, PartialEq, RustcEncodable)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Output {
     /// id
     pub id: u32,

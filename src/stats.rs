@@ -3,7 +3,6 @@
 use crate::convert::FromIter;
 use crate::error::Error;
 
-use rustc_serialize::{Encodable, Encoder};
 use std::time::Duration;
 
 /// DB and playback statistics
@@ -23,21 +22,6 @@ pub struct Stats {
     pub db_playtime: Duration,
     /// last DB update timestamp in seconds since Epoch, seconds resolution
     pub db_update: Duration,
-}
-
-impl Encodable for Stats {
-    fn encode<S: Encoder>(&self, e: &mut S) -> Result<(), S::Error> {
-        e.emit_struct("Stats", 7, |e| {
-            e.emit_struct_field("artists", 0, |e| self.artists.encode(e))?;
-            e.emit_struct_field("albums", 1, |e| self.albums.encode(e))?;
-            e.emit_struct_field("songs", 2, |e| self.songs.encode(e))?;
-            e.emit_struct_field("uptime", 3, |e| self.uptime.as_secs().encode(e))?;
-            e.emit_struct_field("playtime", 4, |e| self.playtime.as_secs().encode(e))?;
-            e.emit_struct_field("db_playtime", 5, |e| self.db_playtime.as_secs().encode(e))?;
-            e.emit_struct_field("db_update", 6, |e| self.db_update.as_secs().encode(e))?;
-            Ok(())
-        })
-    }
 }
 
 impl Default for Stats {

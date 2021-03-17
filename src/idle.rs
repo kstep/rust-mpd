@@ -36,7 +36,7 @@ use std::mem::forget;
 use std::str::FromStr;
 
 /// Subsystems for `idle` command
-#[derive(Clone, Copy, Debug, PartialEq, RustcEncodable)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Subsystem {
     /// database: the song database has been modified after update.
     Database,

@@ -15,7 +15,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 
 /// Message
-#[derive(Debug, PartialEq, Clone, RustcEncodable)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Message {
     /// channel
     pub channel: Channel,
@@ -33,7 +33,7 @@ impl FromMap for Message {
 }
 
 /// Channel
-#[derive(Debug, PartialEq, PartialOrd, Clone, RustcEncodable)]
+#[derive(Debug, PartialEq, PartialOrd, Clone)]
 pub struct Channel(String);
 
 impl fmt::Display for Channel {
