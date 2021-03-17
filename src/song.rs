@@ -5,7 +5,6 @@ use crate::error::{Error, ParseError};
 
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
-use std::collections::BTreeMap;
 use std::fmt;
 use std::str::FromStr;
 use std::time::Duration;
@@ -112,7 +111,7 @@ pub struct Song {
     /// range to play (if queued for playback and range was set)
     pub range: Option<Range>,
     /// arbitrary tags, like album, artist etc
-    pub tags: BTreeMap<String, String>,
+    pub tags: Vec<(String, String)>,
 }
 
 impl Encodable for Song {
@@ -200,7 +199,7 @@ impl FromIter for Song {
                     }
                 }
                 _ => {
-                    result.tags.insert(line.0, line.1);
+                    result.tags.push((line.0, line.1));
                 }
             }
         }
