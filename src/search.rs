@@ -55,7 +55,7 @@ impl<'a> Query<'a> {
         Query { filters: Vec::new() }
     }
 
-    pub fn and<'b: 'a, V: 'b + Into<Cow<'b, str>>>(&'a mut self, term: Term<'b>, value: V) -> &'a mut Query<'a> {
+    pub fn and<'b: 'a, V: 'b + Into<Cow<'b, str>>>(&mut self, term: Term<'b>, value: V) -> &mut Query<'a> {
         self.filters.push(Filter::new(term, value));
         self
     }
@@ -137,5 +137,12 @@ mod test {
         let finished = query.and(Term::Tag("albumartist".into()), "Mac DeMarco").and(Term::Tag("album".into()), "Salad Days");
         let output = collect(&*finished);
         assert_eq!(output, vec!["albumartist", "Mac DeMarco", "album", "Salad Days"]);
+    }
+
+    #[test]
+    fn multiple_and() {
+        let mut query = Query::new();
+        query.and(Term::Tag("albumartist".into()), "Mac DeMarco");
+        query.and(Term::Tag("album".into()), "Salad Days");
     }
 }
