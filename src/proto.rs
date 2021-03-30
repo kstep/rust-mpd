@@ -181,14 +181,6 @@ impl ToArguments for () {
     }
 }
 
-impl<'a> ToArguments for &'a str {
-    fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
-        where F: FnMut(&str) -> StdResult<(), E>
-    {
-        f(self)
-    }
-}
-
 macro_rules! argument_for_display {
     ( $x:path ) => {
         impl ToArguments for $x {
@@ -207,7 +199,6 @@ argument_for_display!{f32}
 argument_for_display!{f64}
 argument_for_display!{usize}
 argument_for_display!{crate::status::ReplayGain}
-argument_for_display!{String}
 argument_for_display!{crate::song::Id}
 argument_for_display!{crate::song::Range}
 argument_for_display!{crate::message::Channel}

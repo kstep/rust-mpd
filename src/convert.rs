@@ -295,21 +295,40 @@ impl ToSongPath for Song {
     }
 }
 
-impl<'a, T: ToSongPath> ToSongPath for &'a T {
-    fn to_path(&self) -> &str {
-        (*self).to_path()
-    }
-}
-
 impl ToSongPath for dyn AsRef<str> {
     fn to_path(&self) -> &str {
         self.as_ref()
     }
 }
 
-impl<T: ToSongPath> ToArguments for T {
+impl<'a> ToSongPath for &'a String {
+    fn to_path(&self) -> &str {
+        self
+    }
+}
+
+impl<'a> ToSongPath for &'a str {
+    fn to_path(&self) -> &str {
+        *self
+    }
+}
+
+impl ToSongPath for str {
+    fn to_path(&self) -> &str {
+        self
+    }
+}
+
+impl ToSongPath for String {
+    fn to_path(&self) -> &str {
+        &*self
+    }
+}
+
+impl<P: ToSongPath> ToArguments for P {
     fn to_arguments<F, E>(&self, f: &mut F) -> Result<(), E>
-        where F: FnMut(&str) -> Result<(), E>
+    where
+        F: FnMut(&str) -> Result<(), E>,
     {
         self.to_path().to_arguments(f)
     }
