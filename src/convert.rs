@@ -310,8 +310,8 @@ impl<'a> ToSongPath for &'a String {
 impl<'a> ToSongPath for &'a str {
     fn to_path(&self) -> &str {
         *self
-    }
 }
+    }
 
 impl ToSongPath for str {
     fn to_path(&self) -> &str {
@@ -330,6 +330,6 @@ impl<P: ToSongPath> ToArguments for P {
     where
         F: FnMut(&str) -> Result<(), E>,
     {
-        self.to_path().to_arguments(f)
+        f(self.to_path())
     }
 }
