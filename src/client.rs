@@ -583,18 +583,26 @@ impl<S: Read + Write> Client<S> {
     /// List all (file, sticker) pairs for sticker name and objects of given type
     /// from given directory (identified by uri)
     pub fn find_sticker(&mut self, typ: &str, uri: &str, name: &str) -> Result<Vec<(String, String)>> {
-        self.run_command("sticker find", (typ, uri, name))
-            .and_then(|_| {
-                self.read_pairs()
-                    .split("file")
-                    .map(|rmap| {
-                             rmap.map(|mut map| {
-                                          (map.remove("file").unwrap(),
-                                           map.remove("sticker").and_then(|s| s.splitn(2, '=').nth(1).map(|s| s.to_owned())).unwrap())
-                                      })
-                         })
-                    .collect()
-            })
+        self.run_command("sticker find", (typ, uri, name)).and_then(|_| {
+            self.read_pairs()
+                .split("file")
+                .map(|rmap| {
+                    rmap.map(|map| {
+                        (
+                            map.iter()
+                                .filter_map(|(k, v)| if k == "file" { Some(v.to_owned()) } else { None })
+                                .next()
+                                .unwrap(),
+                            map.iter()
+                                .filter_map(|(k, v)| if k == "sticker" { Some(v.to_owned()) } else { None })
+                                .next()
+                                .and_then(|s| s.splitn(2, '=').nth(1).map(|s| s.to_owned()))
+                                .unwrap(),
+                        )
+                    })
+                })
+                .collect()
+        })
     }
 
     /// List all files of a given type under given directory (identified by uri)
