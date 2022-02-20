@@ -211,6 +211,11 @@ impl<S: Read + Write> Client<S> {
         self.run_command("currentsong", ()).and_then(|_| self.read_struct::<Song>()).map(|s| if s.place.is_none() { None } else { Some(s) })
     }
 
+    /// gets the song wrt to songid in the playlist
+    pub fn playlistid(&mut self, id:Id)->Result<Option<Song>>{
+        self.run_command("playlistid", id).and_then(|_| self.read_struct::<Song>()).map(|s| if s.place.is_none() { None} else { Some(s)})
+    }
+
     /// Clear current queue
     pub fn clear(&mut self) -> Result<()> {
         self.run_command("clear", ()).and_then(|_| self.expect_ok())
