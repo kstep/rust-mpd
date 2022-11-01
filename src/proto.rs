@@ -3,11 +3,10 @@
 
 use bufstream::BufStream;
 
-use crate::convert::{FromIter, FromMap};
+use crate::convert::FromIter;
 use crate::error::{Error, ProtoError, Result, ParseError};
 use crate::reply::Reply;
 
-use std::collections::BTreeMap;
 use std::fmt;
 use std::io::{self, Lines, Read, Write};
 use std::result::Result as StdResult;
@@ -43,16 +42,16 @@ pub struct Maps<'a, I: 'a> {
 impl<'a, I> Iterator for Maps<'a, I>
     where I: Iterator<Item = io::Result<String>>
 {
-    type Item = Result<BTreeMap<String, String>>;
-    fn next(&mut self) -> Option<Result<BTreeMap<String, String>>> {
+    type Item = Result<Vec<(String, String)>>;
+    fn next(&mut self) -> Option<Result<Vec<(String, String)>>> {
         if self.done {
             return None;
         }
 
-        let mut map = BTreeMap::new();
+        let mut map = Vec::new();
 
         if let Some(b) = self.value.take() {
-            map.insert(self.sep.to_owned(), b);
+            map.push((self.sep.to_owned(), b));
         }
 
         loop {
@@ -66,7 +65,7 @@ impl<'a, I> Iterator for Maps<'a, I>
                         }
                         break;
                     } else {
-                        map.insert(a, b);
+                        map.push((a, b));
                     }
                 }
                 Some(Err(e)) => return Some(Err(e)),
@@ -107,9 +106,12 @@ pub trait Proto {
     fn run_command<I>(&mut self, command: &str, arguments: I) -> Result<()> where I: ToArguments;
 
     fn read_structs<'a, T>(&'a mut self, key: &'static str) -> Result<Vec<T>>
-        where T: 'a + FromMap
+        where T: 'a + FromIter,
     {
-        self.read_pairs().split(key).map(|v| v.and_then(FromMap::from_map)).collect()
+        self.read_pairs()
+            .split(key)
+            .map(|v| v.and_then(|v| FromIter::from_iter(v.into_iter().map(Ok))))
+            .collect()
     }
 
     fn read_list(&mut self, key: &'static str) -> Result<Vec<String>> {

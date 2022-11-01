@@ -21,9 +21,9 @@ pub trait FromIter: Sized {
     fn from_iter<I: Iterator<Item = Result<(String, String), Error>>>(iter: I) -> Result<Self, Error>;
 }
 
-impl<T: FromIter> FromMap for T {
-    fn from_map(map: BTreeMap<String, String>) -> Result<Self, Error> {
-        FromIter::from_iter(map.into_iter().map(Ok))
+impl<T: FromMap> FromIter for T {
+    fn from_iter<I: Iterator<Item = Result<(String, String), Error>>>(iter: I) -> Result<Self, Error> {
+        iter.collect::<Result<BTreeMap<_, _>, _>>().and_then(FromMap::from_map)
     }
 }
 
