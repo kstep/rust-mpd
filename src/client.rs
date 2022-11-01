@@ -206,9 +206,19 @@ impl<S: Read + Write> Client<S> {
         self.run_command("playlistinfo", ()).and_then(|_| self.read_structs("file"))
     }
 
+    /// lists all songs in the database
+    pub fn listall(&mut self) -> Result<Vec<String>> {
+        self.run_command("listall", ()).and_then(|_| self.read_structs("file"))
+    }
+
     /// Get current playing song
     pub fn currentsong(&mut self) -> Result<Option<Song>> {
         self.run_command("currentsong", ()).and_then(|_| self.read_struct::<Song>()).map(|s| if s.place.is_none() { None } else { Some(s) })
+    }
+
+    /// gets the song wrt to songid in the playlist
+    pub fn playlistid(&mut self, id:Id)->Result<Option<Song>>{
+        self.run_command("playlistid", id).and_then(|_| self.read_struct::<Song>()).map(|s| if s.place.is_none() { None} else { Some(s)})
     }
 
     /// Clear current queue
