@@ -8,7 +8,7 @@
 use bufstream::BufStream;
 
 use crate::convert::*;
-use crate::error::{Error, ProtoError, Result};
+use crate::error::{Error, ParseError, ProtoError, Result};
 use crate::message::{Channel, Message};
 use crate::mount::{Mount, Neighbor};
 use crate::output::Output;
@@ -385,7 +385,7 @@ impl<S: Read + Write> Client<S> {
     // TODO: search type what [...] [window start:end], searchadd type what [...]
     // TODO: listallinfo [uri], listfiles [uri]
     // TODO: list type [filtertype] [filterwhat] [...] [group] [grouptype] [...]
-    // TODO: searchaddpl name type what [...], readcomments
+    // TODO: searchaddpl name type what [...]
 
     /// List all songs/directories in directory
     pub fn listfiles(&mut self, song_path: &str) -> Result<Vec<(String, String)>> {
@@ -397,6 +397,29 @@ impl<S: Read + Write> Client<S> {
         where W: Into<Window>
     {
         self.find_generic("find", query, window.into())
+    }
+
+    /// Find album art for file
+    pub fn albumart<P: ToSongPath>(&mut self, path: &P) -> Result<Vec<u8>> {
+        let mut buf = vec![];
+        loop {
+            self.run_command("albumart", (path, &*format!("{}", buf.len())))?;
+            let (_, size) = self.read_pair()?;
+            let (_, bytes) = self.read_pair()?;
+            let mut chunk = self.read_bytes(bytes.parse()?)?;
+            buf.append(&mut chunk);
+            // Read empty newline
+            let _ = self.read_line()?;
+            let result = self.read_line()?;
+            if result != "OK" {
+                return Err(ProtoError::NotOk)?;
+            }
+
+            if size.parse::<usize>()? == buf.len() {
+                break;
+            }
+        }
+        Ok(buf)
     }
 
     /// Case-insensitively search for songs matching Query conditions.
@@ -425,6 +448,12 @@ impl<S: Read + Write> Client<S> {
     /// Lists the contents of a directory.
     pub fn lsinfo<P: ToSongPath>(&mut self, path: P) -> Result<Vec<Song>> {
         self.run_command("lsinfo", path).and_then(|_| self.read_structs("file"))
+    }
+
+    /// Returns raw metadata for file
+    pub fn readcomments<'a, P: ToSongPath>(&'a mut self, path: P) -> Result<impl Iterator<Item = Result<(String, String)>> + 'a> {
+        self.run_command("readcomments", path)?;
+        Ok(self.read_pairs())
     }
 
     // }}}
@@ -624,17 +653,34 @@ impl<S: Read + Write> Client<S> {
 impl<S: Read + Write> Proto for Client<S> {
     type Stream = S;
 
+    fn read_bytes(&mut self, bytes: usize) -> Result<Vec<u8>> {
+        let mut buf = Vec::with_capacity(bytes);
+        let mut chunk = (&mut self.socket).take(bytes as u64);
+        chunk.read_to_end(&mut buf)?;
+        Ok(buf)
+    }
+
     fn read_line(&mut self) -> Result<String> {
-        let mut buf = String::new();
-        self.socket.read_line(&mut buf)?;
-        if buf.ends_with('\n') {
+        let mut buf = Vec::new();
+        self.socket.read_until(b'\n', &mut buf)?;
+        if buf.ends_with(&[b'\n']) {
             buf.pop();
         }
-        Ok(buf)
+        let str = String::from_utf8(buf)
+            .map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidData, "stream did not contain valid UTF-8"))?;
+        Ok(str)
     }
 
     fn read_pairs(&mut self) -> Pairs<Lines<&mut BufStream<S>>> {
         Pairs((&mut self.socket).lines())
+    }
+
+    fn read_pair(&mut self) -> Result<(String, String)> {
+        let line = self.read_line()?;
+        let mut split = line.split(": ");
+        let key = split.next().ok_or(ParseError::BadPair)?;
+        let val = split.next().ok_or(ParseError::BadPair)?;
+        Ok((key.to_string(), val.to_string()))
     }
 
     fn run_command<I>(&mut self, command: &str, arguments: I) -> Result<()>
