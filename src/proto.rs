@@ -99,6 +99,7 @@ impl<I> Pairs<I>
 pub trait Proto {
     type Stream: Read + Write;
 
+    fn read_bytes(&mut self, bytes: usize) -> Result<Vec<u8>>;
     fn read_line(&mut self) -> Result<String>;
     fn read_pairs(&mut self) -> Pairs<Lines<&mut BufStream<Self::Stream>>>;
 
@@ -232,7 +233,8 @@ macro_rules! argument_for_tuple {
 argument_for_tuple!{t0: T0}
 argument_for_tuple!{t0: T0, t1: T1}
 argument_for_tuple!{t0: T0, t1: T1, t2: T2}
-argument_for_tuple!{t0: T0, t1: T1, t2: T2, t3:T3}
+argument_for_tuple!{t0: T0, t1: T1, t2: T2, t3: T3}
+argument_for_tuple!{t0: T0, t1: T1, t2: T2, t3:T3, t4: T4}
 
 impl<'a, T: ToArguments> ToArguments for &'a [T] {
     fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
