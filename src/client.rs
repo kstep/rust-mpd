@@ -387,6 +387,11 @@ impl<S: Read + Write> Client<S> {
     // TODO: list type [filtertype] [filterwhat] [...] [group] [grouptype] [...]
     // TODO: searchaddpl name type what [...], readcomments
 
+    /// List all songs/directories in directory
+    pub fn listfiles(&mut self, song_path: &str) -> Result<Vec<(String, String)>> {
+        self.run_command("listfiles", song_path).and_then(|_| self.read_pairs().collect())
+    }
+
     /// Find songs matching Query conditions.
     pub fn find<W>(&mut self, query: &Query, window: W) -> Result<Vec<Song>>
         where W: Into<Window>
@@ -418,8 +423,8 @@ impl<S: Read + Write> Client<S> {
     }
 
     /// Lists the contents of a directory.
-    pub fn lsinfo<P: ToSongPath>(&mut self, path: P) -> Result<Song> {
-        self.run_command("lsinfo", path).and_then(|_| self.read_struct())
+    pub fn lsinfo<P: ToSongPath>(&mut self, path: P) -> Result<Vec<Song>> {
+        self.run_command("lsinfo", path).and_then(|_| self.read_structs("file"))
     }
 
     // }}}
