@@ -207,7 +207,7 @@ impl<S: Read + Write> Client<S> {
     }
 
     /// lists all songs in the database
-    pub fn listall(&mut self) -> Result<Vec<String>> {
+    pub fn listall(&mut self) -> Result<Vec<Song>> {
         self.run_command("listall", ()).and_then(|_| self.read_structs("file"))
     }
 
