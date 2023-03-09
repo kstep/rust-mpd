@@ -3,8 +3,6 @@
 use crate::convert::FromIter;
 use crate::error::{Error, ParseError};
 
-use std::collections::BTreeMap;
-use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
 use std::time::Duration;
@@ -19,7 +17,24 @@ impl fmt::Display for Id {
     }
 }
 
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Id {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where D: serde::Deserializer<'de> {
+        Ok(Id(u32::deserialize(deserializer)?))
+    }
+}
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for Id {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where S: serde::Serializer {
+        serializer.serialize_u32(self.0)
+    }
+}
+
 /// Song place in the queue
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub struct QueuePlace {
     /// song ID
@@ -31,6 +46,7 @@ pub struct QueuePlace {
 }
 
 /// Song range
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Range(pub Duration, pub Option<Duration>);
 
@@ -65,6 +81,7 @@ impl FromStr for Range {
 }
 
 /// Song data
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Song {
     /// filename
@@ -103,33 +120,15 @@ impl FromIter for Song {
                 "Time" => result.duration = Some(Duration::from_secs(line.1.parse()?)),
                 "Range" => result.range = Some(line.1.parse()?),
                 "Id" => match result.place {
-                    None => {
-                        result.place = Some(QueuePlace {
-                            id: Id(line.1.parse()?),
-                            pos: 0,
-                            prio: 0,
-                        })
-                    }
+                    None => result.place = Some(QueuePlace { id: Id(line.1.parse()?), pos: 0, prio: 0 }),
                     Some(ref mut place) => place.id = Id(line.1.parse()?),
                 },
                 "Pos" => match result.place {
-                    None => {
-                        result.place = Some(QueuePlace {
-                            pos: line.1.parse()?,
-                            id: Id(0),
-                            prio: 0,
-                        })
-                    }
+                    None => result.place = Some(QueuePlace { pos: line.1.parse()?, id: Id(0), prio: 0 }),
                     Some(ref mut place) => place.pos = line.1.parse()?,
                 },
                 "Prio" => match result.place {
-                    None => {
-                        result.place = Some(QueuePlace {
-                            prio: line.1.parse()?,
-                            id: Id(0),
-                            pos: 0,
-                        })
-                    }
+                    None => result.place = Some(QueuePlace { prio: line.1.parse()?, id: Id(0), pos: 0 }),
                     Some(ref mut place) => place.prio = line.1.parse()?,
                 },
                 _ => {

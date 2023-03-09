@@ -4,7 +4,6 @@
 //!
 //! [proto]: http://www.musicpd.org/doc/protocol/
 
-
 use bufstream::BufStream;
 
 use crate::convert::*;
@@ -15,24 +14,24 @@ use crate::output::Output;
 use crate::playlist::Playlist;
 use crate::plugin::Plugin;
 use crate::proto::*;
-use crate::search::{Query, Window, Term};
+use crate::search::{Query, Term, Window};
 use crate::song::{Id, Song};
 use crate::stats::Stats;
 use crate::status::{ReplayGain, Status};
 use crate::sticker::Sticker;
 use crate::version::Version;
 
+use std::collections::HashMap;
 use std::convert::From;
 use std::io::{BufRead, Lines, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
-use std::collections::HashMap;
 
 // Client {{{
 
 /// Client connection
 #[derive(Debug)]
 pub struct Client<S = TcpStream>
-    where S: Read + Write
+where S: Read + Write
 {
     socket: BufStream<S>,
     /// MPD version
@@ -67,10 +66,7 @@ impl<S: Read + Write> Client<S> {
 
         let version = banner[7..].trim().parse::<Version>()?;
 
-        Ok(Client {
-               socket: socket,
-               version: version,
-           })
+        Ok(Client { socket, version })
     }
     // }}}
 
@@ -153,7 +149,7 @@ impl<S: Read + Write> Client<S> {
     }
 
     /// Switch to a next song in queue
-    #[cfg_attr(feature = "cargo-clippy", allow(should_implement_trait))]
+    #[cfg_attr(feature = "cargo-clippy", allow(clippy::should_implement_trait))]
     pub fn next(&mut self) -> Result<()> {
         self.run_command("next", ()).and_then(|_| self.expect_ok())
     }
@@ -193,11 +189,7 @@ impl<S: Read + Write> Client<S> {
     // Queue control {{{
     /// List given song or range of songs in a play queue
     pub fn songs<T: ToQueueRangeOrPlace>(&mut self, pos: T) -> Result<Vec<Song>> {
-        let command = if T::is_id() {
-            "playlistid"
-        } else {
-            "playlistinfo"
-        };
+        let command = if T::is_id() { "playlistid" } else { "playlistinfo" };
         self.run_command(command, pos.to_range()).and_then(|_| self.read_structs("file"))
     }
 
@@ -213,12 +205,16 @@ impl<S: Read + Write> Client<S> {
 
     /// Get current playing song
     pub fn currentsong(&mut self) -> Result<Option<Song>> {
-        self.run_command("currentsong", ()).and_then(|_| self.read_struct::<Song>()).map(|s| if s.place.is_none() { None } else { Some(s) })
+        self.run_command("currentsong", ())
+            .and_then(|_| self.read_struct::<Song>())
+            .map(|s| if s.place.is_none() { None } else { Some(s) })
     }
 
     /// gets the song wrt to songid in the playlist
-    pub fn playlistid(&mut self, id:Id)->Result<Option<Song>>{
-        self.run_command("playlistid", id).and_then(|_| self.read_struct::<Song>()).map(|s| if s.place.is_none() { None} else { Some(s)})
+    pub fn playlistid(&mut self, id: Id) -> Result<Option<Song>> {
+        self.run_command("playlistid", id)
+            .and_then(|_| self.read_struct::<Song>())
+            .map(|s| if s.place.is_none() { None } else { Some(s) })
     }
 
     /// Clear current queue
@@ -394,8 +390,7 @@ impl<S: Read + Write> Client<S> {
 
     /// Find songs matching Query conditions.
     pub fn find<W>(&mut self, query: &Query, window: W) -> Result<Vec<Song>>
-        where W: Into<Window>
-    {
+    where W: Into<Window> {
         self.find_generic("find", query, window.into())
     }
 
@@ -424,8 +419,7 @@ impl<S: Read + Write> Client<S> {
 
     /// Case-insensitively search for songs matching Query conditions.
     pub fn search<W>(&mut self, query: &Query, window: W) -> Result<Vec<Song>>
-        where W: Into<Window>
-    {
+    where W: Into<Window> {
         self.find_generic("search", query, window.into())
     }
 
@@ -451,7 +445,7 @@ impl<S: Read + Write> Client<S> {
     }
 
     /// Returns raw metadata for file
-    pub fn readcomments<'a, P: ToSongPath>(&'a mut self, path: P) -> Result<impl Iterator<Item = Result<(String, String)>> + 'a> {
+    pub fn readcomments<P: ToSongPath>(&mut self, path: P) -> Result<impl Iterator<Item = Result<(String, String)>> + '_> {
         self.run_command("readcomments", path)?;
         Ok(self.read_pairs())
     }
@@ -524,13 +518,9 @@ impl<S: Read + Write> Client<S> {
     // Messaging {{{
     /// List all channels available for current connection
     pub fn channels(&mut self) -> Result<Vec<Channel>> {
-        self.run_command("channels", ()).and_then(|_| self.read_list("channel")).map(|v| {
-                                                                                         v.into_iter()
-                                                                                             .map(|b| unsafe {
-                                                                                                      Channel::new_unchecked(b)
-                                                                                                  })
-                                                                                             .collect()
-                                                                                     })
+        self.run_command("channels", ())
+            .and_then(|_| self.read_list("channel"))
+            .map(|v| v.into_iter().map(|b| unsafe { Channel::new_unchecked(b) }).collect())
     }
 
     /// Read queued messages from subscribed channels
@@ -610,18 +600,20 @@ impl<S: Read + Write> Client<S> {
     pub fn stickers(&mut self, typ: &str, uri: &str) -> Result<Vec<String>> {
         self.run_command("sticker list", (typ, uri))
             .and_then(|_| self.read_list("sticker"))
-            .map(|v| v.into_iter().map(|b| b.splitn(2, '=').nth(1).map(|s| s.to_owned()).unwrap()).collect())
+            .map(|v| v.into_iter().map(|b| b.split_once('=').map(|x| x.1.to_owned()).unwrap()).collect())
     }
 
     /// List all stickers from a given object in a map, identified by type and uri
     pub fn stickers_map(&mut self, typ: &str, uri: &str) -> Result<HashMap<String, String>> {
-        self.run_command("sticker list", (typ, uri))
-            .and_then(|_| self.read_list("sticker"))
-            .map(|v| v.into_iter().map(|b| {
-                let mut iter = b.splitn(2, '=');
+        self.run_command("sticker list", (typ, uri)).and_then(|_| self.read_list("sticker")).map(|v| {
+            v.into_iter()
+                .map(|b| {
+                    let mut iter = b.splitn(2, '=');
 
-                (iter.next().unwrap().to_owned(), iter.next().unwrap().to_owned())
-            }).collect())
+                    (iter.next().unwrap().to_owned(), iter.next().unwrap().to_owned())
+                })
+                .collect()
+        })
     }
 
     /// List all (file, sticker) pairs for sticker name and objects of given type
@@ -633,14 +625,10 @@ impl<S: Read + Write> Client<S> {
                 .map(|rmap| {
                     rmap.map(|map| {
                         (
+                            map.iter().find_map(|(k, v)| if k == "file" { Some(v.to_owned()) } else { None }).unwrap(),
                             map.iter()
-                                .filter_map(|(k, v)| if k == "file" { Some(v.to_owned()) } else { None })
-                                .next()
-                                .unwrap(),
-                            map.iter()
-                                .filter_map(|(k, v)| if k == "sticker" { Some(v.to_owned()) } else { None })
-                                .next()
-                                .and_then(|s| s.splitn(2, '=').nth(1).map(|s| s.to_owned()))
+                                .find_map(|(k, v)| if k == "sticker" { Some(v.to_owned()) } else { None })
+                                .and_then(|s| s.split_once('=').map(|x| x.1.to_owned()))
                                 .unwrap(),
                         )
                     })
@@ -692,8 +680,7 @@ impl<S: Read + Write> Proto for Client<S> {
     }
 
     fn run_command<I>(&mut self, command: &str, arguments: I) -> Result<()>
-        where I: ToArguments
-    {
+    where I: ToArguments {
         self.socket
             .write_all(command.as_bytes())
             .and_then(|_| arguments.to_arguments(&mut |arg| write!(self.socket, " {}", Quoted(arg))))

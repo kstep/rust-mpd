@@ -34,13 +34,13 @@ pub trait ToPlaylistName {
 
 impl ToPlaylistName for Playlist {
     fn to_name(&self) -> &str {
-        &*self.name
+        &self.name
     }
 }
 
 impl<'a> ToPlaylistName for &'a Playlist {
     fn to_name(&self) -> &str {
-        &*self.name
+        &self.name
     }
 }
 
@@ -52,7 +52,7 @@ impl<'a> ToPlaylistName for &'a String {
 
 impl<'a> ToPlaylistName for &'a str {
     fn to_name(&self) -> &str {
-        *self
+        self
     }
 }
 
@@ -64,7 +64,7 @@ impl ToPlaylistName for str {
 
 impl ToPlaylistName for String {
     fn to_name(&self) -> &str {
-        &*self
+        self
     }
 }
 // }}}
@@ -309,18 +309,17 @@ impl ToSongPath for dyn AsRef<str> {
 
 impl<T: ToSongPath> ToArguments for T {
     fn to_arguments<F, E>(&self, f: &mut F) -> Result<(), E>
-        where F: FnMut(&str) -> Result<(), E>
-    {
+    where F: FnMut(&str) -> Result<(), E> {
         self.to_path().to_arguments(f)
     }
 }
 
-impl FromIter for String{
-    fn from_iter<I: Iterator<Item = Result<(String, String), Error>>>(mut iter: I) -> Result<Self, Error> {
-        for res in iter{
+impl FromIter for String {
+    fn from_iter<I: Iterator<Item = Result<(String, String), Error>>>(iter: I) -> Result<Self, Error> {
+        for res in iter {
             let line = res?;
             if line.0 == "file" {
-                return Ok(line.1)
+                return Ok(line.1);
             }
         }
         Err(Error::Proto(ProtoError::NoField("songname")))

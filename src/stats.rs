@@ -6,6 +6,7 @@ use crate::error::Error;
 use std::time::Duration;
 
 /// DB and playback statistics
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Stats {
     /// number of artists in DB

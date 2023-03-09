@@ -6,6 +6,7 @@ use crate::error::{Error, ProtoError};
 use std::collections::BTreeMap;
 
 /// Playlist
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct Playlist {
     /// name
@@ -17,14 +18,8 @@ pub struct Playlist {
 impl FromMap for Playlist {
     fn from_map(map: BTreeMap<String, String>) -> Result<Playlist, Error> {
         Ok(Playlist {
-            name: map
-                .get("playlist")
-                .map(|v| v.to_owned())
-                .ok_or(Error::Proto(ProtoError::NoField("playlist")))?,
-            last_mod: map
-                .get("Last-Modified")
-                .map(|v| v.to_owned())
-                .ok_or(Error::Proto(ProtoError::NoField("Last-Modified")))?,
+            name: map.get("playlist").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("playlist")))?,
+            last_mod: map.get("Last-Modified").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("Last-Modified")))?,
         })
     }
 }

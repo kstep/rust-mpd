@@ -4,7 +4,7 @@
 use bufstream::BufStream;
 
 use crate::convert::FromIter;
-use crate::error::{Error, ProtoError, Result, ParseError};
+use crate::error::{Error, ParseError, ProtoError, Result};
 use crate::reply::Reply;
 
 use std::fmt;
@@ -15,7 +15,7 @@ use std::str::FromStr;
 pub struct Pairs<I>(pub I);
 
 impl<I> Iterator for Pairs<I>
-    where I: Iterator<Item = io::Result<String>>
+where I: Iterator<Item = io::Result<String>>
 {
     type Item = Result<(String, String)>;
     fn next(&mut self) -> Option<Result<(String, String)>> {
@@ -23,8 +23,7 @@ impl<I> Iterator for Pairs<I>
             self.0.next().map(|v| v.map_err(Error::Io).and_then(|s| s.parse::<Reply>().map_err(Error::Parse)));
         match reply {
             Some(Ok(Reply::Pair(a, b))) => Some(Ok((a, b))),
-            None |
-            Some(Ok(Reply::Ok)) => None,
+            None | Some(Ok(Reply::Ok)) => None,
             Some(Ok(Reply::Ack(e))) => Some(Err(Error::Server(e))),
             Some(Err(e)) => Some(Err(e)),
         }
@@ -40,7 +39,7 @@ pub struct Maps<'a, I: 'a> {
 }
 
 impl<'a, I> Iterator for Maps<'a, I>
-    where I: Iterator<Item = io::Result<String>>
+where I: Iterator<Item = io::Result<String>>
 {
     type Item = Result<Vec<(String, String)>>;
     fn next(&mut self) -> Option<Result<Vec<(String, String)>>> {
@@ -76,21 +75,19 @@ impl<'a, I> Iterator for Maps<'a, I>
             }
         }
 
-        if map.is_empty() { None } else { Some(Ok(map)) }
+        if map.is_empty() {
+            None
+        } else {
+            Some(Ok(map))
+        }
     }
 }
 
 impl<I> Pairs<I>
-    where I: Iterator<Item = io::Result<String>>
+where I: Iterator<Item = io::Result<String>>
 {
     pub fn split<'a, 'b: 'a>(&'a mut self, f: &'b str) -> Maps<'a, I> {
-        Maps {
-            pairs: self,
-            sep: f,
-            value: None,
-            done: false,
-            first: true,
-        }
+        Maps { pairs: self, sep: f, value: None, done: false, first: true }
     }
 }
 
@@ -103,24 +100,22 @@ pub trait Proto {
     fn read_line(&mut self) -> Result<String>;
     fn read_pairs(&mut self) -> Pairs<Lines<&mut BufStream<Self::Stream>>>;
 
-    fn run_command<I>(&mut self, command: &str, arguments: I) -> Result<()> where I: ToArguments;
+    fn run_command<I>(&mut self, command: &str, arguments: I) -> Result<()>
+    where I: ToArguments;
 
     fn read_structs<'a, T>(&'a mut self, key: &'static str) -> Result<Vec<T>>
-        where T: 'a + FromIter,
-    {
-        self.read_pairs()
-            .split(key)
-            .map(|v| v.and_then(|v| FromIter::from_iter(v.into_iter().map(Ok))))
-            .collect()
+    where T: 'a + FromIter {
+        self.read_pairs().split(key).map(|v| v.and_then(|v| FromIter::from_iter(v.into_iter().map(Ok)))).collect()
     }
 
     fn read_list(&mut self, key: &'static str) -> Result<Vec<String>> {
-        self.read_pairs().filter(|r| r.as_ref().map(|&(ref a, _)| *a == key).unwrap_or(true)).map(|r| r.map(|(_, b)| b)).collect()
+        self.read_pairs().filter(|r| r.as_ref().map(|(a, _)| *a == key).unwrap_or(true)).map(|r| r.map(|(_, b)| b)).collect()
     }
 
     fn read_struct<'a, T>(&'a mut self) -> Result<T>
-        where T: 'a + FromIter,
-              Self::Stream: 'a
+    where
+        T: 'a + FromIter,
+        Self::Stream: 'a,
     {
         FromIter::from_iter(self.read_pairs())
     }
@@ -159,8 +154,7 @@ pub trait Proto {
     }
 
     fn read_field<T: FromStr>(&mut self, field: &'static str) -> Result<T>
-        where ParseError: From<T::Err>
-    {
+    where ParseError: From<T::Err> {
         let (a, b) = self.read_pair()?;
         self.expect_ok()?;
         if &*a == field {
@@ -171,23 +165,21 @@ pub trait Proto {
     }
 }
 
-
 pub trait ToArguments {
-    fn to_arguments<F, E>(&self, _: &mut F) -> StdResult<(), E> where F: FnMut(&str) -> StdResult<(), E>;
+    fn to_arguments<F, E>(&self, _: &mut F) -> StdResult<(), E>
+    where F: FnMut(&str) -> StdResult<(), E>;
 }
 
 impl ToArguments for () {
     fn to_arguments<F, E>(&self, _: &mut F) -> StdResult<(), E>
-        where F: FnMut(&str) -> StdResult<(), E>
-    {
+    where F: FnMut(&str) -> StdResult<(), E> {
         Ok(())
     }
 }
 
 impl<'a> ToArguments for &'a str {
     fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
-        where F: FnMut(&str) -> StdResult<(), E>
-    {
+    where F: FnMut(&str) -> StdResult<(), E> {
         f(self)
     }
 }
@@ -196,24 +188,23 @@ macro_rules! argument_for_display {
     ( $x:path ) => {
         impl ToArguments for $x {
             fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
-                where F: FnMut(&str) -> StdResult<(), E>
-                {
-                    f(&self.to_string())
-                }
+            where F: FnMut(&str) -> StdResult<(), E> {
+                f(&self.to_string())
+            }
         }
     };
 }
-argument_for_display!{i8}
-argument_for_display!{u8}
-argument_for_display!{u32}
-argument_for_display!{f32}
-argument_for_display!{f64}
-argument_for_display!{usize}
-argument_for_display!{crate::status::ReplayGain}
-argument_for_display!{String}
-argument_for_display!{crate::song::Id}
-argument_for_display!{crate::song::Range}
-argument_for_display!{crate::message::Channel}
+argument_for_display! {i8}
+argument_for_display! {u8}
+argument_for_display! {u32}
+argument_for_display! {f32}
+argument_for_display! {f64}
+argument_for_display! {usize}
+argument_for_display! {crate::status::ReplayGain}
+argument_for_display! {String}
+argument_for_display! {crate::song::Id}
+argument_for_display! {crate::song::Range}
+argument_for_display! {crate::message::Channel}
 
 macro_rules! argument_for_tuple {
     ( $($t:ident: $T: ident),+ ) => {
@@ -230,16 +221,15 @@ macro_rules! argument_for_tuple {
         }
     };
 }
-argument_for_tuple!{t0: T0}
-argument_for_tuple!{t0: T0, t1: T1}
-argument_for_tuple!{t0: T0, t1: T1, t2: T2}
-argument_for_tuple!{t0: T0, t1: T1, t2: T2, t3: T3}
-argument_for_tuple!{t0: T0, t1: T1, t2: T2, t3:T3, t4: T4}
+argument_for_tuple! {t0: T0}
+argument_for_tuple! {t0: T0, t1: T1}
+argument_for_tuple! {t0: T0, t1: T1, t2: T2}
+argument_for_tuple! {t0: T0, t1: T1, t2: T2, t3: T3}
+argument_for_tuple! {t0: T0, t1: T1, t2: T2, t3:T3, t4: T4}
 
 impl<'a, T: ToArguments> ToArguments for &'a [T] {
     fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
-        where F: FnMut(&str) -> StdResult<(), E>
-    {
+    where F: FnMut(&str) -> StdResult<(), E> {
         for arg in *self {
             arg.to_arguments(f)?
         }
@@ -252,7 +242,7 @@ pub struct Quoted<'a, D: fmt::Display + 'a + ?Sized>(pub &'a D);
 impl<'a, D: fmt::Display + 'a + ?Sized> fmt::Display for Quoted<'a, D> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         let unquoted = format!("{}", self.0);
-        if &unquoted == "" {
+        if unquoted.is_empty() {
             // return Ok(());
         }
         let quoted = unquoted.replace('\\', r"\\").replace('"', r#"\""#);
