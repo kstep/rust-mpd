@@ -9,6 +9,7 @@ use std::str::FromStr;
 use std::time::Duration;
 
 /// MPD status
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, PartialEq, Clone, Default)]
 pub struct Status {
     /// volume (0-100, or -1 if volume is unavailable (e.g. for HTTPD output type)
@@ -73,50 +74,23 @@ impl FromIter for Status {
                 "playlistlength" => result.queue_len = line.1.parse()?,
                 "state" => result.state = line.1.parse()?,
                 "songid" => match result.song {
-                    None => {
-                        result.song = Some(QueuePlace {
-                            id: Id(line.1.parse()?),
-                            pos: 0,
-                            prio: 0,
-                        })
-                    }
+                    None => result.song = Some(QueuePlace { id: Id(line.1.parse()?), pos: 0, prio: 0 }),
                     Some(ref mut place) => place.id = Id(line.1.parse()?),
                 },
                 "song" => match result.song {
-                    None => {
-                        result.song = Some(QueuePlace {
-                            pos: line.1.parse()?,
-                            id: Id(0),
-                            prio: 0,
-                        })
-                    }
+                    None => result.song = Some(QueuePlace { pos: line.1.parse()?, id: Id(0), prio: 0 }),
                     Some(ref mut place) => place.pos = line.1.parse()?,
                 },
                 "nextsongid" => match result.nextsong {
-                    None => {
-                        result.nextsong = Some(QueuePlace {
-                            id: Id(line.1.parse()?),
-                            pos: 0,
-                            prio: 0,
-                        })
-                    }
+                    None => result.nextsong = Some(QueuePlace { id: Id(line.1.parse()?), pos: 0, prio: 0 }),
                     Some(ref mut place) => place.id = Id(line.1.parse()?),
                 },
                 "nextsong" => match result.nextsong {
-                    None => {
-                        result.nextsong = Some(QueuePlace {
-                            pos: line.1.parse()?,
-                            id: Id(0),
-                            prio: 0,
-                        })
-                    }
+                    None => result.nextsong = Some(QueuePlace { pos: line.1.parse()?, id: Id(0), prio: 0 }),
                     Some(ref mut place) => place.pos = line.1.parse()?,
                 },
                 "time" => {
-                    let mut splits = line
-                        .1
-                        .splitn(2, ':')
-                        .map(|v| v.parse().map_err(ParseError::BadInteger).map(Duration::from_secs));
+                    let mut splits = line.1.splitn(2, ':').map(|v| v.parse().map_err(ParseError::BadInteger).map(Duration::from_secs));
                     result.time = match (splits.next(), splits.next()) {
                         (Some(Ok(a)), Some(Ok(b))) => Ok(Some((a, b))),
                         (Some(Err(e)), _) | (_, Some(Err(e))) => Err(e),
@@ -143,6 +117,7 @@ impl FromIter for Status {
 }
 
 /// Audio playback format
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct AudioFormat {
     /// sample rate, kbps
@@ -158,40 +133,32 @@ impl FromStr for AudioFormat {
     fn from_str(s: &str) -> Result<AudioFormat, ParseError> {
         let mut it = s.split(':');
         Ok(AudioFormat {
-            rate: it
-                .next()
-                .ok_or(ParseError::NoRate)
-                .and_then(|v| v.parse().map_err(ParseError::BadRate))?,
-            bits: it.next().ok_or(ParseError::NoBits).and_then(|v| {
-                if &*v == "f" {
-                    Ok(0)
-                } else {
-                    v.parse().map_err(ParseError::BadBits)
-                }
-            })?,
-            chans: it
-                .next()
-                .ok_or(ParseError::NoChans)
-                .and_then(|v| v.parse().map_err(ParseError::BadChans))?,
+            rate: it.next().ok_or(ParseError::NoRate).and_then(|v| v.parse().map_err(ParseError::BadRate))?,
+            bits: it.next().ok_or(ParseError::NoBits).and_then(
+                |v| {
+                    if v == "f" {
+                        Ok(0)
+                    } else {
+                        v.parse().map_err(ParseError::BadBits)
+                    }
+                },
+            )?,
+            chans: it.next().ok_or(ParseError::NoChans).and_then(|v| v.parse().map_err(ParseError::BadChans))?,
         })
     }
 }
 
 /// Playback state
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize), serde(rename_all = "lowercase"))]
+#[derive(Default, Debug, Copy, Clone, PartialEq)]
 pub enum State {
     /// player stopped
+    #[default]
     Stop,
     /// player is playing
     Play,
     /// player paused
     Pause,
-}
-
-impl Default for State {
-    fn default() -> State {
-        State::Stop
-    }
 }
 
 impl FromStr for State {
@@ -207,6 +174,7 @@ impl FromStr for State {
 }
 
 /// Replay gain mode
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize), serde(rename_all = "lowercase"))]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ReplayGain {
     /// off

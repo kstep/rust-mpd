@@ -23,7 +23,9 @@ use std::string::ParseError as StringParseError;
 
 // Server errors {{{
 /// Server error codes, as defined in [libmpdclient](http://www.musicpd.org/doc/libmpdclient/protocol_8h_source.html)
+#[cfg_attr(feature = "serde", derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr))]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[repr(u8)]
 pub enum ErrorCode {
     /// not a list
     NotList = 1,
@@ -102,6 +104,7 @@ impl fmt::Display for ErrorCode {
 }
 
 /// Server error
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct ServerError {
     /// server error code
@@ -126,8 +129,7 @@ impl FromStr for ServerError {
     type Err = ParseError;
     fn from_str(s: &str) -> result::Result<ServerError, ParseError> {
         // ACK [<code>@<index>] {<command>} <description>
-        if s.starts_with("ACK [") {
-            let s = &s[5..];
+        if let Some(s) = s.strip_prefix("ACK [") {
             if let (Some(atsign), Some(right_bracket)) = (s.find('@'), s.find(']')) {
                 match (s[..atsign].parse(), s[atsign + 1..right_bracket].parse()) {
                     (Ok(code), Ok(pos)) => {
@@ -135,12 +137,7 @@ impl FromStr for ServerError {
                         if let (Some(left_brace), Some(right_brace)) = (s.find('{'), s.find('}')) {
                             let command = s[left_brace + 1..right_brace].to_string();
                             let detail = s[right_brace + 1..].trim().to_string();
-                            Ok(ServerError {
-                                code: code,
-                                pos: pos,
-                                command: command,
-                                detail: detail,
-                            })
+                            Ok(ServerError { code, pos, command, detail })
                         } else {
                             Err(ParseError::NoMessage)
                         }

@@ -36,6 +36,7 @@ use std::mem::forget;
 use std::str::FromStr;
 
 /// Subsystems for `idle` command
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Subsystem {
     /// database: the song database has been modified after update.
@@ -110,10 +111,9 @@ impl fmt::Display for Subsystem {
 }
 
 use std::result::Result as StdResult;
-impl<'a> crate::proto::ToArguments for Subsystem {
+impl crate::proto::ToArguments for Subsystem {
     fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
-        where F: FnMut(&str) -> StdResult<(), E>
-    {
+    where F: FnMut(&str) -> StdResult<(), E> {
         f(self.to_str())
     }
 }
