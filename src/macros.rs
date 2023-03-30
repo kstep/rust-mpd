@@ -20,6 +20,7 @@ macro_rules! get_field {
     ($map:expr, $name:expr) => { get_field_impl!(get, $map, $name) }
 }
 
+#[allow(unused_macros)]
 macro_rules! pop_field {
     ($map:expr, bool $name:expr) => { get_field_impl!(remove, $map, bool $name) };
     ($map:expr, opt $name:expr) => { get_field_impl!(remove, $map, opt $name) };
