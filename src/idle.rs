@@ -26,17 +26,18 @@
 //! to original `Client` struct, thus enforcing MPD contract in regards of (im)possibility
 //! to send commands while in "idle" mode.
 
-use client::Client;
+use crate::client::Client;
+use crate::error::{Error, ParseError};
+use crate::proto::Proto;
 
-use error::{Error, ParseError};
-use proto::Proto;
 use std::fmt;
 use std::io::{Read, Write};
 use std::mem::forget;
 use std::str::FromStr;
 
 /// Subsystems for `idle` command
-#[derive(Clone, Copy, Debug, PartialEq, RustcEncodable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Subsystem {
     /// database: the song database has been modified after update.
     Database,
@@ -110,10 +111,9 @@ impl fmt::Display for Subsystem {
 }
 
 use std::result::Result as StdResult;
-impl<'a> ::proto::ToArguments for Subsystem {
+impl crate::proto::ToArguments for Subsystem {
     fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
-        where F: FnMut(&str) -> StdResult<(), E>
-    {
+    where F: FnMut(&str) -> StdResult<(), E> {
         f(self.to_str())
     }
 }

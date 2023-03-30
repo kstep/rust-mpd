@@ -1,15 +1,15 @@
 #![allow(missing_docs)]
 //! These are inner traits to support methods overloading for the `Client`
 
-use error::Error;
-use output::Output;
-use playlist::Playlist;
-use proto::ToArguments;
-use song::{self, Id, Song};
+use crate::error::{Error, ProtoError};
+use crate::output::Output;
+use crate::playlist::Playlist;
+use crate::proto::ToArguments;
+use crate::song::{self, Id, Song};
 use std::collections::BTreeMap;
 use std::ops::{Range, RangeFrom, RangeFull, RangeTo};
 
-use time::Duration;
+use std::time::Duration;
 
 #[doc(hidden)]
 pub trait FromMap: Sized {
@@ -21,9 +21,9 @@ pub trait FromIter: Sized {
     fn from_iter<I: Iterator<Item = Result<(String, String), Error>>>(iter: I) -> Result<Self, Error>;
 }
 
-impl<T: FromIter> FromMap for T {
-    fn from_map(map: BTreeMap<String, String>) -> Result<Self, Error> {
-        FromIter::from_iter(map.into_iter().map(Ok))
+impl<T: FromMap> FromIter for T {
+    fn from_iter<I: Iterator<Item = Result<(String, String), Error>>>(iter: I) -> Result<Self, Error> {
+        iter.collect::<Result<BTreeMap<_, _>, _>>().and_then(FromMap::from_map)
     }
 }
 
@@ -34,13 +34,13 @@ pub trait ToPlaylistName {
 
 impl ToPlaylistName for Playlist {
     fn to_name(&self) -> &str {
-        &*self.name
+        &self.name
     }
 }
 
 impl<'a> ToPlaylistName for &'a Playlist {
     fn to_name(&self) -> &str {
-        &*self.name
+        &self.name
     }
 }
 
@@ -52,7 +52,7 @@ impl<'a> ToPlaylistName for &'a String {
 
 impl<'a> ToPlaylistName for &'a str {
     fn to_name(&self) -> &str {
-        *self
+        self
     }
 }
 
@@ -64,7 +64,7 @@ impl ToPlaylistName for str {
 
 impl ToPlaylistName for String {
     fn to_name(&self) -> &str {
-        &*self
+        self
     }
 }
 // }}}
@@ -88,7 +88,7 @@ impl ToSeconds for f64 {
 
 impl ToSeconds for Duration {
     fn to_seconds(self) -> f64 {
-        self.num_milliseconds() as f64 / 1000.0
+        self.as_secs_f64()
     }
 }
 // }}}
@@ -243,7 +243,7 @@ impl ToSongRange for Range<Duration> {
 
 impl ToSongRange for Range<u32> {
     fn to_range(self) -> song::Range {
-        song::Range(Duration::seconds(self.start as i64), Some(Duration::seconds(self.end as i64)))
+        song::Range(Duration::from_secs(self.start as u64), Some(Duration::from_secs(self.end as u64)))
     }
 }
 
@@ -255,25 +255,25 @@ impl ToSongRange for RangeFrom<Duration> {
 
 impl ToSongRange for RangeFrom<u32> {
     fn to_range(self) -> song::Range {
-        song::Range(Duration::seconds(self.start as i64), None)
+        song::Range(Duration::from_secs(self.start as u64), None)
     }
 }
 
 impl ToSongRange for RangeTo<Duration> {
     fn to_range(self) -> song::Range {
-        song::Range(Duration::zero(), Some(self.end))
+        song::Range(Duration::from_secs(0), Some(self.end))
     }
 }
 
 impl ToSongRange for RangeTo<u32> {
     fn to_range(self) -> song::Range {
-        song::Range(Duration::zero(), Some(Duration::seconds(self.end as i64)))
+        song::Range(Duration::from_secs(0), Some(Duration::from_secs(self.end as u64)))
     }
 }
 
 impl ToSongRange for RangeFull {
     fn to_range(self) -> song::Range {
-        song::Range(Duration::zero(), None)
+        song::Range(Duration::from_secs(0), None)
     }
 }
 
@@ -301,7 +301,7 @@ impl<'a, T: ToSongPath> ToSongPath for &'a T {
     }
 }
 
-impl ToSongPath for AsRef<str> {
+impl ToSongPath for dyn AsRef<str> {
     fn to_path(&self) -> &str {
         self.as_ref()
     }
@@ -309,8 +309,19 @@ impl ToSongPath for AsRef<str> {
 
 impl<T: ToSongPath> ToArguments for T {
     fn to_arguments<F, E>(&self, f: &mut F) -> Result<(), E>
-        where F: FnMut(&str) -> Result<(), E>
-    {
+    where F: FnMut(&str) -> Result<(), E> {
         self.to_path().to_arguments(f)
+    }
+}
+
+impl FromIter for String {
+    fn from_iter<I: Iterator<Item = Result<(String, String), Error>>>(iter: I) -> Result<Self, Error> {
+        for res in iter {
+            let line = res?;
+            if line.0 == "file" {
+                return Ok(line.1);
+            }
+        }
+        Err(Error::Proto(ProtoError::NoField("songname")))
     }
 }

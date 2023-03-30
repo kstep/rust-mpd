@@ -2,15 +2,15 @@
 
 macro_rules! get_field_impl {
     ($op:ident, $map:expr, bool $name:expr) => {
-        try!($map.$op($name).ok_or(Error::Proto(ProtoError::NoField($name)))
-             .map(|v| v == "1"))
+        $map.$op($name).ok_or(Error::Proto(ProtoError::NoField($name))).map(|v| v == "1")?
     };
     ($op:ident, $map:expr, opt $name:expr) => {
-        try!($map.$op($name).map(|v| v.parse().map(Some)).unwrap_or(Ok(None)))
+        $map.$op($name).map(|v| v.parse().map(Some)).unwrap_or(Ok(None))?
     };
     ($op:ident, $map:expr, $name:expr) => {
-        try!($map.$op($name).ok_or(Error::Proto(ProtoError::NoField($name)))
-             .and_then(|v| v.parse().map_err(|e| Error::Parse(From::from(e)))))
+        $map.$op($name)
+            .ok_or(Error::Proto(ProtoError::NoField($name)))
+            .and_then(|v| v.parse().map_err(|e| Error::Parse(From::from(e))))?
     };
 }
 

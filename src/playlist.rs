@@ -1,27 +1,25 @@
 //! The module defines playlist data structures
 
-use convert::FromMap;
-use error::{Error, ProtoError};
+use crate::convert::FromMap;
+use crate::error::{Error, ProtoError};
 
 use std::collections::BTreeMap;
-use time::{Tm, strptime};
 
 /// Playlist
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct Playlist {
     /// name
     pub name: String,
     /// last modified
-    pub last_mod: Tm,
+    pub last_mod: String,
 }
 
 impl FromMap for Playlist {
     fn from_map(map: BTreeMap<String, String>) -> Result<Playlist, Error> {
         Ok(Playlist {
-               name: try!(map.get("playlist").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("playlist")))),
-               last_mod: try!(map.get("Last-Modified")
-                .ok_or(Error::Proto(ProtoError::NoField("Last-Modified")))
-                .and_then(|v| strptime(&*v, "%Y-%m-%dT%H:%M:%S%Z").map_err(From::from))),
-           })
+            name: map.get("playlist").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("playlist")))?,
+            last_mod: map.get("Last-Modified").map(|v| v.to_owned()).ok_or(Error::Proto(ProtoError::NoField("Last-Modified")))?,
+        })
     }
 }

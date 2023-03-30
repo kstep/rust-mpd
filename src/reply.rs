@@ -3,11 +3,11 @@
 //! Also it contains most generic parser, which can handle
 //! all possible server replies.
 
-
-use error::{ParseError, ServerError};
+use crate::error::{ParseError, ServerError};
 use std::str::FromStr;
 
 /// All possible MPD server replies
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub enum Reply {
     /// `OK` and `list_OK` replies

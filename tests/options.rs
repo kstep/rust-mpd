@@ -1,9 +1,8 @@
 extern crate mpd;
-extern crate time;
 
 mod helpers;
 use helpers::connect;
-use time::Duration;
+use std::time::Duration;
 
 #[test]
 fn status() {
@@ -29,7 +28,7 @@ macro_rules! test_options_impl {
             mpd.$name($val2).unwrap();
             assert_eq!(mpd.status().unwrap().$name, $tval2);
         }
-    }
+    };
 }
 
 macro_rules! test_option {
@@ -46,7 +45,7 @@ test_option!(single, true, false);
 test_option!(random, true, false);
 test_option!(repeat, true, false);
 // test_option!(mixrampdb, 1.0f32, 0.0f32);
-// test_option!(mixrampdelay, 1 => Some(Duration::seconds(1)), 0 => None);
+// test_option!(mixrampdelay, 1 => Some(Duration::from_secs(1)), 0 => None);
 
 #[test]
 fn volume() {
@@ -63,12 +62,7 @@ fn volume() {
 fn crossfade() {
     let mut mpd = connect();
     mpd.crossfade(1000).unwrap();
-    assert_eq!(mpd.status().unwrap().crossfade, Some(Duration::seconds(1000)));
+    assert_eq!(mpd.status().unwrap().crossfade, Some(Duration::from_secs(1000)));
     mpd.crossfade(0).unwrap();
-    assert_eq!(mpd.status().unwrap().crossfade,
-               if mpd.version >= mpd::Version(0, 19, 0) {
-                   None
-               } else {
-                   Some(Duration::zero())
-               });
+    assert_eq!(mpd.status().unwrap().crossfade, if mpd.version >= mpd::Version(0, 19, 0) { None } else { Some(Duration::from_secs(0)) });
 }
