@@ -56,12 +56,18 @@ pub enum Subsystem {
     Output,
     /// options: options like repeat, random, crossfade, replay gain
     Options,
+    /// partition: a partition was added, removed or changed
+    Partition,
     /// sticker: the sticker database has been modified.
     Sticker,
     /// subscription: a client has subscribed or unsubscribed to a channel
     Subscription,
     /// message: a message was received on a channel this client is subscribed to; this event is only emitted when the queue is empty
     Message,
+    /// neighbor: a neighbor was found or lost
+    Neighbor,
+    /// mount: the mount list has changed
+    Mount,
 }
 
 impl FromStr for Subsystem {
@@ -77,9 +83,12 @@ impl FromStr for Subsystem {
             "mixer" => Ok(Mixer),
             "output" => Ok(Output),
             "options" => Ok(Options),
+            "partition" => Ok(Partition),
             "sticker" => Ok(Sticker),
             "subscription" => Ok(Subscription),
             "message" => Ok(Message),
+            "neighbor" => Ok(Neighbor),
+            "mount" => Ok(Mount),
             _ => Err(ParseError::BadValue(s.to_owned())),
         }
     }
@@ -97,9 +106,12 @@ impl Subsystem {
             Mixer => "mixer",
             Output => "output",
             Options => "options",
+            Partition => "partition",
             Sticker => "sticker",
             Subscription => "subscription",
             Message => "message",
+            Neighbor => "neighbor",
+            Mount => "mount",
         }
     }
 }
