@@ -34,7 +34,7 @@ pub struct Client<S = TcpStream>
 where S: Read + Write
 {
     socket: BufStream<S>,
-    /// MPD version
+    /// MPD protocol version
     pub version: Version,
 }
 
