@@ -43,6 +43,7 @@ bind_to_address "{sock_path}"
 audio_output {{
     type "null"
     name "null"
+    mixer_type "null"
 }}
 "#,
             db_file = self.db_file.display(),
