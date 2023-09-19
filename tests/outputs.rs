@@ -6,7 +6,15 @@ use helpers::connect;
 #[test]
 fn outputs() {
     let mut mpd = connect();
-    println!("{:?}", mpd.outputs());
+
+    let outputs = mpd.outputs().unwrap();
+    assert_eq!(outputs.len(), 1);
+
+    let null_output = outputs.first().unwrap();
+    assert_eq!(null_output.id, 0);
+    assert_eq!(null_output.plugin, "null");
+    assert_eq!(null_output.name, "null");
+    assert!(null_output.enabled);
 }
 
 #[test]
