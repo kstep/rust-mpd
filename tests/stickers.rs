@@ -8,7 +8,7 @@ use helpers::connect;
 fn set_sticker() {
     let mut mpd = connect();
 
-    static VALUE: &'static str = "value";
+    static VALUE: &str = "value";
 
     mpd.set_sticker("song", "empty.flac", "test_sticker", VALUE).unwrap();
 

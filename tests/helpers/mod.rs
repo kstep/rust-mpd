@@ -29,5 +29,5 @@ impl DerefMut for DaemonClient {
 pub fn connect() -> DaemonClient {
     let daemon = Daemon::start();
     let client = daemon.connect();
-    DaemonClient { _daemon: daemon, client: client }
+    DaemonClient { _daemon: daemon, client }
 }

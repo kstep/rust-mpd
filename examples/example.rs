@@ -11,10 +11,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let now_playing = c.currentsong()?;
     if let Some(song) = now_playing {
         println!("Metadata:");
-        for row in c.readcomments(song)? {
-            if let Ok((k, v)) = row {
-                println!("{}: {}", k, v);
-            }
+        for (k, v) in (c.readcomments(song)?).flatten() {
+            println!("{}: {}", k, v);
         }
     } else {
         println!("No song playing.");
