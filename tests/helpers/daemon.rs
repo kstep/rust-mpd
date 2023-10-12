@@ -88,7 +88,7 @@ fn sleep() {
     thread::sleep(ten_millis);
 }
 
-static EMPTY_FLAC_BYTES: &'static [u8] = include_bytes!("../data/empty.flac");
+static EMPTY_FLAC_BYTES: &[u8] = include_bytes!("../data/empty.flac");
 
 impl Daemon {
     pub fn start() -> Daemon {
@@ -108,7 +108,7 @@ impl Daemon {
             .spawn()
             .expect("Could not create mpd daemon.");
 
-        let daemon = Daemon { _temp_dir: temp_dir, config: config, process: process };
+        let daemon = Daemon { _temp_dir: temp_dir, config, process };
 
         // Wait until we can connect to the daemon
         let mut client;
@@ -119,7 +119,7 @@ impl Daemon {
             }
             sleep()
         }
-        while let Some(_) = client.status().expect("Couldn't get status.").updating_db {
+        while client.status().expect("Couldn't get status.").updating_db.is_some() {
             sleep()
         }
 
