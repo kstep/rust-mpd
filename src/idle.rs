@@ -96,22 +96,22 @@ impl FromStr for Subsystem {
 
 impl Subsystem {
     fn to_str(self) -> &'static str {
-        use self::Subsystem::*;
+        use self::Subsystem as S;
         match self {
-            Database => "database",
-            Update => "update",
-            Playlist => "stored_playlist",
-            Queue => "playlist",
-            Player => "player",
-            Mixer => "mixer",
-            Output => "output",
-            Options => "options",
-            Partition => "partition",
-            Sticker => "sticker",
-            Subscription => "subscription",
-            Message => "message",
-            Neighbor => "neighbor",
-            Mount => "mount",
+            S::Database => "database",
+            S::Update => "update",
+            S::Playlist => "stored_playlist",
+            S::Queue => "playlist",
+            S::Player => "player",
+            S::Mixer => "mixer",
+            S::Output => "output",
+            S::Options => "options",
+            S::Partition => "partition",
+            S::Sticker => "sticker",
+            S::Subscription => "subscription",
+            S::Message => "message",
+            S::Neighbor => "neighbor",
+            S::Mount => "mount",
         }
     }
 }

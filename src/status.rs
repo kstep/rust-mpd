@@ -203,12 +203,12 @@ impl FromStr for ReplayGain {
 
 impl fmt::Display for ReplayGain {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::ReplayGain::*;
+        use self::ReplayGain as R;
         f.write_str(match *self {
-            Off => "off",
-            Track => "track",
-            Album => "album",
-            Auto => "auto",
+            R::Off => "off",
+            R::Track => "track",
+            R::Album => "album",
+            R::Auto => "auto",
         })
     }
 }

@@ -81,22 +81,22 @@ impl StdError for ErrorCode {}
 
 impl fmt::Display for ErrorCode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::ErrorCode::*;
+        use self::ErrorCode as E;
 
         let desc = match *self {
-            NotList => "not a list",
-            Argument => "invalid argument",
-            Password => "invalid password",
-            Permission => "permission",
-            UnknownCmd => "unknown command",
+            E::NotList => "not a list",
+            E::Argument => "invalid argument",
+            E::Password => "invalid password",
+            E::Permission => "permission",
+            E::UnknownCmd => "unknown command",
 
-            NoExist => "item not found",
-            PlaylistMax => "playlist overflow",
-            System => "system",
-            PlaylistLoad => "playload load",
-            UpdateAlready => "already updating",
-            PlayerSync => "player syncing",
-            Exist => "already exists",
+            E::NoExist => "item not found",
+            E::PlaylistMax => "playlist overflow",
+            E::System => "system",
+            E::PlaylistLoad => "playload load",
+            E::UpdateAlready => "already updating",
+            E::PlayerSync => "player syncing",
+            E::Exist => "already exists",
         };
 
         f.write_str(desc)
@@ -276,27 +276,27 @@ impl StdError for ParseError {}
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::ParseError::*;
+        use self::ParseError as E;
 
         let desc = match *self {
-            BadInteger(_) => "invalid integer",
-            BadFloat(_) => "invalid float",
-            BadValue(_) => "invalid value",
-            BadVersion => "invalid version",
-            NotAck => "not an ACK",
-            BadPair => "invalid pair",
-            BadCode => "invalid code",
-            BadPos => "invalid position",
-            NoCodePos => "missing code and position",
-            NoMessage => "missing position",
-            NoRate => "missing audio format rate",
-            NoBits => "missing audio format bits",
-            NoChans => "missing audio format channels",
-            BadRate(_) => "invalid audio format rate",
-            BadBits(_) => "invalid audio format bits",
-            BadChans(_) => "invalid audio format channels",
-            BadState(_) => "invalid playing state",
-            BadErrorCode(_) => "unknown error code",
+            E::BadInteger(_) => "invalid integer",
+            E::BadFloat(_) => "invalid float",
+            E::BadValue(_) => "invalid value",
+            E::BadVersion => "invalid version",
+            E::NotAck => "not an ACK",
+            E::BadPair => "invalid pair",
+            E::BadCode => "invalid code",
+            E::BadPos => "invalid position",
+            E::NoCodePos => "missing code and position",
+            E::NoMessage => "missing position",
+            E::NoRate => "missing audio format rate",
+            E::NoBits => "missing audio format bits",
+            E::NoChans => "missing audio format channels",
+            E::BadRate(_) => "invalid audio format rate",
+            E::BadBits(_) => "invalid audio format bits",
+            E::BadChans(_) => "invalid audio format channels",
+            E::BadState(_) => "invalid playing state",
+            E::BadErrorCode(_) => "unknown error code",
         };
 
         write!(f, "{}", desc)
