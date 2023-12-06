@@ -1,6 +1,6 @@
-extern crate tempdir;
+extern crate tempfile;
 
-use self::tempdir::TempDir;
+use self::tempfile::TempDir;
 use super::mpd;
 use std::fs::{create_dir, File};
 use std::io::{Read, Write};
@@ -92,7 +92,7 @@ static EMPTY_FLAC_BYTES: &[u8] = include_bytes!("../data/empty.flac");
 
 impl Daemon {
     pub fn start() -> Daemon {
-        let temp_dir = TempDir::new("mpd-test").unwrap();
+        let temp_dir = TempDir::with_prefix("mpd-test").unwrap();
         let config = MpdConfig::new(&temp_dir);
         config.generate();
 

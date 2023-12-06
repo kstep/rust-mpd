@@ -15,7 +15,7 @@ serde = { version = "1", features = ["derive"], optional = true }
 serde_repr = { version = "0.1", optional = true }
 
 [dev-dependencies]
-tempdir = "0.3.5"
+tempfile = "3.8.1"
 unix_socket = "0.5.0"
 
 [features]
