@@ -2,7 +2,6 @@
 
 extern crate mpd;
 extern crate test;
-extern crate time;
 
 use std::os::unix::net::UnixStream;
 use test::{black_box, Bencher};
