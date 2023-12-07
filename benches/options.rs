@@ -3,10 +3,9 @@
 extern crate mpd;
 extern crate test;
 extern crate time;
-extern crate unix_socket;
 
+use std::os::unix::net::UnixStream;
 use test::{black_box, Bencher};
-use unix_socket::UnixStream;
 
 #[bench]
 fn status(b: &mut Bencher) {
