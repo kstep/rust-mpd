@@ -16,7 +16,6 @@ serde_repr = { version = "0.1", optional = true }
 
 [dev-dependencies]
 tempfile = "3.8.1"
-unix_socket = "0.5.0"
 
 [features]
 serde = ["dep:serde", "dep:serde_repr"]
