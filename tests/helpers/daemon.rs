@@ -88,7 +88,7 @@ fn sleep() {
     thread::sleep(ten_millis);
 }
 
-static EMPTY_FLAC_BYTES: &[u8] = include_bytes!("../data/empty.flac");
+static EMPTY_FLAC_BYTES: &[u8] = include_bytes!("../data/silence.flac");
 
 impl Daemon {
     pub fn start() -> Daemon {
@@ -97,7 +97,7 @@ impl Daemon {
         config.generate();
 
         // TODO: Factor out putting files in the music directory.
-        File::create(config.music_directory.join("empty.flac")).unwrap().write_all(EMPTY_FLAC_BYTES).unwrap();
+        File::create(config.music_directory.join("silence.flac")).unwrap().write_all(EMPTY_FLAC_BYTES).unwrap();
 
         let process = Command::new("mpd")
             .arg("--no-daemon")

@@ -10,8 +10,8 @@ fn set_sticker() {
 
     static VALUE: &str = "value";
 
-    mpd.set_sticker("song", "empty.flac", "test_sticker", VALUE).unwrap();
+    mpd.set_sticker("song", "silence.flac", "test_sticker", VALUE).unwrap();
 
-    let sticker = mpd.sticker("song", "empty.flac", "test_sticker").unwrap();
+    let sticker = mpd.sticker("song", "silence.flac", "test_sticker").unwrap();
     assert_eq!(sticker, VALUE);
 }
