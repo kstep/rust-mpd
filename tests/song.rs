@@ -1,7 +1,10 @@
 extern crate mpd;
 
 mod helpers;
+use std::time::Duration;
+
 use helpers::connect;
+use mpd::Song;
 
 #[test]
 fn currentsong() {
@@ -18,6 +21,17 @@ fn queue() {
 
     let songs = mpd.songs(..).unwrap();
     assert_eq!(songs, queue);
+}
+
+#[test]
+fn lsinfo() {
+    let mut mpd = connect();
+    let songs = mpd.lsinfo(Song { file: "silence.flac".into(), ..Default::default() }).unwrap();
+    assert_eq!(songs.len(), 1);
+
+    let song = songs.get(0).unwrap();
+    assert_eq!(song.file, "silence.flac");
+    assert_eq!(song.duration.expect("song should have duration"), Duration::from_millis(500));
 }
 
 #[test]
