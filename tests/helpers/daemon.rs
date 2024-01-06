@@ -35,7 +35,6 @@ impl MpdConfig {
         format!(
             r#"
 db_file "{db_file}"
-log_file "/dev/null"
 music_directory "{music_directory}"
 playlist_directory "{playlist_directory}"
 sticker_file "{sticker_file}"
@@ -76,8 +75,7 @@ impl Drop for Daemon {
         if let Some(ref mut stderr) = self.process.stderr {
             let mut output = String::new();
             stderr.read_to_string(&mut output).expect("Could not collect output from mpd.");
-            println! {"Output from mpd:"}
-            println! {"{}", output};
+            println!("Output from mpd:\n{output}");
         }
     }
 }
@@ -101,6 +99,8 @@ impl Daemon {
 
         let process = Command::new("mpd")
             .arg("--no-daemon")
+            .arg("--verbose")
+            .arg("--stderr")
             .arg(&config.config_path)
             .stdin(Stdio::null())
             .stdout(Stdio::null())
