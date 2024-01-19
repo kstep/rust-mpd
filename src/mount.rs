@@ -7,7 +7,7 @@
 //! a source of songs for its database (like network shares).
 //!
 //! Possible, but inactive, mounts are named "neighbors" and can be
-//! listed with `neighbors()` method.
+//! listed with [`neighbors()`](crate::Client::neighbors) method.
 
 use crate::convert::FromMap;
 use crate::error::{Error, ProtoError};

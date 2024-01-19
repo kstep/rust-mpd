@@ -50,7 +50,8 @@ pub struct Status {
     pub audio: Option<AudioFormat>,
     /// current DB updating job number (if DB updating is in progress)
     pub updating_db: Option<u32>,
-    /// last player error (if happened, can be reset with `clearerror()` method)
+    /// last player error (if happened, can be reset with
+    /// [`clearerror()`](crate::Client::clearerror) method)
     pub error: Option<String>,
     /// replay gain mode
     pub replaygain: Option<ReplayGain>,
