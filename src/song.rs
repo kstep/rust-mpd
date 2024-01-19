@@ -119,7 +119,7 @@ impl FromIter for Song {
                 "Name" => result.name = Some(line.1.to_owned()),
                 // Deprecated in MPD.
                 "Time" => (),
-                "duration" => result.duration = Some(Duration::from_secs_f64(line.1.parse()?)),
+                "duration" => result.duration = Some(Duration::try_from_secs_f64(line.1.parse()?)?),
                 "Range" => result.range = Some(line.1.parse()?),
                 "Id" => match result.place {
                     None => result.place = Some(QueuePlace { id: Id(line.1.parse()?), pos: 0, prio: 0 }),
