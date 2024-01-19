@@ -2,7 +2,7 @@
 //!
 //! Almost every method of the [`Client`] structure corresponds to some command in [MPD protocol][proto].
 //!
-//! [proto]: http://www.musicpd.org/doc/protocol/
+//! [proto]: https://www.musicpd.org/doc/protocol/
 
 use bufstream::BufStream;
 

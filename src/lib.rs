@@ -7,8 +7,8 @@
 //! of the struct follow [MPD protocol][proto] for most part, making use of
 //! traits to overload different parameters for convenience.
 //!
-//! [mpd]: http://www.musicpd.org/
-//! [proto]: http://www.musicpd.org/doc/protocol/
+//! [mpd]: https://www.musicpd.org/
+//! [proto]: https://www.musicpd.org/doc/protocol/
 //!
 //! # Usage
 //!
