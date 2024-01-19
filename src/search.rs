@@ -1,4 +1,5 @@
 #![allow(missing_docs)]
+//! The module defines data structures used in MPD search queries.
 // TODO: unfinished functionality
 
 use crate::proto::ToArguments;

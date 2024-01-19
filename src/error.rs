@@ -22,7 +22,7 @@ use std::str::FromStr;
 use std::string::ParseError as StringParseError;
 
 // Server errors {{{
-/// Server error codes, as defined in [libmpdclient](http://www.musicpd.org/doc/libmpdclient/protocol_8h_source.html)
+/// Server error codes, as defined in [libmpdclient](https://www.musicpd.org/doc/libmpdclient/protocol_8h_source.html)
 #[cfg_attr(feature = "serde", derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr))]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(u8)]

@@ -71,9 +71,9 @@ impl Channel {
 
     /// Create channel with arbitrary name, bypassing name validity checks
     ///
-    /// Not recommened! Use `new()` method above instead.
+    /// Not recommened! Use [`new()`](Channel::new) method above instead.
     /// # Safety
-    /// Only if Channel::is_valid_name(name)
+    /// Only if [`Channel::is_valid_name(name)`](Channel::is_valid_name)
     pub unsafe fn new_unchecked(name: String) -> Channel {
         Channel(name)
     }
