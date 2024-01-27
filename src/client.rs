@@ -198,12 +198,12 @@ impl<S: Read + Write> Client<S> {
         self.run_command("playlistinfo", ()).and_then(|_| self.read_structs("file"))
     }
 
-    /// lists all songs in the database
+    /// Lists all songs in the database
     pub fn listall(&mut self) -> Result<Vec<Song>> {
         self.run_command("listall", ()).and_then(|_| self.read_structs("file"))
     }
 
-    /// lists all songs in the database with metadata
+    /// Lists all songs in the database with metadata
     pub fn listallinfo(&mut self) -> Result<Vec<Song>> {
         self.run_command("listallinfo", ()).and_then(|_| self.read_structs("file"))
     }
@@ -384,7 +384,7 @@ impl<S: Read + Write> Client<S> {
     // Database search {{{
     // TODO: count tag needle [...] [group] [grouptag], find type what [...] [window start:end]
     // TODO: search type what [...] [window start:end], searchadd type what [...]
-    // TODO: listallinfo [uri], listfiles [uri]
+    // TODO: listfiles [uri]
     // TODO: list type [filtertype] [filterwhat] [...] [group] [grouptype] [...]
     // TODO: searchaddpl name type what [...]
 
