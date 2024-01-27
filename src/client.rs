@@ -203,6 +203,11 @@ impl<S: Read + Write> Client<S> {
         self.run_command("listall", ()).and_then(|_| self.read_structs("file"))
     }
 
+    /// lists all songs in the database with metadata
+    pub fn listallinfo(&mut self) -> Result<Vec<Song>> {
+        self.run_command("listallinfo", ()).and_then(|_| self.read_structs("file"))
+    }
+
     /// Get current playing song
     pub fn currentsong(&mut self) -> Result<Option<Song>> {
         self.run_command("currentsong", ())
