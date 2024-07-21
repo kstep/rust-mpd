@@ -62,7 +62,6 @@ impl FromIter for Status {
 
         for res in iter {
             let line = res?;
-            println!("{:?}", line);
             match &*line.0 {
                 "volume" => result.volume = line.1.parse()?,
 
@@ -112,7 +111,6 @@ impl FromIter for Status {
                 _ => (),
             }
         }
-        println!("{:?}", &result);
 
         Ok(result)
     }
