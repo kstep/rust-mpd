@@ -1,8 +1,11 @@
 #![allow(missing_docs)]
 // TODO: unfinished functionality
 
-use crate::proto::ToArguments;
-use std::borrow::Cow;
+use crate::proto::{Quoted, ToArguments};
+use std::{
+    io::Write,  // implements write for Vec
+    borrow::Cow
+};
 use std::convert::Into;
 use std::fmt;
 use std::result::Result as StdResult;
@@ -17,16 +20,39 @@ pub enum Term<'a> {
     Tag(Cow<'a, str>),
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize), serde(untagged, rename_all = "lowercase"))]
+pub enum Operation {
+    Equals,
+    NotEquals,
+    Contains,
+    #[cfg_attr(feature = "serde", serde(rename = "starts_with"))]
+    StartsWith
+}
+
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Filter<'a> {
     typ: Term<'a>,
     what: Cow<'a, str>,
+    how: Operation
 }
 
 impl<'a> Filter<'a> {
-    fn new<W>(typ: Term<'a>, what: W) -> Filter
+    pub fn new<W>(typ: Term<'a>, what: W) -> Filter
     where W: 'a + Into<Cow<'a, str>> {
-        Filter { typ, what: what.into() }
+        Filter {
+            typ,
+            what: what.into(),
+            how: Operation::Equals
+        }
+    }
+
+    pub fn new_with_op<W>(typ: Term<'a>, what: W, how: Operation) -> Filter
+    where W: 'a + Into<Cow<'a, str>> {
+        Filter {
+            typ,
+            what: what.into(),
+            how
+        }
     }
 }
 
@@ -80,21 +106,66 @@ impl<'a> ToArguments for &'a Term<'a> {
     }
 }
 
+impl fmt::Display for Operation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(match *self {
+            Operation::Equals => "==",
+            Operation::NotEquals => "!=",
+            Operation::Contains => "contains",
+            Operation::StartsWith => "starts_with"
+        })
+    }
+}
+
+impl ToArguments for Operation {
+    fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
+    where F: FnMut(&str) -> StdResult<(), E> {
+        f(&self.to_string())
+    }
+}
+
 impl<'a> ToArguments for &'a Filter<'a> {
     fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
     where F: FnMut(&str) -> StdResult<(), E> {
-        (&self.typ).to_arguments(f)?;
-        f(&self.what)
+        match self.typ {
+            // For some terms, the filter clause cannot have an operation
+            Term::Base | Term::LastMod => {
+                f(&format!(
+                    "({} {})",
+                    &self.typ,
+                    &Quoted(&self.what).to_string()
+                ))
+            }
+            _ => {
+                f(&format!(
+                    "({} {} {})",
+                    &self.typ,
+                    &self.how,
+                    &Quoted(&self.what).to_string())
+                )
+            }
+        }
     }
 }
 
 impl<'a> ToArguments for &'a Query<'a> {
+    // Use MPD 0.21+ filter syntax
     fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
     where F: FnMut(&str) -> StdResult<(), E> {
-        for filter in &self.filters {
-            filter.to_arguments(f)?
+        // Construct the query string in its entirety first before escaping
+        let mut qs = String::new();
+        for (i, filter) in self.filters.iter().enumerate() {
+            if i > 0 {
+                qs.push_str(" AND ");
+            }
+            // Leave escaping to the filter since terms should not be escaped or quoted
+            filter.to_arguments(&mut |arg| {
+                qs.push_str(arg);
+                Ok(())
+            })?;
         }
-        Ok(())
+        println!("Singly escaped query string: {}", &qs);
+        f(&qs)
     }
 }
 
