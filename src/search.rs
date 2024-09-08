@@ -85,6 +85,11 @@ impl<'a> Query<'a> {
         self.filters.push(Filter::new(term, value));
         self
     }
+
+    pub fn and_with_op<'b: 'a, V: 'b + Into<Cow<'b, str>>>(&mut self, term: Term<'b>, op: Operation, value: V) -> &mut Query<'a> {
+        self.filters.push(Filter::new_with_op(term, value, op));
+        self
+    }
 }
 
 impl<'a> fmt::Display for Term<'a> {
@@ -153,19 +158,23 @@ impl<'a> ToArguments for &'a Query<'a> {
     fn to_arguments<F, E>(&self, f: &mut F) -> StdResult<(), E>
     where F: FnMut(&str) -> StdResult<(), E> {
         // Construct the query string in its entirety first before escaping
-        let mut qs = String::new();
-        for (i, filter) in self.filters.iter().enumerate() {
-            if i > 0 {
-                qs.push_str(" AND ");
+        if !self.filters.is_empty() {
+            let mut qs = String::new();
+            for (i, filter) in self.filters.iter().enumerate() {
+                if i > 0 {
+                    qs.push_str(" AND ");
+                }
+                // Leave escaping to the filter since terms should not be escaped or quoted
+                filter.to_arguments(&mut |arg| {
+                    qs.push_str(arg);
+                    Ok(())
+                })?;
             }
-            // Leave escaping to the filter since terms should not be escaped or quoted
-            filter.to_arguments(&mut |arg| {
-                qs.push_str(arg);
-                Ok(())
-            })?;
+            // println!("Singly escaped query string: {}", &qs);
+            f(&qs)
+        } else {
+            Ok(())
         }
-        println!("Singly escaped query string: {}", &qs);
-        f(&qs)
     }
 }
 
