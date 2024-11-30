@@ -102,8 +102,8 @@ impl FromIter for Status {
                 "duration" => result.duration = line.1.parse::<f32>().ok().map(|v| Duration::from_millis((v * 1000.0) as u64)),
                 "bitrate" => result.bitrate = Some(line.1.parse()?),
                 "xfade" => result.crossfade = Some(Duration::from_secs(line.1.parse()?)),
-                // "mixrampdb" => 0.0, //get_field!(map, "mixrampdb"),
-                // "mixrampdelay" => None, //get_field!(map, opt "mixrampdelay").map(|v: f64| Duration::milliseconds((v * 1000.0) as i64)),
+                "mixrampdb" => result.mixrampdb = line.1.parse::<f32>()?,
+                "mixrampdelay" => result.mixrampdelay = Some(Duration::from_secs_f64(line.1.parse()?)),
                 "audio" => result.audio = Some(line.1.parse()?),
                 "updating_db" => result.updating_db = Some(line.1.parse()?),
                 "error" => result.error = Some(line.1.to_owned()),
@@ -120,17 +120,33 @@ impl FromIter for Status {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct AudioFormat {
-    /// sample rate, kbps
+    /// Sample rate, kbps.
+    /// For DSD, to align with MPD's internal handling, the returned rate will be in kilobytes per second instead.
+    /// See https://mpd.readthedocs.io/en/latest/user.html#audio-output-format.
     pub rate: u32,
-    /// sample resolution in bits, can be 0 for floating point resolution
+    /// Sample resolution in bits, can be 0 for floating point resolution or 1 for DSD.
     pub bits: u8,
-    /// number of channels
+    /// Number of channels.
     pub chans: u8,
 }
 
 impl FromStr for AudioFormat {
     type Err = ParseError;
     fn from_str(s: &str) -> Result<AudioFormat, ParseError> {
+        if s.contains("dsd") {
+            // DSD format string only contains two terms: "dsd..." and number of channels.
+            // To shoehorn into our current AudioFormat struct, use the following conversion:
+            // - Sample rate: 44100 * the DSD multiplier / 8. For example, DSD64 is sampled at 2.8224MHz.
+            // - Bits: 1 (DSD is a sequence of single-bit values, or PDM).
+            // - Channels: as usual.
+            let mut it = s.split(':');
+            let dsd_mul: u32 = it.next().ok_or(ParseError::NoRate).and_then(|v| v[3..].parse().map_err(ParseError::BadRate))?;
+            return Ok(AudioFormat {
+                rate: dsd_mul * 44100 / 8,
+                bits: 1,
+                chans: it.next().ok_or(ParseError::NoChans).and_then(|v| v.parse().map_err(ParseError::BadChans))?,
+            });
+        }
         let mut it = s.split(':');
         Ok(AudioFormat {
             rate: it.next().ok_or(ParseError::NoRate).and_then(|v| v.parse().map_err(ParseError::BadRate))?,
