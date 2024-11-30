@@ -20,6 +20,7 @@ use std::num::{ParseFloatError, ParseIntError};
 use std::result;
 use std::str::FromStr;
 use std::string::ParseError as StringParseError;
+use std::time::TryFromFloatSecsError;
 
 // Server errors {{{
 /// Server error codes, as defined in [libmpdclient](https://www.musicpd.org/doc/libmpdclient/protocol_8h_source.html)
@@ -219,6 +220,11 @@ impl From<ParseFloatError> for Error {
         Error::Parse(ParseError::BadFloat(e))
     }
 }
+impl From<TryFromFloatSecsError> for Error {
+    fn from(e: TryFromFloatSecsError) -> Error {
+        Error::Parse(ParseError::BadDuration(e))
+    }
+}
 impl From<ServerError> for Error {
     fn from(e: ServerError) -> Error {
         Error::Server(e)
@@ -235,6 +241,8 @@ pub enum ParseError {
     BadInteger(ParseIntError),
     /// invalid float
     BadFloat(ParseFloatError),
+    /// invalid duration (negative, too big or not a number)
+    BadDuration(TryFromFloatSecsError),
     /// some other invalid value
     BadValue(String),
     /// invalid version format (should be x.y.z)
@@ -281,6 +289,7 @@ impl fmt::Display for ParseError {
         let desc = match *self {
             E::BadInteger(_) => "invalid integer",
             E::BadFloat(_) => "invalid float",
+            E::BadDuration(_) => "invalid duration",
             E::BadValue(_) => "invalid value",
             E::BadVersion => "invalid version",
             E::NotAck => "not an ACK",
@@ -312,6 +321,12 @@ impl From<ParseIntError> for ParseError {
 impl From<ParseFloatError> for ParseError {
     fn from(e: ParseFloatError) -> ParseError {
         ParseError::BadFloat(e)
+    }
+}
+
+impl From<TryFromFloatSecsError> for ParseError {
+    fn from(e: TryFromFloatSecsError) -> ParseError {
+        ParseError::BadDuration(e)
     }
 }
 

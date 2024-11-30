@@ -2,13 +2,30 @@ extern crate mpd;
 
 mod helpers;
 use helpers::connect;
+use mpd::{Idle, Song, State, Subsystem};
 use std::time::Duration;
 
 #[test]
 fn status() {
     let mut mpd = connect();
     let status = mpd.status().unwrap();
-    println!("{:?}", status);
+
+    assert_eq!(status.song, None);
+    assert_eq!(status.state, State::Stop);
+}
+
+#[test]
+fn status_during_playback() {
+    let mut mpd = connect();
+    mpd.push(Song { file: "silence.flac".to_string(), ..Song::default() }).expect("adding song to queue should not fail");
+    mpd.play().expect("starting playback should not fail");
+    mpd.idle(&[Subsystem::Player]).expect("waiting for playback should not fail");
+
+    let status = mpd.status().expect("getting status should not fail");
+
+    assert!(status.song.is_some());
+    assert_eq!(status.state, State::Play);
+    assert_eq!(status.duration, Some(Duration::from_millis(500)));
 }
 
 #[test]
