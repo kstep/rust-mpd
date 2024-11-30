@@ -1,17 +1,18 @@
 //! The module defines structures and protocols for asynchronous MPD communication
 //!
 //! The MPD supports very simple protocol for asynchronous client notifications about
-//! different player events. First user issues `idle` command with optional argument
-//! to filter events by source subsystem (like "database", "player", "mixer" etc.)
+//! different player events. First user issues [`idle`](Client::idle) command
+//! with optional argument to filter events by source subsystem (like
+//! "database", "player", "mixer" etc.)
 //!
 //! Once in "idle" mode, client connection timeout is disabled, and MPD will notify
 //! client about next event when one occurs (if originated from one of designated
 //! subsystems, if specified).
 //!
 //! (Actually MPD notifies only about general subsystem source of event, e.g.
-//! if user changed volume, client will get `mixer` event in idle mode, so
-//! it should issue `status` command then and check for any mixer-related field
-//! changes.)
+//! if user changed volume, client will get [`mixer`](Subsystem::Mixer) event
+//! in idle mode, so it should issue [`status`](Client::status) command then and
+//! check for any mixer-related field changes.)
 //!
 //! Once some such event occurs, and client is notified about it, idle mode is interrupted,
 //! and client must issue another `idle` command to continue listening for interesting
@@ -22,8 +23,8 @@
 //! since last `idle` command, if they occurred.
 //!
 //! The module describes subsystems enum only, but the main workflow is determined by
-//! [`IdleGuard`](struct.IdleGuard.html) struct, which catches mutable reference
-//! to original `Client` struct, thus enforcing MPD contract in regards of (im)possibility
+//! [`IdleGuard`] struct, which catches mutable reference
+//! to original [`Client`] struct, thus enforcing MPD contract in regards of (im)possibility
 //! to send commands while in "idle" mode.
 
 use crate::client::Client;
